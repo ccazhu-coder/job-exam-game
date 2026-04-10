@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>就服乙級 AI 闖關教練 | 專業考照遊戲化系統</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Inter:wght@400;600;800&display=swap');
+    
+    :root {
+      --bg-dark: #0f172a; --bg-darker: #020617; --primary: #2563eb; --accent: #7c3aed;
+      --success: #16a34a; --danger: #dc2626; --warning: #f59e0b; --text-main: #f8fafc;
+      --text-muted: #94a3b8; --card-bg: rgba(30, 41, 59, 0.7); --card-border: rgba(255, 255, 255, 0.1);
+      --vip-gradient: linear-gradient(135deg, #7c3aed, #ec4899, #f59e0b);
+      --ai-gradient: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--bg-darker); color: var(--text-main); line-height: 1.6; overflow-x: hidden; }
+    
+    .view-section { display: none; padding-top: 80px; min-height: 100vh; animation: fadeIn 0.4s ease; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+    .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 1.5rem; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+    .btn { padding: 0.75rem 1.5rem; border-radius: 999px; border: none; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-vip { background: var(--vip-gradient); color: white; background-size: 200% auto; animation: shine 3s infinite; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
+    .btn-outline { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--card-border); }
+    @keyframes shine { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
+
+    nav { position: fixed; top: 0; width: 100%; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid var(--card-border); z-index: 1000; height: 75px; display: flex; align-items: center; }
+    .nav-inner { width: 100%; max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.2rem; cursor: pointer; }
+    .logo-icon { width: 32px; height: 32px; border-radius: 8px; background: var(--ai-gradient); display: flex; align-items: center; justify-content: center; color: white; }
+
+    .price-card { text-align: center; border: 1px solid var(--card-border); transition: 0.3s; padding: 3rem 2rem; }
+    .price-card.featured { border: 2px solid var(--accent); transform: scale(1.05); background: linear-gradient(180deg, #1e293b, #020617); }
+    .price-val { font-size: 3rem; font-weight: 900; margin: 1rem 0; }
+    .price-val span { font-size: 1rem; color: var(--text-muted); }
+
+    .opt-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: rgba(255,255,255,0.03); border: 2px solid var(--card-border); border-radius: 16px; margin-bottom: 1rem; cursor: pointer; transition: 0.2s; }
+    .opt-card:hover { transform: translateX(8px); background: rgba(255,255,255,0.08); }
+    .opt-card.selected { border-color: var(--primary); background: rgba(37,99,235,0.1); }
+    .is-correct { border-color: var(--success) !important; background: rgba(16,185,129,0.1) !important; }
+    .is-wrong { border-color: var(--danger) !important; background: rgba(220,38,38,0.1) !important; }
+    
+    #loader { position: fixed; inset: 0; background: var(--bg-darker); z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to {transform:rotate(360deg)} }
+
+    .qnav-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border); border-radius: 8px; padding: 10px 0; font-weight: 700; cursor: pointer; }
+    .qnav-btn.current { background: var(--primary); }
+    .qnav-btn.done { opacity: 0.5; border-color: var(--success); }
+  </style>
+</head>
+<body>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <p style="margin-top: 20px; font-weight: 700;">同步雲端資料中...</p>
+  </div>
+
+  <nav>
+    <div class="nav-inner">
+      <div class="logo" onclick="App.showView('landingView')">
+        <div class="logo-icon">乙</div>就服 AI 闖關教練
+      </div>
+      <div class="nav-actions">
+        <span id="limitBadge" class="badge" style="background:#1e293b; padding:6px 12px; border-radius:8px; font-size:0.8rem; margin-right:10px; font-weight:800;">今日剩餘: 30 題</span>
+        <button id="btnAuth" class="btn btn-outline" onclick="UI.showModal('authModal')">登入</button>
+        <button id="btnDash" class="btn btn-primary" style="display:none;" onclick="App.showView('dashboardView')">會員中心</button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    
+    <!-- View: Landing -->
+    <section id="landingView" class="view-section active">
+      <div style="text-align:center; padding: 4rem 0;">
+        <h1 style="font-size:clamp(2.5rem, 5vw, 4rem); font-weight:900; margin-bottom:1.5rem;">把 1262 題，變成真正能考上的<br><span style="background:var(--ai-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">AI 闖關系統</span></h1>
+        <p style="color:var(--text-muted); max-width:700px; margin:0 auto 3rem; font-size:1.1rem;">拒絕死背！結合 60/20 比例模擬考與 AI 智能解說。每日 30 題免費體驗，助你一戰成名。</p>
+        <div style="display:flex; justify-content:center; gap:1rem;">
+          <button class="btn btn-primary" style="padding:1rem 2.5rem;" onclick="App.startMode('practice')">🚀 開始免費體驗</button>
+          <button class="btn btn-outline" style="padding:1rem 2.5rem;" onclick="App.showView('vipView')">查看 VIP 方案</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: VIP Sales (高轉換設計) -->
+    <section id="vipView" class="view-section">
+      <div style="text-align:center; margin-bottom:4rem;">
+        <h2 style="font-size:3rem; font-weight:900;">投資未來，一次就考上</h2>
+        <p style="color:var(--text-muted);">🎁 新用戶享有 7 天免費全功能試用 ｜ 已幫助 1,500+ 位學員取證</p>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:2rem; max-width:1000px; margin:0 auto;">
+        <div class="card price-card">
+          <h3 style="color:var(--text-muted);">月度衝刺版</h3>
+          <div class="price-val">NT$ 199 <span>/ 月</span></div>
+          <ul style="text-align:left; list-style:none; margin:2rem 0; color:#e2e8f0; line-height:2;">
+            <li>✅ 無限題目刷題</li>
+            <li>✅ 完整 AI 解析與口訣</li>
+            <li>✅ 錯題追蹤系統</li>
+            <li style="opacity:0.3;">❌ 模擬考試系統</li>
+          </ul>
+          <button class="btn btn-outline" style="width:100%;" onclick="window.open('https://lin.ee/qZt97JY')">立即訂閱</button>
+        </div>
+        <div class="card price-card featured">
+          <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--vip-gradient); padding:4px 16px; border-radius:999px; font-size:0.8rem; font-weight:900;">限時優惠中</div>
+          <h3 style="background:var(--vip-gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-weight:900;">年度全能通行證</h3>
+          <div class="price-val">NT$ 790 <span>/ 年</span></div>
+          <ul style="text-align:left; list-style:none; margin:2rem 0; line-height:2;">
+            <li>✅ 包含所有核心功能</li>
+            <li>✅ <b>精準模擬考 (60單/20複)</b></li>
+            <li>✅ 考點熟練度分析報告</li>
+            <li>✅ 優先客服支援</li>
+          </ul>
+          <button class="btn btn-vip" style="width:100%;" onclick="window.open('https://lin.ee/qZt97JY')">立即開通</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: Dashboard -->
+    <section id="dashboardView" class="view-section">
+      <div style="display:grid; grid-template-columns: 1fr 300px; gap:2rem;">
+        <div>
+          <h2 style="margin-bottom:2rem;">學習控制台</h2>
+          <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:1.5rem;">
+            <div class="card" onclick="App.startMode('practice')" style="cursor:pointer;"><h3>🏃‍♂️ 快速練習</h3><p>隨機抽取 10 題</p></div>
+            <div class="card" style="border-color:var(--accent); cursor:pointer;" onclick="App.startMode('exam')"><h3>📝 模擬考試</h3><p>60單/20複精準比例 (VIP)</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 id="userName">學員</h3>
+          <p id="userRole">一般會員</p>
+          <div style="margin-top:2rem;">
+            <p style="font-size:0.8rem; color:var(--text-muted);">EXP 進度</p>
+            <div style="height:8px; background:#000; border-radius:4px; margin-top:5px;"><div id="expBar" style="width:0%; height:100%; background:var(--primary); border-radius:4px;"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: Quiz -->
+    <section id="quizView" class="view-section">
+      <div class="container" style="max-width:850px;">
+        <div class="card" style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+          <button class="btn btn-outline" onclick="App.showView('dashboardView')">🚪 離開</button>
+          <div id="quizTimer" style="font-family:monospace; font-size:1.3rem; color:var(--warning); font-weight:800;">00:00</div>
+          <div id="quizCounter" style="font-weight:900;">1 / 80</div>
+        </div>
+        <div class="quiz-layout">
+          <aside class="quiz-side" style="margin-bottom: 1.5rem;">
+             <div id="qNavGrid" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px;"></div>
+          </aside>
+          <div class="quiz-main">
+            <div class="card">
+              <div id="qTypeHint" style="font-weight:900; color:var(--primary); margin-bottom:10px;">單選題</div>
+              <div id="qText" style="font-size:1.4rem; font-weight:800; margin-bottom:2.5rem;"></div>
+              <div id="optionsGrid"></div>
+              <div style="margin-top:2.5rem; text-align:right;">
+                <button class="btn btn-primary" id="btnSubmit" onclick="App.submitAnswer()" style="padding:1rem 4rem;">送出答案</button>
+                <button class="btn btn-primary" id="btnNext" onclick="App.nextQ()" style="display:none; padding:1rem 4rem;">下一題 ➔</button>
+              </div>
+            </div>
+            <div class="card" id="analysisBox" style="margin-top:1.5rem; display:none; border-left:4px solid var(--accent);">
+              <h4 style="color:var(--accent); font-weight:900; margin-bottom:1rem;">✨ AI 智能解析</h4>
+              <div id="analysisContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- View: Result -->
+    <section id="resultView" class="view-section">
+      <div class="container" style="max-width:700px;">
+        <div class="card" style="text-align:center;">
+          <h2 style="font-size:2rem; margin-bottom:1rem;">🎉 測驗完成</h2>
+          <h1 id="finalScore" style="font-size:3rem; margin-bottom:1rem;"></h1>
+          <p id="finalDetail" style="margin-bottom:2rem; font-size:1.2rem; color:var(--text-muted);"></p>
+          <button class="btn btn-primary" style="padding:1rem 3rem;" onclick="App.showView('dashboardView')">
+            回會員中心
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal-box">
+      <h2 style="margin-bottom:1.5rem;">登入同步進度</h2>
+      <input type="email" id="authEmail" style="width:100%; padding:1rem; border-radius:12px; margin-bottom:1.5rem; background:#000; color:white; border:1px solid var(--card-border);" placeholder="Email">
+      <button class="btn btn-primary" style="width:100%;" onclick="App.login()">登入 / 註冊</button>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxPmwrWrAf7qkEHfxg4BBOtzJPkFBQFtd8ZB7lVSSWuECrduMPwZJ4RXCtzu-vTZilN9Q/exec';
+
+    // --- ①【整段取代 QuizEngine】 ---
+    const QuizEngine = {
+      shuffle(a) {
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      },
+
+      getRecentHistory() {
+        return JSON.parse(localStorage.getItem("recent_q") || "[]");
+      },
+
+      saveHistory(ids) {
+        let history = this.getRecentHistory();
+        history = [...ids, ...history];
+        history = [...new Set(history)].slice(0, 50);
+        localStorage.setItem("recent_q", JSON.stringify(history));
+      },
+
+      generate(mode, db) {
+        const recent = this.getRecentHistory();
+        let pool = db.filter(q => !recent.includes(q.id));
+        if (pool.length < 50) pool = db; // 題庫不足補題
+
+        let selected = [];
+        if (mode === "exam") {
+          const singles = pool.filter(q => String(q.type).includes("單"));
+          const multis = pool.filter(q => String(q.type).includes("複"));
+          selected = [
+            ...this.shuffle(singles).slice(0, 60),
+            ...this.shuffle(multis).slice(0, 20)
+          ];
+        } else {
+          selected = this.shuffle(pool).slice(0, 10);
+        }
+
+        this.saveHistory(selected.map(q => q.id));
+        return this.shuffle(selected);
+      }
+    };
+
+    const App = {
+      state: { db: [], user: null, isVip: false, quiz: null, todayUsage: 0, limit: 30 },
+
+      // --- ②【取代 App.init（加入防刷機制）】 ---
+      async init() {
+        const today = new Date().toDateString();
+        const savedDate = localStorage.getItem('usage_date');
+
+        if (savedDate !== today) {
+          localStorage.setItem('usage_date', today);
+          localStorage.setItem('usage_count', 0);
+        }
+
+        this.todayUsage = parseInt(localStorage.getItem('usage_count') || '0');
+        this.updateLimitUI();
+
+        try {
+          const res = await fetch(API_URL);
+          const result = await res.json();
+          if (result.success) {
+            this.state.db = result.data;
+            UI.hideLoader();
+          }
+        } catch (err) { console.error("題庫同步失敗", err); }
+
+        const saved = localStorage.getItem('user_p');
+        if(saved) {
+          this.state.user = JSON.parse(saved);
+          this.state.isVip = this.state.user.isVip;
+          this.syncUI();
+        }
+      },
+
+      updateLimitUI() {
+        const rem = Math.max(0, this.state.limit - this.todayUsage);
+        document.getElementById('limitBadge').textContent = `今日剩餘: ${this.state.isVip ? '無限' : rem + ' 題'}`;
+      },
+
+      showView(id) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0,0);
+      },
+
+      async login() {
+        const email = document.getElementById('authEmail').value;
+        if(!email) return;
+        try {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'login', email: email })
+          });
+          const r = await res.json();
+          if(r.success) {
+            this.state.user = r.user;
+            this.state.isVip = r.user.isVip;
+            localStorage.setItem('user_p', JSON.stringify(r.user));
+            this.syncUI();
+            UI.hideModal('authModal');
+            this.showView('dashboardView');
+          }
+        } catch(e) { alert("登入失敗。"); }
+      },
+
+      syncUI() {
+        if(this.state.user) {
+          document.getElementById('btnAuth').style.display = 'none';
+          document.getElementById('btnDash').style.display = 'inline-flex';
+          document.getElementById('userName').textContent = this.state.user.name;
+          document.getElementById('userRole').textContent = this.state.isVip ? "💎 VIP 尊榮學員" : "一般學員";
+          document.getElementById('expBar').style.width = (this.state.user.exp % 100) + "%";
+        }
+        this.updateLimitUI();
+      },
+
+      // --- ③【取代 startMode（同步修正）】 ---
+      async startMode(mode) {
+        if (!this.state.isVip && this.todayUsage >= this.state.limit) {
+          alert("今日免費額度已滿，請升級 VIP");
+          this.showView('vipView');
+          return;
+        }
+
+        if (mode === 'exam' && !this.state.isVip) {
+          this.showView('vipView');
+          return;
+        }
+
+        const qs = QuizEngine.generate(mode, this.state.db);
+
+        this.state.quiz = {
+          mode,
+          qs,
+          cur: 0,
+          answers: {},
+          results: {},
+          startTime: Date.now()
+        };
+
+        this.showView('quizView');
+        this.renderQ();
+        this.startTimer();
+      },
+
+      renderQ() {
+        const qz = this.state.quiz; const q = qz.qs[qz.cur];
+        const isSub = !!qz.results[q.id];
+
+        document.getElementById('quizCounter').textContent = `${qz.cur + 1} / ${qz.qs.length}`;
+        document.getElementById('qTypeHint').textContent = String(q.type).includes("複") ? "💡【複選題】" : "💡【單選題】";
+        document.getElementById('qText').textContent = q.question;
+
+        const opts = ['A','B','C','D'].map(k => ({k, v: q[k] || q['option'+k]})).filter(x=>x.v);
+        document.getElementById('optionsGrid').innerHTML = opts.map(o => {
+          let cls = 'opt-card';
+          const sel = (qz.answers[q.id] || []).includes(o.k);
+          if (sel) cls += ' selected';
+          if (isSub) {
+            if (String(q.answer).includes(o.k)) cls += ' is-correct';
+            else if (sel) cls += ' is-wrong';
+          }
+          return `<div class="${cls}" onclick="App.pick('${o.k}')"><b>${o.k}</b> ${o.v}</div>`;
+        }).join('');
+
+        document.getElementById('btnSubmit').style.display = isSub ? 'none' : 'inline-flex';
+        document.getElementById('btnNext').style.display = (isSub && qz.cur < qz.qs.length - 1) ? 'inline-flex' : 'none';
+        
+        const panel = document.getElementById('analysisBox');
+        if (isSub) {
+          document.getElementById('analysisContent').innerHTML = `
+            <p style="margin-bottom:1rem; color:#e2e8f0;">${q.ai_explanation || '解析同步中...'}</p>
+            <p style="color:var(--warning); font-weight:700;">💡 記憶口訣：${q.memory || '多做幾次就會囉！'}</p>
+          `;
+          panel.style.display = 'block';
+        } else { panel.style.display = 'none'; }
+
+        document.getElementById('qNavGrid').innerHTML = qz.qs.map((_, i) => `
+          <button class="qnav-btn ${i===qz.cur?'current':''} ${qz.results[qz.qs[i].id]?'done':''}" onclick="App.jump(${i})">${i+1}</button>
+        `).join('');
+      },
+
+      pick(k) {
+        const qz = this.state.quiz; const q = qz.qs[qz.cur];
+        if (qz.results[q.id]) return;
+        let cur = qz.answers[q.id] || [];
+        if (String(q.type).includes("單")) cur = [k];
+        else {
+          if (cur.includes(k)) cur = cur.filter(x => x !== k);
+          else cur.push(k);
+        }
+        qz.answers[q.id] = cur;
+        this.renderQ();
+      },
+
+      // --- 🔥 ⑥【修正 submitAnswer（確保記錄）】 ---
+      async submitAnswer() {
+        const qz = this.state.quiz;
+        const q = qz.qs[qz.cur];
+
+        const ans = (qz.answers[q.id] || []).sort().join('');
+        if (!ans) return;
+
+        const isCorrect = ans === q.answer;
+        qz.results[q.id] = { isCorrect };
+
+        if (!this.state.isVip) {
+          this.todayUsage++;
+          localStorage.setItem('usage_count', this.todayUsage);
+          this.updateLimitUI();
+        }
+
+        if(this.state.user) {
+          fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'submitAnswer',
+              uid: this.state.user.uid,
+              qid: q.id,
+              correct: isCorrect
+            })
+          });
+        }
+
+        this.renderQ();
+        
+        // 若是最後一題且已作答，自動顯示交卷邏輯
+        if (qz.cur === qz.qs.length - 1) {
+           setTimeout(() => this.finishQuiz(), 1500);
+        }
+      },
+
+      nextQ() {
+        if (this.state.quiz.cur < this.state.quiz.qs.length - 1) {
+          this.state.quiz.cur++; this.renderQ();
+        } else {
+          this.finishQuiz();
+        }
+      },
+      jump(i) { this.state.quiz.cur = i; this.renderQ(); },
+
+      // --- ④【取代 finishQuiz（真實分數＋結果頁）】 ---
+      finishQuiz() {
+        const total = this.state.quiz.qs.length;
+        const correct = Object.values(this.state.quiz.results)
+          .filter(r => r.isCorrect).length;
+
+        const score = Math.round((correct / total) * 100);
+
+        document.getElementById('finalScore').textContent = score + " 分";
+        document.getElementById('finalDetail').textContent = `答對 ${correct} / ${total}`;
+
+        if(this.state.user) {
+          fetch(API_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'saveSession',
+              uid: this.state.user.uid,
+              mode: this.state.quiz.mode,
+              score: score
+            })
+          });
+        }
+
+        this.showView('resultView');
+      },
+
+      startTimer() {
+        if(this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => {
+          const sec = Math.floor((Date.now() - this.state.quiz.startTime)/1000);
+          const m = String(Math.floor(sec/60)).padStart(2,'0');
+          const s = String(sec%60).padStart(2,'0');
+          document.getElementById('quizTimer').textContent = `${m}:${s}`;
+        }, 1000);
+      }
+    };
+
+    const UI = {
+      showModal: (id) => document.getElementById(id).classList.add('active'),
+      hideModal: (id) => document.getElementById(id).classList.remove('active'),
+      hideLoader: () => document.getElementById('loader').style.display = 'none'
+    };
+
+    window.App = App;
+    App.init();
+  </script>
+</body>
+</html>
