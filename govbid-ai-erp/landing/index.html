@@ -21,7 +21,7 @@
       <h1>不會寫標案，也能建立一套可複製的政府標案接案系統</h1>
       <p class="lead">從找案、判斷要不要投、撰寫服務建議書、準備簡報答詢，到履約、請款與結案，一套系統幫你整理清楚。</p>
       <div class="hero-actions">
-        <a class="btn primary" href="#contact">我要了解系統</a>
+        <a class="btn primary" href="#contact">我要預約諮詢</a>
         <a class="btn secondary" href="#features">看系統功能</a>
       </div>
       <p class="micro">適合個人講師、顧問、協會、公會、教育訓練單位與政府計畫承辦團隊。</p>
@@ -82,6 +82,7 @@
             <div class="price">NT$9,800</div>
             <p>適合想先建立標案系統，快速開始使用的人。</p>
             <ul><li>ERP系統</li><li>基礎教學</li><li>AI提案提示詞</li><li>SOP文件</li></ul>
+            <a class="btn secondary dark" href="#contact">我要內測版</a>
           </div>
           <div class="price-card featured">
             <div class="tag">推薦</div>
@@ -89,12 +90,14 @@
             <div class="price">NT$19,800</div>
             <p>適合已準備接案，想建立完整作業流程的人。</p>
             <ul><li>內測版全部內容</li><li>投標決策模型說明</li><li>財務與履約流程教學</li><li>簡報答詢模組</li><li>一次線上導入說明</li></ul>
+            <a class="btn primary" href="#contact">我要商用版</a>
           </div>
           <div class="price-card">
             <h3>顧問導入版</h3>
             <div class="price">NT$39,800 起</div>
             <p>適合協會、顧問公司與教育訓練單位。</p>
             <ul><li>完整商用版全部內容</li><li>客製欄位調整</li><li>標案流程盤點</li><li>團隊導入教學</li><li>1個月線上支援</li></ul>
+            <a class="btn secondary dark" href="#contact">我要顧問導入</a>
           </div>
         </div>
       </div>
@@ -110,12 +113,44 @@
       </div>
     </section>
 
-    <section id="contact" class="section cta">
+    <section id="contact" class="section lead-form-section">
       <div class="container narrow">
-        <h2>先建立系統，再開始接案</h2>
-        <p>如果你想開始接政府標案，不要再靠感覺投標。加入 GovBid AI ERP，建立你的第一套政府標案接案作業系統。</p>
-        <a class="btn primary large" href="mailto:your-email@example.com?subject=我想了解 GovBid AI ERP">我要了解 GovBid AI ERP</a>
-        <p class="micro">可將此按鈕改成你的 LINE 官方帳號或報名表連結。</p>
+        <h2>預約了解 GovBid AI ERP</h2>
+        <p class="section-lead">留下資料後，系統會先記錄你的需求。後端串接完成後，資料會自動進入 Google Sheet 客戶名單。</p>
+        <form id="leadForm" class="lead-form">
+          <label>姓名 / 單位名稱
+            <input name="name" type="text" placeholder="例如：珍珠老師 / 某某協會" required />
+          </label>
+          <label>LINE ID 或官方帳號
+            <input name="line" type="text" placeholder="方便後續聯繫" required />
+          </label>
+          <label>Email
+            <input name="email" type="email" placeholder="example@email.com" />
+          </label>
+          <label>想了解的方案
+            <select name="plan" required>
+              <option value="">請選擇</option>
+              <option>首批內測版 NT$9,800</option>
+              <option>完整商用版 NT$19,800</option>
+              <option>顧問導入版 NT$39,800 起</option>
+              <option>先了解，不確定方案</option>
+            </select>
+          </label>
+          <label>目前狀況
+            <select name="status" required>
+              <option value="">請選擇</option>
+              <option>已經有接政府標案</option>
+              <option>想開始接，但還沒開始</option>
+              <option>協會 / 公司想建立內部標案流程</option>
+              <option>只是想先了解</option>
+            </select>
+          </label>
+          <label>你最想解決的問題
+            <textarea name="message" rows="5" placeholder="例如：不會寫服務建議書、投標流程混亂、履約財務不好管理"></textarea>
+          </label>
+          <button class="btn primary large" type="submit">送出諮詢需求</button>
+          <p id="formStatus" class="form-status">目前為前後端串接版，送出後會先進行前端驗證。</p>
+        </form>
       </div>
     </section>
   </main>
@@ -123,5 +158,6 @@
   <footer class="footer">
     <p>© GovBid AI ERP. AI標案決策＋提案生成＋履約管理系統。</p>
   </footer>
+  <script src="form.js"></script>
 </body>
 </html>
