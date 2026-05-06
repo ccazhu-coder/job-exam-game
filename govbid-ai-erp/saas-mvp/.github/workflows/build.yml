@@ -1,0 +1,27 @@
+name: GovBid SaaS Build
+
+on:
+  push:
+    paths:
+      - 'govbid-ai-erp/saas-mvp/**'
+  pull_request:
+    paths:
+      - 'govbid-ai-erp/saas-mvp/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: govbid-ai-erp/saas-mvp
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
