@@ -1,12 +1,7 @@
 /*
 GovOps OS｜第37檔：Apps Script 正式後端 core.gs
-版本：MVP v1.0.0
+版本：MVP v1.0.0 內部試營運版
 用途：提供正式前端 govbid-os/app/index.html 可呼叫的 Apps Script API 基礎核心。
-
-貼上方式：
-1. 到 Apps Script 新增檔案：37_core
-2. 貼上本檔全部內容
-3. 執行「初始化系統」或前端點選後自動初始化
 */
 
 const GOVOPS_VERSION = '1.0.0';
@@ -45,13 +40,8 @@ const HEADERS = {
   使用者常用選項: ['選項ID','選項類型','選項名稱','使用次數','最後使用時間','是否預設','狀態','建立時間','更新時間']
 };
 
-function doGet(e) {
-  return handleRequest(e);
-}
-
-function doPost(e) {
-  return handleRequest(e);
-}
+function doGet(e) { return handleRequest(e); }
+function doPost(e) { return handleRequest(e); }
 
 function handleRequest(e) {
   try {
@@ -70,10 +60,7 @@ function parseRequest(e) {
   const data = {};
   if (e && e.parameter) Object.assign(data, e.parameter);
   if (e && e.postData && e.postData.contents) {
-    try {
-      const body = JSON.parse(e.postData.contents);
-      Object.assign(data, body);
-    } catch (err) {}
+    try { Object.assign(data, JSON.parse(e.postData.contents)); } catch (err) {}
   }
   return data;
 }
@@ -104,134 +91,39 @@ function router(action, data) {
     case '更新核銷狀態': return 更新核銷狀態(data);
     case '建立Drive資料夾': return 建立Drive資料夾(data);
     case '查詢文件歸檔': return 查詢文件歸檔(data);
-    case 'LINE測試': return LINE測試(data);
+    case 'LINE測試': return typeof AI秘書查詢 === 'function' ? AI秘書查詢(data) : LINE測試(data);
+    case 'LINE測試V2': return AI秘書查詢(data);
+    case '初始化財務資料表': 初始化財務資料表(); return success('財務資料表初始化完成。');
+    case '建立應收帳款': return 建立應收帳款(data);
+    case '登錄收款': return 登錄收款(data);
+    case '登錄支出': return 登錄支出(data);
+    case '查詢未收款': return 查詢未收款(data);
+    case '查詢專案損益': return 查詢專案損益(data);
+    case '初始化提醒中心': 初始化提醒中心(); return success('提醒中心初始化完成。');
+    case '建立活動提醒': return 建立活動提醒(data);
+    case '查詢今日提醒': return 查詢今日提醒(data);
+    case '執行提醒檢查': return 執行提醒檢查(data);
+    case 'AI秘書查詢': return AI秘書查詢(data);
+    case '產生秘書摘要': return 產生秘書摘要(data);
     default: return fail('找不到對應功能：' + action);
   }
 }
 
-function jsonOutput(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function success(message, data) {
-  return { success: true, message: message || '操作完成。', data: data || {} };
-}
-
-function fail(message, data) {
-  return { success: false, message: message || '操作失敗。', data: data || {} };
-}
-
-function ss() {
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
-
-function now() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');
-}
-
-function today() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd');
-}
-
-function getSheet(name) {
-  const spreadsheet = ss();
-  let sheet = spreadsheet.getSheetByName(name);
-  if (!sheet) sheet = spreadsheet.insertSheet(name);
-  return sheet;
-}
-
-function ensureSheet(name, headers) {
-  const sheet = getSheet(name);
-  if (sheet.getLastRow() === 0) {
-    sheet.appendRow(headers);
-    return sheet;
-  }
-  const current = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(String);
-  const missing = headers.filter(h => current.indexOf(h) < 0);
-  if (missing.length) sheet.getRange(1, current.length + 1, 1, missing.length).setValues([missing]);
-  return sheet;
-}
-
-function 初始化系統() {
-  Object.keys(HEADERS).forEach(name => ensureSheet(name, HEADERS[name]));
-  writeLog('初始化系統', '系統', '', '建立或補齊MVP資料表', '完成');
-  return success('系統初始化完成。', { 分頁數: Object.keys(HEADERS).length });
-}
-
-function headersOf(sheetName) {
-  const sheet = getSheet(sheetName);
-  if (sheet.getLastRow() === 0) return [];
-  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String);
-}
-
-function readRows(sheetName) {
-  const sheet = getSheet(sheetName);
-  if (sheet.getLastRow() < 2) return [];
-  const headers = headersOf(sheetName);
-  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues();
-  return values.map((row, idx) => {
-    const obj = { _row: idx + 2 };
-    headers.forEach((h, i) => obj[h] = row[i]);
-    return obj;
-  });
-}
-
-function appendObject(sheetName, obj) {
-  const headers = HEADERS[sheetName] || headersOf(sheetName);
-  ensureSheet(sheetName, headers);
-  const row = headers.map(h => obj[h] !== undefined ? obj[h] : '');
-  getSheet(sheetName).appendRow(row);
-  return obj;
-}
-
-function updateRow(sheetName, rowNumber, patch) {
-  const sheet = getSheet(sheetName);
-  const headers = headersOf(sheetName);
-  Object.keys(patch).forEach(key => {
-    const col = headers.indexOf(key) + 1;
-    if (col > 0) sheet.getRange(rowNumber, col).setValue(patch[key]);
-  });
-}
-
-function findById(sheetName, id) {
-  if (!id) return null;
-  const rows = readRows(sheetName);
-  return rows.find(row => Object.keys(row).some(k => /ID$/.test(k) && String(row[k]) === String(id))) || null;
-}
-
-function generateId(type) {
-  const y = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy');
-  const roc = String(Number(y) - 1911);
-  const prefixMap = { 活動:'ACT', 報名:'REG', 學員:'STU', 任務:'TSK', 物品:'ITM', 餐點:'MEAL', 簽到:'ATT', 核銷:'CHK', 文件:'DOC', 候補:'WAIT', 選項:'OPT' };
-  const prefix = prefixMap[type] || 'ID';
-  const key = prefix + '-' + roc + '-';
-  let max = 0;
-  Object.keys(SHEETS).forEach(k => {
-    readRows(SHEETS[k]).forEach(row => {
-      Object.keys(row).forEach(col => {
-        const v = String(row[col] || '');
-        if (v.indexOf(key) === 0) {
-          const n = Number(v.replace(key, ''));
-          if (!isNaN(n) && n > max) max = n;
-        }
-      });
-    });
-  });
-  return key + String(max + 1).padStart(4, '0');
-}
-
-function writeLog(type, sheetName, id, content, result) {
-  try {
-    appendObject(SHEETS.操作, { 時間: now(), 操作類型: type, 資料表: sheetName, 關聯ID: id, 操作內容: content, 操作結果: result || '完成' });
-  } catch (err) {}
-}
-
-function logError(module, err) {
-  try {
-    appendObject(SHEETS.錯誤, { 時間: now(), 功能模組: module, 錯誤摘要: err && err.message ? err.message : String(err), 錯誤內容: err && err.stack ? err.stack : String(err), 處理狀態: '未處理' });
-  } catch (e) {}
-}
-
-function requireField(data, key, label) {
-  if (!data[key]) throw new Error('請先填寫必要欄位：' + (label || key));
-}
+function jsonOutput(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function success(message, data) { return { success: true, message: message || '操作完成。', data: data || {} }; }
+function fail(message, data) { return { success: false, message: message || '操作失敗。', data: data || {} }; }
+function ss() { return SpreadsheetApp.getActiveSpreadsheet(); }
+function now() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss'); }
+function today() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd'); }
+function getSheet(name) { const spreadsheet = ss(); let sheet = spreadsheet.getSheetByName(name); if (!sheet) sheet = spreadsheet.insertSheet(name); return sheet; }
+function ensureSheet(name, headers) { const sheet = getSheet(name); if (sheet.getLastRow() === 0) { sheet.appendRow(headers); return sheet; } const current = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(String); const missing = headers.filter(h => current.indexOf(h) < 0); if (missing.length) sheet.getRange(1, current.length + 1, 1, missing.length).setValues([missing]); return sheet; }
+function 初始化系統() { Object.keys(HEADERS).forEach(name => ensureSheet(name, HEADERS[name])); writeLog('初始化系統', '系統', '', '建立或補齊MVP資料表', '完成'); return success('系統初始化完成。', { 分頁數: Object.keys(HEADERS).length }); }
+function headersOf(sheetName) { const sheet = getSheet(sheetName); if (sheet.getLastRow() === 0) return []; return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String); }
+function readRows(sheetName) { const sheet = getSheet(sheetName); if (sheet.getLastRow() < 2) return []; const headers = headersOf(sheetName); const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues(); return values.map((row, idx) => { const obj = { _row: idx + 2 }; headers.forEach((h, i) => obj[h] = row[i]); return obj; }); }
+function appendObject(sheetName, obj) { const headers = HEADERS[sheetName] || headersOf(sheetName); ensureSheet(sheetName, headers); const row = headers.map(h => obj[h] !== undefined ? obj[h] : ''); getSheet(sheetName).appendRow(row); return obj; }
+function updateRow(sheetName, rowNumber, patch) { const sheet = getSheet(sheetName); const headers = headersOf(sheetName); Object.keys(patch).forEach(key => { const col = headers.indexOf(key) + 1; if (col > 0) sheet.getRange(rowNumber, col).setValue(patch[key]); }); }
+function findById(sheetName, id) { if (!id) return null; const rows = readRows(sheetName); return rows.find(row => Object.keys(row).some(k => /ID$/.test(k) && String(row[k]) === String(id))) || null; }
+function generateId(type) { const y = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy'); const roc = String(Number(y) - 1911); const prefixMap = { 活動:'ACT', 報名:'REG', 學員:'STU', 任務:'TSK', 物品:'ITM', 餐點:'MEAL', 簽到:'ATT', 核銷:'CHK', 文件:'DOC', 候補:'WAIT', 選項:'OPT' }; const prefix = prefixMap[type] || 'ID'; const key = prefix + '-' + roc + '-'; let max = 0; Object.keys(SHEETS).forEach(k => { readRows(SHEETS[k]).forEach(row => { Object.keys(row).forEach(col => { const v = String(row[col] || ''); if (v.indexOf(key) === 0) { const n = Number(v.replace(key, '')); if (!isNaN(n) && n > max) max = n; } }); }); }); return key + String(max + 1).padStart(4, '0'); }
+function writeLog(type, sheetName, id, content, result) { try { appendObject(SHEETS.操作, { 時間: now(), 操作類型: type, 資料表: sheetName, 關聯ID: id, 操作內容: content, 操作結果: result || '完成' }); } catch (err) {} }
+function logError(module, err) { try { appendObject(SHEETS.錯誤, { 時間: now(), 功能模組: module, 錯誤摘要: err && err.message ? err.message : String(err), 錯誤內容: err && err.stack ? err.stack : String(err), 處理狀態: '未處理' }); } catch (e) {} }
+function requireField(data, key, label) { if (!data[key]) throw new Error('請先填寫必要欄位：' + (label || key)); }
