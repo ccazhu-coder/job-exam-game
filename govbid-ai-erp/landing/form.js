@@ -1,4 +1,4 @@
-const WEB_APP_URL = '';
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxtozd2ZoYNhn8VHERI2yIjy8Ib4MBPt24_XKXpLrF4-QddzywwwF70ndrbABzrpmY2/exec';
 
 const form = document.getElementById('leadForm');
 const statusEl = document.getElementById('formStatus');
@@ -12,6 +12,7 @@ form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   const data = Object.fromEntries(new FormData(form).entries());
+  data.action = 'createLead';
   data.source = 'GovBid AI ERP Landing Page';
   data.createdAt = new Date().toISOString();
 
@@ -20,18 +21,9 @@ form.addEventListener('submit', async (event) => {
     return;
   }
 
-  if (!WEB_APP_URL) {
-    const saved = JSON.parse(localStorage.getItem('govbid_leads') || '[]');
-    saved.push(data);
-    localStorage.setItem('govbid_leads', JSON.stringify(saved));
-    form.reset();
-    showStatus('已收到你的資料。後端部署前，資料已先暫存在此裝置；正式串接後會自動送進後台。', 'success');
-    return;
-  }
-
   try {
     showStatus('送出中，請稍候...', 'info');
-    const response = await fetch(WEB_APP_URL, {
+    await fetch(WEB_APP_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
