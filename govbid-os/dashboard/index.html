@@ -6,71 +6,24 @@
   <title>GovOps OS｜政府專案作業系統操作台</title>
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-      background: #f4f7fb;
-      color: #182033;
-    }
-    header {
-      background: linear-gradient(135deg, #102542, #1d4e89);
-      color: white;
-      padding: 28px 18px;
-    }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "Microsoft JhengHei", sans-serif; background: #f4f7fb; color: #182033; }
+    header { background: linear-gradient(135deg, #102542, #1d4e89); color: white; padding: 28px 18px; }
     .wrap { max-width: 1180px; margin: 0 auto; }
     h1 { margin: 0; font-size: 30px; letter-spacing: 1px; }
     .sub { margin-top: 8px; opacity: .9; line-height: 1.7; }
     main { padding: 20px 14px 80px; }
     .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-    .card {
-      background: white;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 10px 30px rgba(16,37,66,.08);
-      border: 1px solid #e8edf5;
-    }
-    .span-12 { grid-column: span 12; }
-    .span-8 { grid-column: span 8; }
-    .span-6 { grid-column: span 6; }
-    .span-4 { grid-column: span 4; }
+    .card { background: white; border-radius: 18px; padding: 18px; box-shadow: 0 10px 30px rgba(16,37,66,.08); border: 1px solid #e8edf5; }
+    .span-12 { grid-column: span 12; } .span-8 { grid-column: span 8; } .span-6 { grid-column: span 6; } .span-4 { grid-column: span 4; }
     .card h2 { margin: 0 0 12px; font-size: 20px; }
     .hint { font-size: 14px; color: #667085; line-height: 1.7; }
     label { display: block; font-weight: 700; margin: 12px 0 6px; }
-    input, textarea, select {
-      width: 100%;
-      padding: 12px 13px;
-      border: 1px solid #d9e1ec;
-      border-radius: 12px;
-      font-size: 16px;
-      background: #fbfcff;
-    }
+    input, textarea, select { width: 100%; padding: 12px 13px; border: 1px solid #d9e1ec; border-radius: 12px; font-size: 16px; background: #fbfcff; }
     textarea { min-height: 94px; resize: vertical; }
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      background: #1d4e89;
-      color: white;
-      margin: 8px 6px 0 0;
-    }
-    button.secondary { background: #e8eef7; color: #1d3557; }
-    button.danger { background: #b42318; }
-    button.good { background: #12805c; }
+    button { border: 0; border-radius: 12px; padding: 12px 16px; font-size: 16px; font-weight: 800; cursor: pointer; background: #1d4e89; color: white; margin: 8px 6px 0 0; }
+    button.secondary { background: #e8eef7; color: #1d3557; } button.good { background: #12805c; }
     .btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .status {
-      padding: 12px;
-      border-radius: 12px;
-      background: #f8fafc;
-      border: 1px dashed #d0d5dd;
-      margin-top: 12px;
-      white-space: pre-wrap;
-      line-height: 1.7;
-      max-height: 380px;
-      overflow: auto;
-    }
+    .status { padding: 12px; border-radius: 12px; background: #f8fafc; border: 1px dashed #d0d5dd; margin-top: 12px; white-space: pre-wrap; line-height: 1.7; max-height: 380px; overflow: auto; }
     .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     .kpi { background: #f8fafc; border-radius: 14px; padding: 14px; border: 1px solid #e4eaf2; }
     .kpi .num { font-size: 26px; font-weight: 900; color: #1d4e89; }
@@ -78,432 +31,58 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     th, td { border-bottom: 1px solid #edf1f6; padding: 10px 8px; text-align: left; vertical-align: top; }
     th { background: #f8fafc; color: #344054; }
-    .pill { display: inline-block; padding: 4px 8px; border-radius: 999px; background: #eef4ff; color: #1d4e89; font-size: 12px; font-weight: 800; }
     .topbar { display:flex; gap: 10px; align-items:end; flex-wrap: wrap; }
     .topbar .api { flex: 1; min-width: 260px; }
-    .small { font-size: 13px; color: #667085; }
-    @media (max-width: 860px) {
-      .span-8, .span-6, .span-4 { grid-column: span 12; }
-      .kpis { grid-template-columns: repeat(2, 1fr); }
-      h1 { font-size: 24px; }
-    }
-    @media (max-width: 520px) {
-      .kpis { grid-template-columns: 1fr; }
-      button { width: 100%; margin-right: 0; }
-    }
+    @media (max-width: 860px) { .span-8, .span-6, .span-4 { grid-column: span 12; } .kpis { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 24px; } }
+    @media (max-width: 520px) { .kpis { grid-template-columns: 1fr; } button { width: 100%; margin-right: 0; } }
   </style>
 </head>
 <body>
-  <header>
-    <div class="wrap">
-      <h1>GovOps OS｜政府專案作業系統</h1>
-      <div class="sub">前端操作台｜對齊 Apps Script 後端動作：新增活動、事件佇列、任務查詢、核銷缺件、簽到表、報名與學員 CRM。</div>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <div class="grid">
-      <section class="card span-12">
-        <h2>一、後端網址設定</h2>
-        <div class="topbar">
-          <div class="api">
-            <label>Apps Script 網頁應用程式網址</label>
-            <input id="apiUrl" placeholder="請貼上 https://script.google.com/macros/s/......../exec" />
-          </div>
-          <div>
-            <button onclick="saveApiUrl()">儲存網址</button>
-            <button class="secondary" onclick="healthCheck()">系統健康檢查</button>
-          </div>
-        </div>
-        <div class="hint">部署 Apps Script 後，把 /exec 網址貼在這裡。此設定會存在你的瀏覽器，不會寫入資料庫。</div>
-        <div id="healthResult" class="status">尚未測試。</div>
-      </section>
-
-      <section class="card span-12">
-        <h2>二、營運儀表板</h2>
-        <div class="btnrow">
-          <button onclick="loadDashboard()">載入儀表板</button>
-          <button class="secondary" onclick="runEvents()">執行事件佇列</button>
-          <button class="secondary" onclick="missingCheck()">AI 缺件檢查</button>
-        </div>
-        <div id="kpiBox" class="kpis" style="margin-top:12px;"></div>
-        <div id="dashboardResult" class="status">尚未載入。</div>
-      </section>
-
-      <section class="card span-6">
-        <h2>三、新增活動</h2>
-        <label>計畫名稱</label>
-        <input id="activityProject" placeholder="例如：114年度青年職涯輔導計畫" />
-        <label>活動名稱</label>
-        <input id="activityName" placeholder="例如：AI職涯探索工作坊" />
-        <label>活動日期</label>
-        <input id="activityDate" type="date" />
-        <label>開始時間</label>
-        <input id="activityStart" type="time" value="09:00" />
-        <label>結束時間</label>
-        <input id="activityEnd" type="time" value="12:00" />
-        <label>活動地點</label>
-        <input id="activityPlace" placeholder="例如：田中婦女中心" />
-        <label>主辦單位</label>
-        <input id="activityHost" placeholder="例如：彰化縣米穀商業同業公會" />
-        <label>聯絡人</label>
-        <input id="activityContact" placeholder="例如：珍珠老師" />
-        <label>聯絡電話</label>
-        <input id="activityPhone" placeholder="例如：0932-571-045" />
-        <div class="btnrow">
-          <button onclick="createActivity()">新增活動</button>
-          <button class="good" onclick="createActivityAndRun()">新增並生成作業包</button>
-        </div>
-        <div id="activityResult" class="status">尚未新增。</div>
-      </section>
-
-      <section class="card span-6">
-        <h2>四、活動作業</h2>
-        <label>活動ID</label>
-        <input id="workActivityId" placeholder="例如：ACT-115-001" />
-        <div class="btnrow">
-          <button onclick="generateActivityPack()">生成活動作業包</button>
-          <button onclick="generateSignIn()">生成簽到表</button>
-          <button class="secondary" onclick="createDriveFolders()">建立 Drive 資料夾</button>
-          <button class="secondary" onclick="createCalendar()">建立 Calendar</button>
-        </div>
-        <div id="workResult" class="status">尚未操作。</div>
-      </section>
-
-      <section class="card span-8">
-        <h2>五、查詢中心</h2>
-        <label>查詢文字</label>
-        <input id="queryText" placeholder="例如：查詢今日任務、查詢未完成事項、查詢核銷缺件、溪湖" />
-        <div class="btnrow">
-          <button onclick="querySystem()">查詢</button>
-          <button class="secondary" onclick="quickQuery('查詢今日任務')">今日任務</button>
-          <button class="secondary" onclick="quickQuery('查詢未完成事項')">未完成事項</button>
-          <button class="secondary" onclick="quickQuery('查詢核銷缺件')">核銷缺件</button>
-          <button class="secondary" onclick="globalSearch()">全域搜尋</button>
-        </div>
-        <div id="queryResult" class="status">尚未查詢。</div>
-        <div id="tableResult"></div>
-      </section>
-
-      <section class="card span-4">
-        <h2>六、LINE 指令測試</h2>
-        <label>LINE 文字指令</label>
-        <textarea id="lineText" placeholder="例如：查詢今日任務\n完成場地佈置\n講師領據已簽回"></textarea>
-        <button onclick="lineTest()">測試 LINE 指令</button>
-        <div id="lineResult" class="status">尚未測試。</div>
-      </section>
-
-      <section class="card span-4">
-        <h2>七、現場任務回報</h2>
-        <label>活動ID，可空白</label>
-        <input id="taskActivityId" placeholder="例如：ACT-115-001" />
-        <label>任務關鍵字</label>
-        <input id="taskKeyword" placeholder="例如：場地佈置、報到處作業、餐點確認" />
-        <label>任務狀態</label>
-        <select id="taskStatus">
-          <option>已完成</option>
-          <option>進行中</option>
-          <option>異常</option>
-          <option>待執行</option>
-        </select>
-        <button onclick="updateTaskStatus()">更新任務狀態</button>
-        <div id="taskResult" class="status">尚未更新。</div>
-      </section>
-
-      <section class="card span-4">
-        <h2>八、物品狀態回報</h2>
-        <label>活動ID，可空白</label>
-        <input id="itemActivityId" placeholder="例如：ACT-115-001" />
-        <label>物品關鍵字</label>
-        <input id="itemKeyword" placeholder="例如：講義、布條、簽到表" />
-        <label>更新欄位</label>
-        <select id="itemField">
-          <option>是否已帶出</option>
-          <option>是否已取回</option>
-        </select>
-        <label>狀態</label>
-        <select id="itemStatus">
-          <option>是</option>
-          <option>否</option>
-        </select>
-        <button onclick="updateItemStatus()">更新物品狀態</button>
-        <div id="itemResult" class="status">尚未更新。</div>
-      </section>
-
-      <section class="card span-4">
-        <h2>九、核銷缺件回報</h2>
-        <label>活動ID，可空白</label>
-        <input id="checkActivityId" placeholder="例如：ACT-115-001" />
-        <label>檢查項目關鍵字</label>
-        <input id="checkKeyword" placeholder="例如：講師領據、照片、滿意度、發票" />
-        <label>狀態</label>
-        <select id="checkStatus">
-          <option>已完成</option>
-          <option>未完成</option>
-          <option>缺件</option>
-        </select>
-        <button onclick="updateCheckStatus()">更新核銷狀態</button>
-        <div id="checkResult" class="status">尚未更新。</div>
-      </section>
-
-      <section class="card span-6">
-        <h2>十、新增報名</h2>
-        <label>活動ID</label>
-        <input id="regActivityId" placeholder="例如：ACT-115-001" />
-        <label>姓名</label>
-        <input id="regName" placeholder="例如：王小明" />
-        <label>電話</label>
-        <input id="regPhone" placeholder="例如：0912-345-678" />
-        <label>Email</label>
-        <input id="regEmail" placeholder="例如：test@example.com" />
-        <label>身分別</label>
-        <input id="regIdentity" placeholder="例如：中高齡、會員、一般民眾" />
-        <label>服務單位</label>
-        <input id="regOrg" placeholder="例如：某某公司" />
-        <label>來源渠道</label>
-        <input id="regSource" placeholder="例如：LINE、FB、朋友介紹" />
-        <button onclick="createRegistration()">新增報名並同步 CRM</button>
-        <div id="regResult" class="status">尚未新增。</div>
-      </section>
-
-      <section class="card span-6">
-        <h2>十一、報名審核</h2>
-        <label>報名ID</label>
-        <input id="reviewRegId" placeholder="例如：REG-115-001" />
-        <label>審核結果</label>
-        <select id="reviewStatus">
-          <option>已入選</option>
-          <option>候補</option>
-          <option>資格不符</option>
-          <option>已取消</option>
-          <option>已確認參加</option>
-          <option>未回覆</option>
-        </select>
-        <button onclick="reviewRegistration()">更新審核結果</button>
-        <div id="reviewResult" class="status">尚未審核。</div>
-      </section>
-    </div>
-  </main>
-
-  <script>
-    const API_STORAGE_KEY = 'GOVOPS_API_URL';
-
-    window.addEventListener('load', () => {
-      const saved = localStorage.getItem(API_STORAGE_KEY) || '';
-      document.getElementById('apiUrl').value = saved;
-    });
-
-    function getApiUrl() {
-      const url = document.getElementById('apiUrl').value.trim();
-      if (!url) throw new Error('請先貼上 Apps Script 網頁應用程式網址');
-      return url;
-    }
-
-    function saveApiUrl() {
-      const url = document.getElementById('apiUrl').value.trim();
-      if (!url) return alert('請先貼上網址');
-      localStorage.setItem(API_STORAGE_KEY, url);
-      setResult('healthResult', '已儲存後端網址：\n' + url);
-    }
-
-    async function callApi(params, targetId) {
-      try {
-        const apiUrl = getApiUrl();
-        const url = apiUrl + '?' + new URLSearchParams(params).toString();
-        setResult(targetId, '處理中...\n' + url);
-        const res = await fetch(url, { method: 'GET' });
-        const data = await res.json();
-        setResult(targetId, JSON.stringify(data, null, 2));
-        return data;
-      } catch (err) {
-        setResult(targetId, '錯誤：' + err.message);
-        throw err;
-      }
-    }
-
-    function setResult(id, text) {
-      const el = document.getElementById(id);
-      if (el) el.textContent = text;
-    }
-
-    function twDate(inputId) {
-      const value = document.getElementById(inputId).value;
-      if (!value) return '';
-      const [y, m, d] = value.split('-');
-      return `${y}/${m}/${d}`;
-    }
-
-    async function healthCheck() {
-      await callApi({ action: '系統健康檢查' }, 'healthResult');
-    }
-
-    async function loadDashboard() {
-      const data = await callApi({ action: '取得儀表板' }, 'dashboardResult');
-      if (data && data.success) renderKpis(data.data || {});
-    }
-
-    function renderKpis(data) {
-      const keys = ['待完成任務', '核銷缺件', '事件待執行', '高風險活動', '招生活動管理', '報名資料庫', '學員CRM', '當日工作任務表'];
-      document.getElementById('kpiBox').innerHTML = keys.map(k => `
-        <div class="kpi">
-          <div class="num">${data[k] ?? '-'}</div>
-          <div class="name">${k}</div>
-        </div>
-      `).join('');
-    }
-
-    async function runEvents() {
-      await callApi({ action: '執行事件佇列', limit: 10 }, 'dashboardResult');
-      loadDashboard();
-    }
-
-    async function missingCheck() {
-      await callApi({ action: 'AI缺件檢查' }, 'dashboardResult');
-    }
-
-    async function createActivity() {
-      const params = getActivityParams();
-      const data = await callApi(params, 'activityResult');
-      if (data && data.data && data.data.活動ID) {
-        document.getElementById('workActivityId').value = data.data.活動ID;
-        document.getElementById('taskActivityId').value = data.data.活動ID;
-        document.getElementById('itemActivityId').value = data.data.活動ID;
-        document.getElementById('checkActivityId').value = data.data.活動ID;
-        document.getElementById('regActivityId').value = data.data.活動ID;
-      }
-      return data;
-    }
-
-    async function createActivityAndRun() {
-      const data = await createActivity();
-      if (data && data.data && data.data.活動ID) {
-        await callApi({ action: '執行事件佇列', limit: 10 }, 'activityResult');
-        loadDashboard();
-      }
-    }
-
-    function getActivityParams() {
-      return {
-        action: '新增活動',
-        計畫名稱: document.getElementById('activityProject').value,
-        活動名稱: document.getElementById('activityName').value,
-        活動日期: twDate('activityDate'),
-        開始時間: document.getElementById('activityStart').value,
-        結束時間: document.getElementById('activityEnd').value,
-        活動地點: document.getElementById('activityPlace').value,
-        主辦單位: document.getElementById('activityHost').value,
-        聯絡人: document.getElementById('activityContact').value,
-        聯絡電話: document.getElementById('activityPhone').value
-      };
-    }
-
-    async function generateActivityPack() {
-      await callApi({ action: '生成活動作業包', 活動ID: document.getElementById('workActivityId').value }, 'workResult');
-    }
-
-    async function generateSignIn() {
-      await callApi({ action: '生成簽到表', 活動ID: document.getElementById('workActivityId').value }, 'workResult');
-    }
-
-    async function createDriveFolders() {
-      await callApi({ action: '建立Drive資料夾', 活動ID: document.getElementById('workActivityId').value }, 'workResult');
-    }
-
-    async function createCalendar() {
-      await callApi({ action: '建立Calendar', 活動ID: document.getElementById('workActivityId').value }, 'workResult');
-    }
-
-    async function querySystem() {
-      const data = await callApi({ action: '查詢', query: document.getElementById('queryText').value }, 'queryResult');
-      renderDataTable(data);
-    }
-
-    function quickQuery(text) {
-      document.getElementById('queryText').value = text;
-      querySystem();
-    }
-
-    async function globalSearch() {
-      const data = await callApi({ action: '全域搜尋', keyword: document.getElementById('queryText').value }, 'queryResult');
-      renderDataTable(data);
-    }
-
-    async function lineTest() {
-      await callApi({ action: 'LINE測試', text: document.getElementById('lineText').value }, 'lineResult');
-    }
-
-    async function updateTaskStatus() {
-      await callApi({
-        action: '更新任務狀態',
-        活動ID: document.getElementById('taskActivityId').value,
-        keyword: document.getElementById('taskKeyword').value,
-        status: document.getElementById('taskStatus').value
-      }, 'taskResult');
-    }
-
-    async function updateItemStatus() {
-      await callApi({
-        action: '更新物品狀態',
-        活動ID: document.getElementById('itemActivityId').value,
-        keyword: document.getElementById('itemKeyword').value,
-        欄位: document.getElementById('itemField').value,
-        status: document.getElementById('itemStatus').value
-      }, 'itemResult');
-    }
-
-    async function updateCheckStatus() {
-      await callApi({
-        action: '更新核銷狀態',
-        活動ID: document.getElementById('checkActivityId').value,
-        keyword: document.getElementById('checkKeyword').value,
-        status: document.getElementById('checkStatus').value
-      }, 'checkResult');
-    }
-
-    async function createRegistration() {
-      await callApi({
-        action: '新增報名',
-        活動ID: document.getElementById('regActivityId').value,
-        姓名: document.getElementById('regName').value,
-        電話: document.getElementById('regPhone').value,
-        Email: document.getElementById('regEmail').value,
-        身分別: document.getElementById('regIdentity').value,
-        服務單位: document.getElementById('regOrg').value,
-        來源渠道: document.getElementById('regSource').value
-      }, 'regResult');
-    }
-
-    async function reviewRegistration() {
-      await callApi({
-        action: '審核報名',
-        報名ID: document.getElementById('reviewRegId').value,
-        審核結果: document.getElementById('reviewStatus').value
-      }, 'reviewResult');
-    }
-
-    function renderDataTable(resp) {
-      const box = document.getElementById('tableResult');
-      if (!resp || !resp.success || !resp.data) {
-        box.innerHTML = '';
-        return;
-      }
-      const data = resp.data;
-      const arr = data.任務 || data.缺件 || data.物品 || data.結果 || [];
-      if (!Array.isArray(arr) || arr.length === 0) {
-        box.innerHTML = '<div class="hint">沒有表格資料。</div>';
-        return;
-      }
-      const rows = arr.slice(0, 30);
-      const keys = Object.keys(rows[0]).filter(k => k !== '_row').slice(0, 8);
-      box.innerHTML = `
-        <table>
-          <thead><tr>${keys.map(k => `<th>${k}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${rows.map(r => `<tr>${keys.map(k => `<td>${r[k] ?? ''}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      `;
-    }
-  </script>
+  <header><div class="wrap"><h1>GovOps OS｜政府專案作業系統</h1><div class="sub">已串接你的 Apps Script 後端，可直接操作：新增活動、事件佇列、任務查詢、核銷缺件、簽到表、報名與學員 CRM。</div></div></header>
+  <main class="wrap"><div class="grid">
+    <section class="card span-12"><h2>一、後端網址設定</h2><div class="topbar"><div class="api"><label>Apps Script 網頁應用程式網址</label><input id="apiUrl" /></div><div><button onclick="saveApiUrl()">儲存網址</button><button class="secondary" onclick="healthCheck()">系統健康檢查</button></div></div><div class="hint">已預設串接你的後端網址。若日後重新部署，只要把新網址貼上後按「儲存網址」。</div><div id="healthResult" class="status">尚未測試。</div></section>
+    <section class="card span-12"><h2>二、營運儀表板</h2><div class="btnrow"><button onclick="loadDashboard()">載入儀表板</button><button class="secondary" onclick="runEvents()">執行事件佇列</button><button class="secondary" onclick="missingCheck()">AI 缺件檢查</button></div><div id="kpiBox" class="kpis" style="margin-top:12px;"></div><div id="dashboardResult" class="status">尚未載入。</div></section>
+    <section class="card span-6"><h2>三、新增活動</h2><label>計畫名稱</label><input id="activityProject" placeholder="例如：114年度青年職涯輔導計畫" /><label>活動名稱</label><input id="activityName" placeholder="例如：AI職涯探索工作坊" /><label>活動日期</label><input id="activityDate" type="date" /><label>開始時間</label><input id="activityStart" type="time" value="09:00" /><label>結束時間</label><input id="activityEnd" type="time" value="12:00" /><label>活動地點</label><input id="activityPlace" placeholder="例如：田中婦女中心" /><label>主辦單位</label><input id="activityHost" placeholder="例如：彰化縣米穀商業同業公會" /><label>聯絡人</label><input id="activityContact" placeholder="例如：珍珠老師" /><label>聯絡電話</label><input id="activityPhone" placeholder="例如：0932-571-045" /><div class="btnrow"><button onclick="createActivity()">新增活動</button><button class="good" onclick="createActivityAndRun()">新增並生成作業包</button></div><div id="activityResult" class="status">尚未新增。</div></section>
+    <section class="card span-6"><h2>四、活動作業</h2><label>活動ID</label><input id="workActivityId" placeholder="例如：ACT-115-001" /><div class="btnrow"><button onclick="generateActivityPack()">生成活動作業包</button><button onclick="generateSignIn()">生成簽到表</button><button class="secondary" onclick="createDriveFolders()">建立 Drive 資料夾</button><button class="secondary" onclick="createCalendar()">建立 Calendar</button></div><div id="workResult" class="status">尚未操作。</div></section>
+    <section class="card span-8"><h2>五、查詢中心</h2><label>查詢文字</label><input id="queryText" placeholder="例如：查詢今日任務、查詢未完成事項、查詢核銷缺件、溪湖" /><div class="btnrow"><button onclick="querySystem()">查詢</button><button class="secondary" onclick="quickQuery('查詢今日任務')">今日任務</button><button class="secondary" onclick="quickQuery('查詢未完成事項')">未完成事項</button><button class="secondary" onclick="quickQuery('查詢核銷缺件')">核銷缺件</button><button class="secondary" onclick="globalSearch()">全域搜尋</button></div><div id="queryResult" class="status">尚未查詢。</div><div id="tableResult"></div></section>
+    <section class="card span-4"><h2>六、LINE 指令測試</h2><label>LINE 文字指令</label><textarea id="lineText" placeholder="例如：查詢今日任務\n完成場地佈置\n講師領據已簽回"></textarea><button onclick="lineTest()">測試 LINE 指令</button><div id="lineResult" class="status">尚未測試。</div></section>
+    <section class="card span-4"><h2>七、現場任務回報</h2><label>活動ID，可空白</label><input id="taskActivityId" /><label>任務關鍵字</label><input id="taskKeyword" placeholder="例如：場地佈置" /><label>任務狀態</label><select id="taskStatus"><option>已完成</option><option>進行中</option><option>異常</option><option>待執行</option></select><button onclick="updateTaskStatus()">更新任務狀態</button><div id="taskResult" class="status">尚未更新。</div></section>
+    <section class="card span-4"><h2>八、物品狀態回報</h2><label>活動ID，可空白</label><input id="itemActivityId" /><label>物品關鍵字</label><input id="itemKeyword" placeholder="例如：講義、布條、簽到表" /><label>更新欄位</label><select id="itemField"><option>是否已帶出</option><option>是否已取回</option></select><label>狀態</label><select id="itemStatus"><option>是</option><option>否</option></select><button onclick="updateItemStatus()">更新物品狀態</button><div id="itemResult" class="status">尚未更新。</div></section>
+    <section class="card span-4"><h2>九、核銷缺件回報</h2><label>活動ID，可空白</label><input id="checkActivityId" /><label>檢查項目關鍵字</label><input id="checkKeyword" placeholder="例如：講師領據、照片、滿意度、發票" /><label>狀態</label><select id="checkStatus"><option>已完成</option><option>未完成</option><option>缺件</option></select><button onclick="updateCheckStatus()">更新核銷狀態</button><div id="checkResult" class="status">尚未更新。</div></section>
+    <section class="card span-6"><h2>十、新增報名</h2><label>活動ID</label><input id="regActivityId" /><label>姓名</label><input id="regName" /><label>電話</label><input id="regPhone" /><label>Email</label><input id="regEmail" /><label>身分別</label><input id="regIdentity" /><label>服務單位</label><input id="regOrg" /><label>來源渠道</label><input id="regSource" /><button onclick="createRegistration()">新增報名並同步 CRM</button><div id="regResult" class="status">尚未新增。</div></section>
+    <section class="card span-6"><h2>十一、報名審核</h2><label>報名ID</label><input id="reviewRegId" /><label>審核結果</label><select id="reviewStatus"><option>已入選</option><option>候補</option><option>資格不符</option><option>已取消</option><option>已確認參加</option><option>未回覆</option></select><button onclick="reviewRegistration()">更新審核結果</button><div id="reviewResult" class="status">尚未審核。</div></section>
+  </div></main>
+<script>
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+const API_STORAGE_KEY = 'GOVOPS_API_URL';
+window.addEventListener('load', () => { const saved = localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_URL; document.getElementById('apiUrl').value = saved; });
+function getApiUrl(){ const url=document.getElementById('apiUrl').value.trim() || DEFAULT_API_URL; return url; }
+function saveApiUrl(){ const url=getApiUrl(); localStorage.setItem(API_STORAGE_KEY,url); setResult('healthResult','已儲存後端網址：\n'+url); }
+async function callApi(params,targetId){ try{ const apiUrl=getApiUrl(); const url=apiUrl+'?'+new URLSearchParams(params).toString(); setResult(targetId,'處理中...\n'+url); const res=await fetch(url,{method:'GET'}); const data=await res.json(); setResult(targetId,JSON.stringify(data,null,2)); return data; }catch(err){ setResult(targetId,'錯誤：'+err.message+'\n\n若看到「Failed to fetch」，通常是 Apps Script 尚未允許跨網域，請先用測試連結確認後端是否成功。'); throw err; } }
+function setResult(id,text){ const el=document.getElementById(id); if(el) el.textContent=text; }
+function twDate(inputId){ const value=document.getElementById(inputId).value; if(!value) return ''; const [y,m,d]=value.split('-'); return `${y}/${m}/${d}`; }
+async function healthCheck(){ await callApi({action:'系統健康檢查'},'healthResult'); }
+async function loadDashboard(){ const data=await callApi({action:'取得儀表板'},'dashboardResult'); if(data&&data.success) renderKpis(data.data||{}); }
+function renderKpis(data){ const keys=['待完成任務','核銷缺件','事件待執行','高風險活動','招生活動管理','報名資料庫','學員CRM','當日工作任務表']; document.getElementById('kpiBox').innerHTML=keys.map(k=>`<div class="kpi"><div class="num">${data[k] ?? '-'}</div><div class="name">${k}</div></div>`).join(''); }
+async function runEvents(){ await callApi({action:'執行事件佇列',limit:10},'dashboardResult'); loadDashboard(); }
+async function missingCheck(){ await callApi({action:'AI缺件檢查'},'dashboardResult'); }
+async function createActivity(){ const data=await callApi(getActivityParams(),'activityResult'); if(data&&data.data&&data.data.活動ID){ ['workActivityId','taskActivityId','itemActivityId','checkActivityId','regActivityId'].forEach(id=>document.getElementById(id).value=data.data.活動ID); } return data; }
+async function createActivityAndRun(){ const data=await createActivity(); if(data&&data.data&&data.data.活動ID){ await callApi({action:'執行事件佇列',limit:10},'activityResult'); loadDashboard(); } }
+function getActivityParams(){ return {action:'新增活動',計畫名稱:document.getElementById('activityProject').value,活動名稱:document.getElementById('activityName').value,活動日期:twDate('activityDate'),開始時間:document.getElementById('activityStart').value,結束時間:document.getElementById('activityEnd').value,活動地點:document.getElementById('activityPlace').value,主辦單位:document.getElementById('activityHost').value,聯絡人:document.getElementById('activityContact').value,聯絡電話:document.getElementById('activityPhone').value}; }
+async function generateActivityPack(){ await callApi({action:'生成活動作業包',活動ID:document.getElementById('workActivityId').value},'workResult'); }
+async function generateSignIn(){ await callApi({action:'生成簽到表',活動ID:document.getElementById('workActivityId').value},'workResult'); }
+async function createDriveFolders(){ await callApi({action:'建立Drive資料夾',活動ID:document.getElementById('workActivityId').value},'workResult'); }
+async function createCalendar(){ await callApi({action:'建立Calendar',活動ID:document.getElementById('workActivityId').value},'workResult'); }
+async function querySystem(){ const data=await callApi({action:'查詢',query:document.getElementById('queryText').value},'queryResult'); renderDataTable(data); }
+function quickQuery(text){ document.getElementById('queryText').value=text; querySystem(); }
+async function globalSearch(){ const data=await callApi({action:'全域搜尋',keyword:document.getElementById('queryText').value},'queryResult'); renderDataTable(data); }
+async function lineTest(){ await callApi({action:'LINE測試',text:document.getElementById('lineText').value},'lineResult'); }
+async function updateTaskStatus(){ await callApi({action:'更新任務狀態',活動ID:document.getElementById('taskActivityId').value,keyword:document.getElementById('taskKeyword').value,status:document.getElementById('taskStatus').value},'taskResult'); }
+async function updateItemStatus(){ await callApi({action:'更新物品狀態',活動ID:document.getElementById('itemActivityId').value,keyword:document.getElementById('itemKeyword').value,欄位:document.getElementById('itemField').value,status:document.getElementById('itemStatus').value},'itemResult'); }
+async function updateCheckStatus(){ await callApi({action:'更新核銷狀態',活動ID:document.getElementById('checkActivityId').value,keyword:document.getElementById('checkKeyword').value,status:document.getElementById('checkStatus').value},'checkResult'); }
+async function createRegistration(){ await callApi({action:'新增報名',活動ID:document.getElementById('regActivityId').value,姓名:document.getElementById('regName').value,電話:document.getElementById('regPhone').value,Email:document.getElementById('regEmail').value,身分別:document.getElementById('regIdentity').value,服務單位:document.getElementById('regOrg').value,來源渠道:document.getElementById('regSource').value},'regResult'); }
+async function reviewRegistration(){ await callApi({action:'審核報名',報名ID:document.getElementById('reviewRegId').value,審核結果:document.getElementById('reviewStatus').value},'reviewResult'); }
+function renderDataTable(resp){ const box=document.getElementById('tableResult'); if(!resp||!resp.success||!resp.data){box.innerHTML=''; return;} const data=resp.data; const arr=data.任務||data.缺件||data.物品||data.結果||data.學員||[]; if(!Array.isArray(arr)||arr.length===0){box.innerHTML='<div class="hint">沒有表格資料。</div>'; return;} const rows=arr.slice(0,30); const keys=Object.keys(rows[0]).filter(k=>k!=='_row').slice(0,8); box.innerHTML=`<table><thead><tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${keys.map(k=>`<td>${r[k] ?? ''}</td>`).join('')}</tr>`).join('')}</tbody></table>`; }
+</script>
 </body>
 </html>
