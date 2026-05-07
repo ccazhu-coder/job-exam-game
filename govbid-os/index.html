@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>政府標案營運作業系統</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">GovBid AI ERP</p>
+      <h1>政府標案營運作業系統</h1>
+      <p class="subtitle">從找案、投標、履約、請款到成果管理，一套系統集中操作。</p>
+    </div>
+    <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/1nNibsAkem2luiVe3iR64Q8GSSUQUQFwvaoiMPU-ZaeY/edit" target="_blank" rel="noreferrer">開啟後台試算表</a>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <button class="tab active" data-tab="overview">營運首頁</button>
+      <button class="tab" data-tab="bidPool">新增標案</button>
+      <button class="tab" data-tab="project">建立投標專案</button>
+      <button class="tab" data-tab="task">建立任務場次</button>
+      <button class="tab" data-tab="finance">建立財務收支</button>
+      <button class="tab" data-tab="query">查詢中心</button>
+      <button class="tab" data-tab="settings">系統設定</button>
+    </aside>
+
+    <section class="content">
+      <section id="overview" class="panel active">
+        <div class="panel-title">
+          <h2>營運首頁</h2>
+          <button class="secondary" id="refreshOverview">更新儀表板</button>
+        </div>
+        <div class="cards" id="overviewCards">
+          <div class="card"><span>標案池</span><strong>-</strong></div>
+          <div class="card"><span>投標專案</span><strong>-</strong></div>
+          <div class="card"><span>任務場次</span><strong>-</strong></div>
+          <div class="card"><span>財務紀錄</span><strong>-</strong></div>
+        </div>
+        <div class="note-box">
+          <h3>目前資料流</h3>
+          <p>標案池 → 投標專案 → 任務場次 → 財務收支 → 營運儀表板 → LINE 查詢</p>
+        </div>
+      </section>
+
+      <section id="bidPool" class="panel">
+        <h2>新增標案到標案池</h2>
+        <form class="form" data-action="新增標案">
+          <label>標案名稱<input name="標案名稱" required /></label>
+          <label>主辦單位<input name="主辦單位" /></label>
+          <label>預算金額<input name="預算金額" type="number" /></label>
+          <label>投標截止日<input name="投標截止日" type="date" /></label>
+          <label>案件狀態<select name="案件狀態"><option>觀察中</option><option>評估中</option><option>決定投標</option><option>放棄</option></select></label>
+          <label>優先級<select name="優先級"><option>普通</option><option>高</option><option>低</option></select></label>
+          <label class="wide">案件說明<textarea name="案件說明" rows="4"></textarea></label>
+          <button type="submit">送出到標案池</button>
+        </form>
+      </section>
+
+      <section id="project" class="panel">
+        <h2>建立投標專案</h2>
+        <form class="form" data-action="建立投標專案">
+          <label>標案名稱<input name="標案名稱" required /></label>
+          <label>主辦單位<input name="主辦單位" /></label>
+          <label>契約／預估金額<input name="契約金額" type="number" /></label>
+          <label>投標截止日<input name="投標截止日" type="date" /></label>
+          <label>負責人<input name="負責人" value="珍珠老師" /></label>
+          <label>專案狀態<select name="專案狀態"><option>備標中</option><option>已投標</option><option>已得標</option><option>未得標</option><option>履約中</option><option>已結案</option></select></label>
+          <label class="wide">備註<textarea name="備註" rows="4"></textarea></label>
+          <button type="submit">建立投標專案</button>
+        </form>
+      </section>
+
+      <section id="task" class="panel">
+        <h2>建立任務場次</h2>
+        <form class="form" data-action="建立任務場次">
+          <label>所屬標案<input name="所屬標案" required /></label>
+          <label>任務名稱<input name="任務名稱" required /></label>
+          <label>任務類型<select name="任務類型"><option>課程</option><option>講座</option><option>會議</option><option>活動</option><option>成果報告</option><option>核銷</option></select></label>
+          <label>執行日期<input name="執行日期" type="date" /></label>
+          <label>地點<input name="地點" /></label>
+          <label>講師／負責人<input name="講師負責人" /></label>
+          <label>任務狀態<select name="任務狀態"><option>未開始</option><option>進行中</option><option>已完成</option><option>待補資料</option></select></label>
+          <label class="wide">備註<textarea name="備註" rows="4"></textarea></label>
+          <button type="submit">建立任務場次</button>
+        </form>
+      </section>
+
+      <section id="finance" class="panel">
+        <h2>建立財務收支</h2>
+        <form class="form" data-action="建立財務收支">
+          <label>所屬標案<input name="所屬標案" /></label>
+          <label>款項名稱<input name="款項名稱" required /></label>
+          <label>收支類型<select name="收支類型"><option>收入</option><option>支出</option><option>應收款</option><option>已收款</option></select></label>
+          <label>金額<input name="金額" type="number" required /></label>
+          <label>日期<input name="日期" type="date" /></label>
+          <label>狀態<select name="狀態"><option>未收</option><option>已收</option><option>未付</option><option>已付</option><option>請款中</option></select></label>
+          <label class="wide">備註<textarea name="備註" rows="4"></textarea></label>
+          <button type="submit">寫入財務收支</button>
+        </form>
+      </section>
+
+      <section id="query" class="panel">
+        <h2>查詢中心</h2>
+        <div class="quick-actions">
+          <button data-query="今日任務">今日任務</button>
+          <button data-query="本週標案">本週標案</button>
+          <button data-query="未收款">未收款</button>
+          <button data-query="投標截止">投標截止</button>
+          <button data-query="履約待辦">履約待辦</button>
+        </div>
+        <div class="result" id="queryResult">請選擇上方查詢項目。</div>
+      </section>
+
+      <section id="settings" class="panel">
+        <h2>系統設定</h2>
+        <div class="settings-box">
+          <label>後端 Web App 網址<input id="apiUrl" placeholder="貼上 Apps Script 部署後的網址" /></label>
+          <button id="saveApiUrl">儲存網址</button>
+          <p>目前後端試算表：<a href="https://docs.google.com/spreadsheets/d/1nNibsAkem2luiVe3iR64Q8GSSUQUQFwvaoiMPU-ZaeY/edit" target="_blank" rel="noreferrer">政府標案全流程營運系統</a></p>
+        </div>
+      </section>
+
+      <p class="status" id="statusText"></p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
