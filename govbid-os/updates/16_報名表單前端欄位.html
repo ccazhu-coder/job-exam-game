@@ -1,0 +1,63 @@
+<!-- GovOps OS｜報名表單設定區塊
+請加入正式前端的「新增報名」前面或活動作業區下面。
+此區塊不顯示後端網址，只顯示使用者需要操作的欄位。
+-->
+<section class="card span-6">
+  <h2>線上報名表單設定</h2>
+  <div class="notice">每場活動可貼上自己的線上報名表單。資料可手動輸入，也可從表單回覆自動同步到系統。</div>
+
+  <label>系統活動編號</label>
+  <input id="formActivityId" placeholder="新增活動後會自動帶入">
+
+  <label>線上報名表單連結</label>
+  <input id="formUrl" placeholder="請貼上 Google 表單或報名頁連結">
+
+  <label>表單回覆試算表ID</label>
+  <input id="responseSheetId" placeholder="請貼上表單回覆試算表ID">
+
+  <label>表單回覆分頁名稱</label>
+  <input id="responseSheetName" value="表單回應 1">
+
+  <div class="btnrow">
+    <button onclick="saveFormLink()">儲存表單設定</button>
+    <button class="good" onclick="syncFormRegistrations()">同步最新報名資料</button>
+  </div>
+
+  <div id="formResult" class="msg">尚未設定。</div>
+</section>
+
+<script>
+function 帶入表單活動編號(id){
+  const el = document.getElementById('formActivityId');
+  if(el && id) el.value = id;
+}
+
+async function saveFormLink(){
+  await 確認初始化('formResult');
+  const activityId = document.getElementById('formActivityId').value.trim() || document.getElementById('workActivityId').value.trim();
+  if(!activityId){ 顯示('formResult','請先新增活動，系統會自動產生活動編號。'); return; }
+  const result = await 呼叫({
+    action:'更新活動報名表單連結',
+    活動ID:activityId,
+    報名表單連結:document.getElementById('formUrl').value.trim(),
+    表單回覆試算表ID:document.getElementById('responseSheetId').value.trim(),
+    表單回覆分頁名稱:document.getElementById('responseSheetName').value.trim() || '表單回應 1'
+  }, 'formResult');
+  if(result.success){ 顯示('formResult','報名表單設定已儲存。\n之後可按「同步最新報名資料」匯入報名名單。'); }
+}
+
+async function syncFormRegistrations(){
+  await 確認初始化('formResult');
+  const activityId = document.getElementById('formActivityId').value.trim() || document.getElementById('workActivityId').value.trim();
+  if(!activityId){ 顯示('formResult','請先新增活動，系統會自動產生活動編號。'); return; }
+  const result = await 呼叫({
+    action:'從報名表單同步報名資料',
+    活動ID:activityId,
+    表單回覆試算表ID:document.getElementById('responseSheetId').value.trim(),
+    表單回覆分頁名稱:document.getElementById('responseSheetName').value.trim() || '表單回應 1'
+  }, 'formResult');
+  if(result.success && result.data){
+    顯示('formResult','報名資料同步完成。\n新增筆數：'+(result.data.新增筆數||0)+'\n略過筆數：'+(result.data.略過筆數||0));
+  }
+}
+</script>
