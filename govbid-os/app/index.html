@@ -30,7 +30,7 @@
 </main>
 <nav class="footerbar"><a href="#dashboard">首頁</a><a href="#onsite">任務</a><a href="#registration">招生</a><a href="#check">缺件</a><a href="#query">查詢</a></nav>
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbwNWbHwPs9lw1qpbOi6HeQhNn3kHNfs6Ap9ybTnOX_u2bssBGKwtwfygwwGpYblj-vt2Q/exec';
 let 系統已初始化=false;
 const optionDefaults={activityTypeList:['政府課程','公會活動','職涯講座','AI課程','工作坊','線上課程'],sheetNameList:['表單回應 1','Form Responses 1','報名回覆','工作表1'],identityList:['一般民眾','公會會員','中高齡者','二度就業婦女','青年','學生'],sourceList:['LINE官方帳號','Facebook','Instagram','Threads','Google搜尋','公會群組','朋友介紹'],taskList:['場地佈置','報到處作業','開場說明','研習課程','餐點確認','資料回收','撤場'],itemList:['出席禮品','有獎徵答禮品','講師海報','講師領據','工作人員領據','簽到表','布條','文具箱','滿意度調查表','講義'],checkList:['簽到表已回收','講師領據已簽回','工作人員領據已簽回','滿意度調查表已回收','便當收據／發票已取得','照片已上傳','場地已恢復']};
 function initOptions(){Object.keys(optionDefaults).forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=optionDefaults[id].map(v=>`<option value="${v}">`).join('')})}
