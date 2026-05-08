@@ -6,7 +6,7 @@ GovOps OS｜第37檔：Apps Script 正式後端 core.gs
 
 const GOVOPS_VERSION = '1.0.0';
 
-const SHEETS = {
+var GOVOPS_CORE_SHEETS = {
   設定: '系統設定',
   活動: '招生活動管理',
   報名: '報名資料庫',
@@ -23,7 +23,7 @@ const SHEETS = {
   常用選項: '使用者常用選項'
 };
 
-const HEADERS = {
+var GOVOPS_CORE_HEADERS = {
   系統設定: ['設定鍵','設定值','說明','更新時間'],
   招生活動管理: ['活動ID','計畫名稱','活動名稱','活動日期','開始時間','結束時間','活動地點','主辦單位','協辦單位','聯絡人','聯絡電話','講師','活動類型','活動狀態','報名表單連結','表單回覆試算表ID','表單回覆分頁名稱','Drive資料夾連結','建立時間','更新時間'],
   報名資料庫: ['報名ID','活動ID','學員ID','姓名','電話','Email','身分別','服務單位','所在地區','來源渠道','報名方式','報名狀態','出席狀態','備註','建立時間','更新時間'],
@@ -133,13 +133,13 @@ function now() { return Utilities.formatDate(new Date(), Session.getScriptTimeZo
 function today() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd'); }
 function getSheet(name) { const spreadsheet = ss(); let sheet = spreadsheet.getSheetByName(name); if (!sheet) sheet = spreadsheet.insertSheet(name); return sheet; }
 function ensureSheet(name, headers) { const sheet = getSheet(name); if (sheet.getLastRow() === 0) { sheet.appendRow(headers); return sheet; } const current = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0].map(String); const missing = headers.filter(h => current.indexOf(h) < 0); if (missing.length) sheet.getRange(1, current.length + 1, 1, missing.length).setValues([missing]); return sheet; }
-function 初始化系統() { Object.keys(HEADERS).forEach(name => ensureSheet(name, HEADERS[name])); writeLog('初始化系統', '系統', '', '建立或補齊MVP資料表', '完成'); return success('系統初始化完成。', { 分頁數: Object.keys(HEADERS).length }); }
+function 初始化系統() { Object.keys(GOVOPS_CORE_HEADERS).forEach(name => ensureSheet(name, GOVOPS_CORE_HEADERS[name])); writeLog('初始化系統', '系統', '', '建立或補齊MVP資料表', '完成'); return success('系統初始化完成。', { 分頁數: Object.keys(GOVOPS_CORE_HEADERS).length }); }
 function headersOf(sheetName) { const sheet = getSheet(sheetName); if (sheet.getLastRow() === 0) return []; return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(String); }
 function readRows(sheetName) { const sheet = getSheet(sheetName); if (sheet.getLastRow() < 2) return []; const headers = headersOf(sheetName); const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, headers.length).getValues(); return values.map((row, idx) => { const obj = { _row: idx + 2 }; headers.forEach((h, i) => obj[h] = row[i]); return obj; }); }
-function appendObject(sheetName, obj) { const headers = HEADERS[sheetName] || headersOf(sheetName); ensureSheet(sheetName, headers); const row = headers.map(h => obj[h] !== undefined ? obj[h] : ''); getSheet(sheetName).appendRow(row); return obj; }
+function appendObject(sheetName, obj) { const headers = GOVOPS_CORE_HEADERS[sheetName] || headersOf(sheetName); ensureSheet(sheetName, headers); const row = headers.map(h => obj[h] !== undefined ? obj[h] : ''); getSheet(sheetName).appendRow(row); return obj; }
 function updateRow(sheetName, rowNumber, patch) { const sheet = getSheet(sheetName); const headers = headersOf(sheetName); Object.keys(patch).forEach(key => { const col = headers.indexOf(key) + 1; if (col > 0) sheet.getRange(rowNumber, col).setValue(patch[key]); }); }
 function findById(sheetName, id) { if (!id) return null; const rows = readRows(sheetName); return rows.find(row => Object.keys(row).some(k => /ID$/.test(k) && String(row[k]) === String(id))) || null; }
-function generateId(type) { const y = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy'); const roc = String(Number(y) - 1911); const prefixMap = { 活動:'ACT', 報名:'REG', 學員:'STU', 任務:'TSK', 物品:'ITM', 餐點:'MEAL', 簽到:'ATT', 核銷:'CHK', 文件:'DOC', 候補:'WAIT', 選項:'OPT' }; const prefix = prefixMap[type] || 'ID'; const key = prefix + '-' + roc + '-'; let max = 0; Object.keys(SHEETS).forEach(k => { readRows(SHEETS[k]).forEach(row => { Object.keys(row).forEach(col => { const v = String(row[col] || ''); if (v.indexOf(key) === 0) { const n = Number(v.replace(key, '')); if (!isNaN(n) && n > max) max = n; } }); }); }); return key + String(max + 1).padStart(4, '0'); }
-function writeLog(type, sheetName, id, content, result) { try { appendObject(SHEETS.操作, { 時間: now(), 操作類型: type, 資料表: sheetName, 關聯ID: id, 操作內容: content, 操作結果: result || '完成' }); } catch (err) {} }
-function logError(module, err) { try { appendObject(SHEETS.錯誤, { 時間: now(), 功能模組: module, 錯誤摘要: err && err.message ? err.message : String(err), 錯誤內容: err && err.stack ? err.stack : String(err), 處理狀態: '未處理' }); } catch (e) {} }
+function generateId(type) { const y = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy'); const roc = String(Number(y) - 1911); const prefixMap = { 活動:'ACT', 報名:'REG', 學員:'STU', 任務:'TSK', 物品:'ITM', 餐點:'MEAL', 簽到:'ATT', 核銷:'CHK', 文件:'DOC', 候補:'WAIT', 選項:'OPT' }; const prefix = prefixMap[type] || 'ID'; const key = prefix + '-' + roc + '-'; let max = 0; Object.keys(GOVOPS_CORE_SHEETS).forEach(k => { readRows(GOVOPS_CORE_SHEETS[k]).forEach(row => { Object.keys(row).forEach(col => { const v = String(row[col] || ''); if (v.indexOf(key) === 0) { const n = Number(v.replace(key, '')); if (!isNaN(n) && n > max) max = n; } }); }); }); return key + String(max + 1).padStart(4, '0'); }
+function writeLog(type, sheetName, id, content, result) { try { appendObject(GOVOPS_CORE_SHEETS.操作, { 時間: now(), 操作類型: type, 資料表: sheetName, 關聯ID: id, 操作內容: content, 操作結果: result || '完成' }); } catch (err) {} }
+function logError(module, err) { try { appendObject(GOVOPS_CORE_SHEETS.錯誤, { 時間: now(), 功能模組: module, 錯誤摘要: err && err.message ? err.message : String(err), 錯誤內容: err && err.stack ? err.stack : String(err), 處理狀態: '未處理' }); } catch (e) {} }
 function requireField(data, key, label) { if (!data[key]) throw new Error('請先填寫必要欄位：' + (label || key)); }
