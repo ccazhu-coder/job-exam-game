@@ -66,6 +66,19 @@ function parseRequest(e) {
 }
 
 function router(action, data) {
+  if (typeof handleComposedGovOpsAction === 'function') {
+    var composed = handleComposedGovOpsAction(action, data, function(runtimeData) {
+      if (typeof handleTenantCoreAction === 'function') {
+        return handleTenantCoreAction(action, runtimeData);
+      }
+      return null;
+    });
+
+    if (composed) {
+      return composed;
+    }
+  }
+
   switch (action) {
     case '初始化系統': return 初始化系統();
     case '系統健康檢查': return success('系統連線正常。', { version: GOVOPS_VERSION });
@@ -105,6 +118,9 @@ function router(action, data) {
     case '執行提醒檢查': return 執行提醒檢查(data);
     case 'AI秘書查詢': return AI秘書查詢(data);
     case '產生秘書摘要': return 產生秘書摘要(data);
+    case '測試_RuntimeComposer_新增活動': return typeof 測試_RuntimeComposer_新增活動 === 'function' ? 測試_RuntimeComposer_新增活動() : fail('Runtime Composer 測試函式尚未載入。');
+    case '測試_RuntimeComposer_財務權限': return typeof 測試_RuntimeComposer_財務權限 === 'function' ? 測試_RuntimeComposer_財務權限() : fail('Runtime Composer 測試函式尚未載入。');
+    case '測試_RuntimeComposer_AI限制': return typeof 測試_RuntimeComposer_AI限制 === 'function' ? 測試_RuntimeComposer_AI限制() : fail('Runtime Composer 測試函式尚未載入。');
     default: return fail('找不到對應功能：' + action);
   }
 }
