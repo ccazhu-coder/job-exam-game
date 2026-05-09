@@ -1,10 +1,11 @@
-/* GovOps OS Shared API Client v1.0.0
+/* GovOps OS Shared API Client v1.0.1
  * 目的：統一前端 API 呼叫、SaaS session 注入、JSON 防呆、錯誤中文化與 timeout。
  */
 (function(){
   const DEFAULT_TIMEOUT_MS=25000;
+  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxpmkuK34tfjo5A3BrC9uxpn2MEyCaAHS_pNPEkHBIp46HPzaXLAg0eachrYaxzFSIoOg/exec';
   function getDefaultApiUrl(){
-    return window.GOVOPS_API_URL || window.API_URL || '';
+    return window.GOVOPS_API_URL || window.API_URL || DEFAULT_API_URL;
   }
   function toQuery(params){
     const payload=window.GovOpsSaaS&&window.GovOpsSaaS.toBackendParams?window.GovOpsSaaS.toBackendParams(params||{}):(params||{});
@@ -61,5 +62,5 @@
     const d=resp&&resp.data?resp.data:{};
     return d.結果||d.任務||d.缺件||d.學員||d.資料||d.明細||d.提醒||[];
   }
-  window.GovOpsAPI={request,bindMessageRequest,formatResult,extractRows,toQuery};
+  window.GovOpsAPI={request,bindMessageRequest,formatResult,extractRows,toQuery,getDefaultApiUrl,DEFAULT_API_URL};
 })();
