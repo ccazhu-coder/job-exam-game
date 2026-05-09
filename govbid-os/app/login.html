@@ -40,6 +40,8 @@
   </main>
 <script src="./config.js"></script>
 <script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<script src="./login-auth-adapter.js"></script>
 <script>
 const PLAN_LIMITS=window.GovOpsSaaS?window.GovOpsSaaS.PLAN_LIMITS:{FREE:{name:'免費體驗版',events:3,crm:50,users:1,ai:0},STARTER:{name:'入門版',events:20,crm:500,users:1,ai:0},PRO:{name:'專業版',events:100,crm:5000,users:3,ai:300},ENTERPRISE:{name:'企業版',events:'依合約',crm:'依合約',users:'依合約',ai:'依合約'}};
 function show(t){document.getElementById('msg').textContent=t}
