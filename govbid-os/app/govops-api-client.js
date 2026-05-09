@@ -1,10 +1,11 @@
-/* GovOps OS Shared API Client v1.0.1
+/* GovOps OS Shared API Client v1.0.2
  * 目的：統一前端 API 呼叫、SaaS session 注入、JSON 防呆、錯誤中文化與 timeout。
  */
 (function(){
   const DEFAULT_TIMEOUT_MS=25000;
-  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxpmkuK34tfjo5A3BrC9uxpn2MEyCaAHS_pNPEkHBIp46HPzaXLAg0eachrYaxzFSIoOg/exec';
+  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbx1bhCaRf2c85JQhECQRnrLVinTIYemFd9uN4c997zzYLacNWMne_AogYq-BWyJRPlDLQ/exec';
   function getDefaultApiUrl(){
+    if(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)return window.GOVOPS_CONFIG.API_URL;
     return window.GOVOPS_API_URL || window.API_URL || DEFAULT_API_URL;
   }
   function toQuery(params){
@@ -27,7 +28,7 @@
       clearTimeout(timer);
       const text=await res.text();
       let data;
-      try{data=JSON.parse(text)}catch(e){return {success:false,message:'API 回傳格式不是有效 JSON，請檢查 Apps Script 部署。',data:{reason:'INVALID_JSON',status:res.status}}}
+      try{data=JSON.parse(text)}catch(e){return {success:false,message:'API 回傳格式不是有效 JSON，請檢查 Apps Script 部署。',data:{reason:'INVALID_JSON',status:res.status,raw:text.slice(0,300)}}}
       if(!res.ok){return {success:false,message:data.message||'API 連線失敗，請稍後再試。',data:data.data||{status:res.status}}}
       return data;
     }catch(e){
