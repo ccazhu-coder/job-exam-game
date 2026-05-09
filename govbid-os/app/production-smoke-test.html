@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GovOps OS｜正式上線 Smoke Test</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;background:#f4f7fb;color:#182033}.wrap{max-width:1120px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#102542,#1d4e89);color:#fff;border-radius:24px;padding:26px 20px;margin:16px 0}.hero h1{margin:0;font-size:26px}.hero p{line-height:1.7;opacity:.92}.card{background:#fff;border:1px solid #e7edf5;border-radius:18px;padding:16px;margin-bottom:14px;box-shadow:0 10px 28px rgba(16,37,66,.08)}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.btns{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}button,a.btn{border:0;border-radius:12px;padding:12px 16px;font-size:16px;font-weight:900;cursor:pointer;background:#1d4e89;color:#fff;text-decoration:none;display:inline-block}.secondary{background:#e8eef7!important;color:#1d3557!important}.danger{background:#b42318!important}.msg{background:#f8fafc;border:1px dashed #cfd8e6;border-radius:12px;padding:12px;white-space:pre-wrap;line-height:1.65;min-height:80px;overflow:auto}.status{display:inline-block;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}.ok{background:#ecfdf3;color:#067647}.bad{background:#fef3f2;color:#b42318}.warn{background:#fff7ed;color:#9a3412}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;word-break:break-all}.small{font-size:13px;color:#667085;line-height:1.6}@media(max-width:760px){.grid{grid-template-columns:1fr}.btns button,.btns a{width:100%;text-align:center}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>GovOps OS｜正式上線 Smoke Test</h1>
+      <p>這頁不改正式主系統，用來測試 Production API、System Guard、Auth、Session、ERP、Finance、Reminder、AI Secretary 是否全鏈路可用。</p>
+      <div class="btns">
+        <button onclick="runFullSmokeTest()">一鍵正式測試</button>
+        <button class="secondary" onclick="runBackendHealth()">只測後端健康</button>
+        <button class="secondary" onclick="clearLocal()">清除本機 Session</button>
+        <a class="btn secondary" href="./runtime-health.html">Runtime Health</a>
+        <a class="btn secondary" href="./login.html">登入頁</a>
+        <a class="btn secondary" href="./index.html">主系統</a>
+        <a class="btn secondary" href="./finance-secretary.html">財務秘書</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><h2>1. Config / API Client</h2><div id="configBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>2. Backend Health</h2><div id="healthBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>3. SystemGuard 初始化</h2><div id="guardBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>4. Auth 註冊 / 登入</h2><div id="authBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>5. Session 驗證</h2><div id="sessionBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>6. ERP 基本功能</h2><div id="erpBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>7. Finance / Reminder / AI</h2><div id="bizBox" class="msg mono">尚未測試。</div></div>
+      <div class="card"><h2>8. localStorage Session</h2><div id="localBox" class="msg mono">尚未測試。</div></div>
+    </section>
+
+    <section class="card">
+      <h2>總結</h2>
+      <div id="summaryBox" class="msg">尚未測試。</div>
+    </section>
+  </main>
+
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<script src="./session-guard.js"></script>
+<script>
+function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function pretty(obj){try{return JSON.stringify(obj,null,2)}catch(e){return String(obj)}}
+function setBox(id,obj,state){
+  var el=document.getElementById(id);if(!el)return;
+  var badge=state?'<span class="status '+state.cls+'">'+state.label+'</span>\n\n':'';
+  el.innerHTML=badge+escapeHtml(typeof obj==='string'?obj:pretty(obj));
+}
+function ok(){return{label:'PASS',cls:'ok'}}
+function bad(){return{label:'FAIL',cls:'bad'}}
+function warn(){return{label:'WARN',cls:'warn'}}
+function safeJSON(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
+function clearLocal(){localStorage.removeItem('govops_profile');localStorage.removeItem('govops_auth');localStorage.removeItem('govops_usage');localStorage.removeItem('govops_last_logout_reason');setBox('localBox','已清除本機 Session。',warn())}
+async function call(action,payload){return GovOpsAPI.request(Object.assign({action:action},payload||{}));}
+async function runBackendHealth(){
+  setBox('configBox',{config:window.GOVOPS_CONFIG||null,apiUrl:GovOpsAPI&&GovOpsAPI.getDefaultApiUrl?GovOpsAPI.getDefaultApiUrl():null},window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL?ok():bad());
+  var res=await call('系統健康檢查');
+  setBox('healthBox',res,res&&res.success?ok():bad());
+  return res;
+}
+function persistSessionFromResult(res){
+  var d=res&&res.data?res.data:{};
+  var profile=d.govops_profile||d.session||d;
+  var auth=d.govops_auth||{tenantId:profile.tenantId,userId:profile.userId,userRole:profile.userRole||profile.role,plan:profile.plan,status:profile.status};
+  var usage=d.govops_usage||profile.usage||{events:0,crm:0,users:1,ai:0};
+  localStorage.setItem('govops_profile',JSON.stringify(profile));
+  localStorage.setItem('govops_auth',JSON.stringify(auth));
+  localStorage.setItem('govops_usage',JSON.stringify(usage));
+  if(window.GovOpsSaaS&&GovOpsSaaS.repairStoredSession)GovOpsSaaS.repairStoredSession();
+}
+async function runFullSmokeTest(){
+  var passed=0,total=0,session=null,activityId='',arId='';
+  function mark(name,cond){total++;if(cond)passed++;return cond?ok():bad();}
+
+  setBox('summaryBox','正在執行正式上線測試，請稍候...',warn());
+
+  var configOk=!!(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL&&window.GovOpsAPI&&GovOpsAPI.request);
+  setBox('configBox',{config:window.GOVOPS_CONFIG||null,apiUrl:window.GovOpsAPI&&GovOpsAPI.getDefaultApiUrl?GovOpsAPI.getDefaultApiUrl():null},mark('config',configOk));
+
+  var health=await call('系統健康檢查');
+  setBox('healthBox',health,mark('health',health&&health.success));
+
+  var guard=await call('初始化SystemGuard');
+  setBox('guardBox',guard,mark('guard',guard&&guard.success));
+
+  var email='smoke.'+Date.now()+'@govops.local';
+  var reg=await call('註冊組織與管理者',{organizationName:'GovOps Smoke Test 組織',ownerName:'Smoke Tester',email:email,plan:'PRO',note:'production smoke test'});
+  var login=null;
+  if(reg&&reg.success){login=await call('登入使用者',{email:email});}
+  var authOk=!!(reg&&reg.success&&login&&login.success);
+  setBox('authBox',{register:reg,login:login},mark('auth',authOk));
+  if(authOk){persistSessionFromResult(login);session=(login.data&&login.data.session)||login.data.govops_profile;}
+
+  var verify=null;
+  if(session){verify=await call('取得目前使用者Session',{tenantId:session.tenantId,userId:session.userId,email:session.email,phone:session.phone});}
+  setBox('sessionBox',verify||'未取得 session，略過驗證。',mark('session',verify&&verify.success));
+  if(verify&&verify.success)persistSessionFromResult(verify);
+
+  if(session){
+    var act=await call('新增活動',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,活動名稱:'Smoke Test 活動',活動日期:new Date().toISOString().slice(0,10),活動地點:'線上測試'});
+    activityId=act&&act.data?act.data.活動ID:'';
+    var regStudent=activityId?await call('新增報名',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,活動ID:activityId,姓名:'Smoke 學員',電話:'0900000000',Email:'student.smoke@govops.local'}):null;
+    var dashboard=await call('取得儀表板',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan});
+    setBox('erpBox',{新增活動:act,新增報名:regStudent,儀表板:dashboard},mark('erp',act&&act.success&&regStudent&&regStudent.success&&dashboard&&dashboard.success));
+
+    var ar=activityId?await call('建立應收帳款',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,活動ID:activityId,應收金額:1000,對象名稱:'Smoke 單位'}):null;
+    arId=ar&&ar.data?ar.data.應收ID:'';
+    var pay=arId?await call('登錄收款',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,應收ID:arId,活動ID:activityId,收款金額:1000,收款方式:'測試'}):null;
+    var reminder=activityId?await call('建立活動提醒',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,活動ID:activityId,提醒內容:'Smoke 測試提醒'}):null;
+    var ai=await call('AI秘書查詢',{tenantId:session.tenantId,userId:session.userId,userRole:session.userRole,plan:session.plan,text:'查詢未收款'});
+    setBox('bizBox',{建立應收:ar,登錄收款:pay,建立提醒:reminder,AI秘書:ai},mark('biz',ar&&ar.success&&pay&&pay.success&&reminder&&reminder.success&&ai&&ai.success));
+  }else{
+    setBox('erpBox','無 session，略過 ERP 測試。',bad());mark('erp',false);
+    setBox('bizBox','無 session，略過業務模組測試。',bad());mark('biz',false);
+  }
+
+  setBox('localBox',{govops_profile:safeJSON('govops_profile'),govops_auth:safeJSON('govops_auth'),govops_usage:safeJSON('govops_usage')},safeJSON('govops_profile')&&safeJSON('govops_auth')?ok():bad());
+
+  var state=passed===total?ok():warn();
+  setBox('summaryBox','正式上線 Smoke Test 完成。\nPASS：'+passed+' / '+total+'\n\n若有 FAIL，請截圖該區塊回報。',state);
+}
+window.addEventListener('DOMContentLoaded',runBackendHealth);
+</script>
+</body>
+</html>
