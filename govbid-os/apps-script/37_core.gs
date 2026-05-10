@@ -66,7 +66,20 @@ function parseRequest(e) {
 }
 
 function router(action, data) {
-  if (typeof handleComposedGovOpsAction === 'function') {
+  data = data || {};
+
+  if (typeof routeWithEnterpriseRuntime === 'function' && !data.__enterpriseRuntimeActive) {
+    var routed = routeWithEnterpriseRuntime(action, data, function(runtimeData) {
+      runtimeData.__enterpriseRuntimeActive = true;
+      return router(action, runtimeData);
+    });
+
+    if (routed) {
+      return routed;
+    }
+  }
+
+  if (typeof handleComposedGovOpsAction === 'function' && !data.__enterpriseRuntimeActive) {
     var composed = handleComposedGovOpsAction(action, data, function(runtimeData) {
       if (typeof handleTenantCoreAction === 'function') {
         return handleTenantCoreAction(action, runtimeData);
@@ -118,6 +131,11 @@ function router(action, data) {
     case '執行提醒檢查': return 執行提醒檢查(data);
     case 'AI秘書查詢': return AI秘書查詢(data);
     case '產生秘書摘要': return 產生秘書摘要(data);
+    case '測試_EnterpriseRouterAdapter_防遞迴': return typeof 測試_EnterpriseRouterAdapter_防遞迴 === 'function' ? 測試_EnterpriseRouterAdapter_防遞迴() : fail('Enterprise Router Adapter 測試函式尚未載入。');
+    case '測試_EnterpriseRouterAdapter_健康檢查': return typeof 測試_EnterpriseRouterAdapter_健康檢查 === 'function' ? 測試_EnterpriseRouterAdapter_健康檢查() : fail('Enterprise Router Adapter 測試函式尚未載入。');
+    case '測試_EnterpriseRouterAdapter_新增活動': return typeof 測試_EnterpriseRouterAdapter_新增活動 === 'function' ? 測試_EnterpriseRouterAdapter_新增活動() : fail('Enterprise Router Adapter 測試函式尚未載入。');
+    case '測試_EnterpriseRouterAdapter_Auth': return typeof 測試_EnterpriseRouterAdapter_Auth === 'function' ? 測試_EnterpriseRouterAdapter_Auth() : fail('Enterprise Router Adapter 測試函式尚未載入。');
+    case '測試_EnterpriseRouterAdapter_AuditLog': return typeof 測試_EnterpriseRouterAdapter_AuditLog === 'function' ? 測試_EnterpriseRouterAdapter_AuditLog() : fail('Enterprise Router Adapter 測試函式尚未載入。');
     case '測試_RuntimeComposer_新增活動': return typeof 測試_RuntimeComposer_新增活動 === 'function' ? 測試_RuntimeComposer_新增活動() : fail('Runtime Composer 測試函式尚未載入。');
     case '測試_RuntimeComposer_財務權限': return typeof 測試_RuntimeComposer_財務權限 === 'function' ? 測試_RuntimeComposer_財務權限() : fail('Runtime Composer 測試函式尚未載入。');
     case '測試_RuntimeComposer_AI限制': return typeof 測試_RuntimeComposer_AI限制 === 'function' ? 測試_RuntimeComposer_AI限制() : fail('Runtime Composer 測試函式尚未載入。');
