@@ -92,6 +92,26 @@ function router(action, data) {
     }
   }
 
+  var preHandlers = [
+    'handleProductionHealthAction',
+    'handleProductionRecoveryAction',
+    'handleBillingAction',
+    'handleFeatureFlagAction',
+    'handleAPIGatewayAction'
+  ];
+
+  for (var i = 0; i < preHandlers.length; i++) {
+    var fnName = preHandlers[i];
+    try {
+      if (typeof this[fnName] === 'function') {
+        var handled = this[fnName](action, data);
+        if (handled) return handled;
+      }
+    } catch (err) {
+      return fail('系統處理模組暫時無法完成操作，請稍後再試。');
+    }
+  }
+
   switch (action) {
     case '初始化系統': return 初始化系統();
     case '系統健康檢查': return success('系統連線正常。', { version: GOVOPS_VERSION });
