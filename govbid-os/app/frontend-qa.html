@@ -28,38 +28,14 @@
 </header>
 <main class="wrap">
   <section class="grid">
-    <div class="card">
-      <div class="head"><h2>前端環境</h2><span id="envBadge" class="badge">待檢查</span></div>
-      <div class="body"><div id="envBox" class="kv"></div></div>
-    </div>
-    <div class="card">
-      <div class="head"><h2>Session 狀態</h2><span id="sessionBadge" class="badge">待檢查</span></div>
-      <div class="body"><div id="sessionBox" class="kv"></div></div>
-    </div>
-    <div class="card full">
-      <div class="head"><h2>頁面連結驗收</h2><span class="badge">Navigation</span></div>
-      <div class="body"><div class="links">
-        <a class="btn secondary" href="./runtime-health.html" target="_blank">runtime-health.html</a>
-        <a class="btn secondary" href="./login.html" target="_blank">login.html</a>
-        <a class="btn secondary" href="./admin-console.html" target="_blank">admin-console.html</a>
-        <a class="btn secondary" href="./finance-secretary.html" target="_blank">finance-secretary.html</a>
-        <a class="btn secondary" href="./index.html" target="_blank">index.html</a>
-      </div></div>
-    </div>
-    <div class="card">
-      <div class="head"><h2>API 驗收結果</h2><span id="apiBadge" class="badge">待檢查</span></div>
-      <div class="body"><div id="apiResults" class="list"><div class="empty">尚未執行</div></div></div>
-    </div>
-    <div class="card">
-      <div class="head"><h2>前端建議</h2><span id="recBadge" class="badge">待檢查</span></div>
-      <div class="body"><div id="recommendations" class="list"><div class="empty">尚未執行</div></div></div>
-    </div>
-    <div class="card full">
-      <div class="head"><h2>原始回應</h2><span class="badge">Safe Debug</span></div>
-      <div class="body"><pre id="rawBox">尚未執行</pre></div>
-    </div>
+    <div class="card"><div class="head"><h2>前端環境</h2><span id="envBadge" class="badge">待檢查</span></div><div class="body"><div id="envBox" class="kv"></div></div></div>
+    <div class="card"><div class="head"><h2>Session 狀態</h2><span id="sessionBadge" class="badge">待檢查</span></div><div class="body"><div id="sessionBox" class="kv"></div></div></div>
+    <div class="card full"><div class="head"><h2>頁面連結驗收</h2><span class="badge">Navigation</span></div><div class="body"><div class="links"><a class="btn secondary" href="./runtime-health.html" target="_blank">runtime-health.html</a><a class="btn secondary" href="./login.html" target="_blank">login.html</a><a class="btn secondary" href="./admin-console.html" target="_blank">admin-console.html</a><a class="btn secondary" href="./finance-secretary.html" target="_blank">finance-secretary.html</a><a class="btn secondary" href="./index.html" target="_blank">index.html</a></div></div></div>
+    <div class="card"><div class="head"><h2>API 驗收結果</h2><span id="apiBadge" class="badge">待檢查</span></div><div class="body"><div id="apiResults" class="list"><div class="empty">尚未執行</div></div></div></div>
+    <div class="card"><div class="head"><h2>前端建議</h2><span id="recBadge" class="badge">待檢查</span></div><div class="body"><div id="recommendations" class="list"><div class="empty">尚未執行</div></div></div></div>
+    <div class="card full"><div class="head"><h2>原始回應</h2><span class="badge">Safe Debug</span></div><div class="body"><pre id="rawBox">尚未執行</pre></div></div>
   </section>
-  <div class="footer">驗收原則：此頁只讀取前端 runtime 與呼叫後端 API，不修改正式頁面，不建立業務資料。</div>
+  <div class="footer">驗收原則：此頁只讀取前端 runtime 與呼叫後端 API，不修改正式頁面，不建立業務資料。若沒有 Session，一鍵驗收會自動建立 QA 測試 Session。</div>
 </main>
 <script>
 var QA = { results: [], raw: {} };
@@ -78,10 +54,10 @@ function renderEnvironment(){var env={config:window.GOVOPS_CONFIG?'loaded':'miss
 function renderSession(){var s=getSession();var data={tenantId:s.tenantId||'-',userId:s.userId||'-',userRole:s.userRole||s.role||'-',plan:s.plan||'-',email:s.email||'-',session:hasSession()?'存在':'不存在',admin:isAdmin()?'是':'否'};document.getElementById('sessionBox').innerHTML=kv(data);setBadge('sessionBadge',hasSession()?'OK':'WARNING');}
 function sessionPayload(){var s=getSession();return {tenantId:s.tenantId||'',userId:s.userId||'',userRole:s.userRole||s.role||'',plan:s.plan||'',email:s.email||'',phone:s.phone||''};}
 async function request(action, extra){if(!window.GovOpsAPI||typeof GovOpsAPI.request!=='function'){return {success:false,message:'GovOpsAPI 尚未載入',data:{}};}try{return await GovOpsAPI.request(Object.assign({action:action},sessionPayload(),extra||{}));}catch(e){return {success:false,message:'API 呼叫失敗，請確認部署 URL 與 CORS/權限。',data:{}};}}
-async function runAllChecks(){QA.results=[];QA.raw={};notice('正在執行前端驗收...', '');renderEnvironment();renderSession();var checks=[['系統健康檢查','系統健康檢查'],['Production Self Check','runProductionSelfCheck'],['Recovery Report','createRecoveryReport'],['Billing Summary','getTenantBillingSummary'],['Feature Matrix','getTenantFeatureMatrix'],['API Usage','getAPIUsageSummary']];for(var i=0;i<checks.length;i++){var label=checks[i][0];var action=checks[i][1];var res=await request(action);QA.results.push({label:label,action:action,success:!!res.success,message:res.message||'',data:res.data||{}});QA.raw[action]=res;}renderResults();renderRecommendations();document.getElementById('rawBox').textContent=JSON.stringify(QA.raw,null,2);var failed=QA.results.filter(function(r){return !r.success;}).length;notice(failed?'前端驗收完成，但有項目需處理。':'前端驗收完成，主要項目通過。',failed?'error':'success');}
+async function runAllChecks(){QA.results=[];QA.raw={};if(!hasSession()){createLocalTestSession(true);notice('未偵測到 Session，已自動建立 QA 測試 Session，開始驗收...', '');}else{notice('正在執行前端驗收...', '');}renderEnvironment();renderSession();var checks=[['系統健康檢查','系統健康檢查'],['Production Self Check','runProductionSelfCheck'],['Recovery Report','createRecoveryReport'],['Billing Summary','getTenantBillingSummary'],['Feature Matrix','getTenantFeatureMatrix'],['API Usage','getAPIUsageSummary']];for(var i=0;i<checks.length;i++){var label=checks[i][0];var action=checks[i][1];var res=await request(action);QA.results.push({label:label,action:action,success:!!res.success,message:res.message||'',data:res.data||{}});QA.raw[action]=res;}renderResults();renderRecommendations();document.getElementById('rawBox').textContent=JSON.stringify(QA.raw,null,2);var failed=QA.results.filter(function(r){return !r.success;}).length;notice(failed?'前端驗收完成，但有項目需處理。':'前端驗收完成，主要項目通過。',failed?'error':'success');}
 function renderResults(){var failed=QA.results.filter(function(r){return !r.success;}).length;setBadge('apiBadge',failed?'WARNING':'OK');document.getElementById('apiResults').innerHTML=QA.results.length?QA.results.map(function(r){return '<div class="item"><div><div class="title">'+esc(r.label)+'</div><div class="desc">'+esc(r.action)+'｜'+esc(r.message)+'</div></div><span class="badge '+(r.success?'ok':'bad')+'">'+(r.success?'OK':'FAIL')+'</span></div>';}).join(''):'<div class="empty">尚未執行</div>';}
 function renderRecommendations(){var rec=[];if(!window.GOVOPS_CONFIG||!window.GOVOPS_CONFIG.API_URL)rec.push('config.js 未正確載入 API_URL。');if(!window.GovOpsAPI)rec.push('govops-api-client.js 未載入，前端無法呼叫後端。');if(!window.GovOpsSessionGuard)rec.push('session-guard.js 未載入，正式頁面需確認登入保護。');if(!hasSession())rec.push('目前沒有 session，請先用 login.html 註冊或登入。');if(hasSession()&&!isAdmin())rec.push('目前帳號不是 owner/admin，admin-console.html 會顯示無權限。');QA.results.forEach(function(r){if(!r.success)rec.push(r.label+' 未通過：'+(r.message||'請檢查後端 action 是否接入 router。'));});if(!rec.length)rec.push('前端主線驗收狀態良好，可進入正式頁面操作測試。');setBadge('recBadge',rec.length>1?'WARNING':'OK');document.getElementById('recommendations').innerHTML=rec.map(function(x){return '<div class="item"><div><div class="title">建議</div><div class="desc">'+esc(x)+'</div></div></div>';}).join('');}
-function createLocalTestSession(){var profile={tenantId:'QA-FRONTEND',userId:'QA-ADMIN',userRole:'owner',role:'owner',plan:'ENTERPRISE',email:'qa@govops.local',organizationName:'GovOps 前端驗收測試組織',userName:'前端驗收管理者'};var auth={tenantId:profile.tenantId,userId:profile.userId,userRole:'owner',plan:'ENTERPRISE',status:'active',email:profile.email};localStorage.setItem('govops_profile',JSON.stringify(profile));localStorage.setItem('govops_auth',JSON.stringify(auth));renderSession();notice('已建立本機測試 Session。','success');}
+function createLocalTestSession(silent){var profile={tenantId:'QA-FRONTEND',userId:'QA-ADMIN',userRole:'owner',role:'owner',plan:'ENTERPRISE',email:'qa@govops.local',organizationName:'GovOps 前端驗收測試組織',userName:'前端驗收管理者'};var auth={tenantId:profile.tenantId,userId:profile.userId,userRole:'owner',plan:'ENTERPRISE',status:'active',email:profile.email};localStorage.setItem('govops_profile',JSON.stringify(profile));localStorage.setItem('govops_auth',JSON.stringify(auth));renderSession();if(!silent)notice('已建立本機測試 Session。','success');}
 function clearLocalSession(){localStorage.removeItem('govops_profile');localStorage.removeItem('govops_auth');localStorage.removeItem('govops_usage');renderSession();notice('已清除本機 Session。','success');}
 function logout(){if(window.GovOpsSessionGuard&&typeof GovOpsSessionGuard.logout==='function'){GovOpsSessionGuard.logout();return;}clearLocalSession();location.href='./login.html';}
 </script>
