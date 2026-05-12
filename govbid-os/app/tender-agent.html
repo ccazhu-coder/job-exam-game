@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜AI 標案顧問工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 4}label{display:block;font-weight:900;margin:12px 0 6px}input,textarea{width:100%;padding:13px;border:1px solid #d8e0eb;border-radius:12px;font-size:16px;background:#fbfcff}textarea{min-height:110px}button{border:0;border-radius:12px;padding:13px 15px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:420px;overflow:auto}.summary{font-size:16px;line-height:1.8}.pill{display:inline-block;background:#eef4ff;color:#1d4e89;border-radius:999px;padding:6px 10px;margin:4px;font-weight:800;font-size:13px}@media(max-width:800px){.span-6,.span-4{grid-column:span 12}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>AI 標案顧問工作台</h1><div class="sub">一鍵整合：投標決策、得標預測、競爭分析、知識推薦、財務摘要與下一步建議。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>一鍵標案診斷</h2><label>標案ID / 標案名稱 / 關鍵字</label><input id="keyword" placeholder="例如：中高齡就業促進、AI課程、農糧推廣"><label>補充說明</label><textarea id="note" placeholder="可貼上招標重點、資格條件、預算、履約地點等"></textarea><button class="good" onclick="runAgent()">一鍵產生標案顧問建議</button><button onclick="queryKnowledge()">查詢知識推薦</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><button class="secondary" onclick="location.href='./tender-finance.html'">財務工作台</button><div id="agentResult" class="status">尚未執行。</div></section>
+<section class="card span-6"><h2>AI 綜合建議</h2><div id="advisorBox" class="summary">尚未產生。</div></section>
+<section class="card span-6"><h2>推薦知識</h2><div id="knowledgeBox" class="summary">尚未查詢。</div></section>
+<section class="card span-12"><h2>原始結果</h2><div id="rawBox" class="status">尚無資料。</div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p){const payload=params(p);let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}return res}
+async function runAgent(){const key=val('keyword');set('agentResult','AI 標案顧問分析中...');const results={};results.decision=await api({action:'tender.decision.score',標案ID:key,keyword:key,標案名稱:key});results.competition=await api({action:'tender.competition.analyze',標案ID:key,keyword:key,標案名稱:key});results.win=await api({action:'tender.win.predict',標案ID:key,keyword:key,標案名稱:key});results.kb=await api({action:'tender.kb.recommend',keyword:key,標案名稱:key});results.finance=await api({action:'tender.finance.query',keyword:key,標案ID:key});renderAdvisor(results);renderKnowledge(results.kb);set('rawBox',JSON.stringify(results,null,2));set('agentResult','標案顧問建議已完成。')}
+async function queryKnowledge(){const r=await api({action:'tender.kb.recommend',keyword:val('keyword'),標案名稱:val('keyword')});renderKnowledge(r);set('rawBox',JSON.stringify(r,null,2))}
+function renderAdvisor(r){const d=r.decision&&r.decision.data||{};const c=r.competition&&r.competition.data||{};const w=r.win&&r.win.data||{};const f=(r.finance&&r.finance.data&&r.finance.data.rows&&r.finance.data.rows[0])||{};document.getElementById('advisorBox').innerHTML='<div class="pill">投標分數：'+(d.總分||'-')+'</div><div class="pill">得標機率：'+(w.得標機率||'-')+'</div><div class="pill">競爭強度：'+(c.競爭強度||'-')+'</div><div class="pill">毛利率：'+(f.毛利率||'-')+'</div><hr><b>投標建議</b><br>'+(d.投標建議||w.策略建議||'尚無建議')+'<br><br><b>競爭風險</b><br>'+(c.競爭風險||w.主要風險||'尚無風險資料')+'<br><br><b>加分策略</b><br>'+(w.加分策略||c.差異化策略||'建議補強實績、KPI、風險控管與創新加值。')}
+function renderKnowledge(r){const rows=(r&&r.data&&(r.data.recommendations||r.data.rows))||[];if(!rows.length){document.getElementById('knowledgeBox').innerHTML='查無推薦知識。';return}document.getElementById('knowledgeBox').innerHTML=rows.slice(0,8).map(x=>'<div style="margin-bottom:14px"><b>'+((x.主題)||'標案知識')+'</b><br>'+((x.內容摘要)||'')+'<br><span style="color:#667085">'+((x.策略建議)||'')+'</span></div>').join('')}
+</script>
+</body>
+</html>
