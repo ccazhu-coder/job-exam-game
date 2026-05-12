@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案任務與日曆</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}.wrap{max-width:1180px;margin:0 auto;padding:20px}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:28px 20px}h1{margin:0;font-size:28px}.sub{opacity:.9;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}label{display:block;font-weight:900;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.danger{background:#b42318}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:800px){.span-6{grid-column:span 12}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案任務與日曆工作台</h1><div class="sub">Tender Task Engine × Tender Calendar｜備標、投標、開標與履約提醒。</div></div></header>
+<main class="wrap">
+<div class="grid">
+<section class="card span-6">
+<h2>標案任務</h2>
+<label>標案ID / 關鍵字</label><input id="taskTenderId">
+<label>任務階段</label><select id="taskStage"><option>評估中</option><option>決定投標</option><option>備標中</option><option>已投標</option><option>已得標</option><option>未得標</option><option>履約中</option></select>
+<label>任務ID（更新時使用）</label><input id="taskId">
+<label>任務狀態</label><select id="taskStatus"><option>待執行</option><option>進行中</option><option>已完成</option><option>異常</option><option>已取消</option></select>
+<button class="good" onclick="generateTasks()">生成標案任務</button><button onclick="queryTasks()">查詢任務</button><button class="secondary" onclick="updateTask()">更新任務</button>
+<div id="taskResult" class="status">尚未操作。</div>
+</section>
+<section class="card span-6">
+<h2>標案日曆</h2>
+<label>標案ID / 關鍵字</label><input id="calendarTenderId">
+<label>標案名稱</label><input id="calendarTenderName">
+<label>截止投標日</label><input id="deadlineDate" type="date">
+<label>開標日期</label><input id="openDate" type="date">
+<button class="good" onclick="createCalendar()">建立日曆提醒</button><button onclick="queryCalendar()">查詢日曆</button><button class="danger" onclick="deleteCalendar()">刪除日曆</button>
+<div id="calendarResult" class="status">尚未操作。</div>
+</section>
+<section class="card span-12"><h2>資料表</h2><div id="tableBox"></div></section>
+<section class="card span-12"><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><button class="secondary" onclick="location.href='./index.html'">回主系統</button></section>
+</div>
+</main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function render(resp,keys){const box=document.getElementById('tableBox');if(!resp||!resp.success||!resp.data){box.innerHTML='';return}const rows=resp.data.rows||[];if(!rows.length){box.innerHTML='<div class="status">查無資料</div>';return}box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,80).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function generateTasks(){await api({action:'tender.task.generate',標案ID:val('taskTenderId'),目前階段:val('taskStage')},'taskResult')}
+async function queryTasks(){const r=await api({action:'tender.task.query',keyword:val('taskTenderId'),標案ID:val('taskTenderId')},'taskResult');render(r,['任務ID','標案ID','標案名稱','任務階段','任務名稱','負責人','截止日期','任務狀態','優先級'])}
+async function updateTask(){await api({action:'tender.task.update',任務ID:val('taskId'),任務狀態:val('taskStatus')},'taskResult')}
+function twDate(id){const v=val(id);if(!v)return'';const a=v.split('-');return a[0]+'/'+a[1]+'/'+a[2]}
+async function createCalendar(){await api({action:'tender.calendar.create',標案ID:val('calendarTenderId'),標案名稱:val('calendarTenderName'),截止投標日:twDate('deadlineDate'),開標日期:twDate('openDate')},'calendarResult')}
+async function queryCalendar(){const r=await api({action:'tender.calendar.query',keyword:val('calendarTenderId'),標案ID:val('calendarTenderId')},'calendarResult');render(r,['標案ID','標案名稱','事件類型','事件名稱','事件日期','開始時間','結束時間','日曆狀態'])}
+async function deleteCalendar(){await api({action:'tender.calendar.delete',keyword:val('calendarTenderId'),標案ID:val('calendarTenderId')},'calendarResult')}
+</script>
+</body>
+</html>
