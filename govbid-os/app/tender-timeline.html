@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案履約時程工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:26px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}label{display:block;font-weight:900;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}.timeline{display:grid;gap:12px}.node{border-left:5px solid #1d4e89;background:#f8fafc;border-radius:14px;padding:14px}.node b{font-size:16px}.small{color:#667085;font-size:13px;margin-top:6px;line-height:1.6}@media(max-width:900px){.span-6{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案履約時程工作台</h1><div class="sub">Delivery Timeline｜契約期間、工作執行、成果交付、驗收、請款與逾期風險。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>履約時程產生</h2><label>標案ID / 關鍵字</label><input id="keyword"><div class="grid" style="margin-top:0"><div class="span-6"><label>合約起日</label><input id="startDate" placeholder="例：2026/06/01"></div><div class="span-6"><label>合約迄日</label><input id="endDate" placeholder="例：2026/12/31"></div></div><button class="good" onclick="generateTimeline()">產生履約時程</button><button onclick="queryTimeline()">查詢履約時程</button><button class="secondary" onclick="generateMindmap()">產生履約心智圖</button><button class="secondary" onclick="location.href='./tender-parser-monitor.html'">文件解析監控</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div class="kpis" id="kpiBox"></div><div id="mainResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>履約時間軸</h2><div id="timelineBox" class="timeline"><div class="status">尚無資料。</div></div></section>
+<section class="card span-6"><h2>履約提醒重點</h2><div class="status">履約時程需要特別控管：
+1. 契約起訖日是否明確。
+2. 成果交付日是否已排入任務。
+3. 驗收與補正期限是否明確。
+4. 請款期限是否會影響現金流。
+5. 逾期條款是否會造成扣款。
+
+後續可串接 Calendar 與任務提醒。</div></section>
+<section class="card span-12"><h2>履約時程明細</h2><div id="tableBox"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderKpis(rows){rows=rows||[];const types=['契約期間','工作執行','交付成果','驗收期限','請款期限','逾期風險'];const items=types.map(t=>[t,rows.filter(r=>r.時程類型===t).length]);document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}
+function renderTimeline(rows){rows=rows||[];const box=document.getElementById('timelineBox');if(!rows.length){box.innerHTML='<div class="status">尚無資料。</div>';return}box.innerHTML=rows.slice(0,30).map(r=>'<div class="node"><b>'+((r.時程類型||'')+'｜'+(r.階段名稱||''))+'</b><div class="small">起始：'+(r.起始日||'待補')+'｜截止：'+(r.截止日||r.相對期限||'待補')+'</div><div class="small">交付：'+(r.交付成果||'無')+'</div><div class="small">驗收：'+(r.驗收方式||'無')+'</div><div class="small">請款：'+(r.請款關聯||'無')+'</div><div class="small">風險：'+(r.逾期風險||'無')+'</div></div>').join('')}
+function renderTable(rows){rows=rows||[];const box=document.getElementById('tableBox');if(!rows.length){box.innerHTML='<div class="status">無履約時程資料</div>';return}const keys=['時程ID','時程類型','階段名稱','起始日','截止日','相對期限','交付成果','驗收方式','請款關聯','逾期風險','提醒狀態'];box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,120).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function generateTimeline(){await api({action:'tender.timeline.generate',keyword:val('keyword'),標案ID:val('keyword'),合約起日:val('startDate'),合約迄日:val('endDate')},'mainResult');queryTimeline()}
+async function queryTimeline(){const r=await api({action:'tender.timeline.query',keyword:val('keyword')},'mainResult');const rows=(r.data&&r.data.rows)||[];renderKpis(rows);renderTimeline(rows);renderTable(rows)}
+async function generateMindmap(){await api({action:'tender.timeline.mindmap',keyword:val('keyword'),標案ID:val('keyword')},'mainResult')}
+queryTimeline();
+</script>
+</body>
+</html>
