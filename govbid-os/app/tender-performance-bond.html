@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜履約保證金管理工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:22px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}label{display:block;font-weight:900;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}textarea{min-height:90px}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.danger{background:#b42318}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>履約保證金管理工作台</h1><div class="sub">Performance Bond｜押標金轉入、履保繳納、退還、扣款、保固保證金與現金流占用。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>履約保證金總覽</h2><label>標案ID / 關鍵字</label><input id="keyword"><button class="good" onclick="summaryBond()">履保摘要</button><button onclick="queryBond()">查詢履保</button><button class="secondary" onclick="fromBidBond()">由押標金轉履保</button><button class="secondary" onclick="location.href='./tender-bid-bond.html'">押標金工作台</button><button class="secondary" onclick="location.href='./tender-finance.html'">財務工作台</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div class="kpis" id="kpiBox"></div><div id="mainResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>建立 / 更新履約保證金</h2><label>履保ID（更新時可填）</label><input id="bondId"><label>標案ID</label><input id="tenderId"><label>標案名稱</label><input id="tenderName"><label>是否需要履保金</label><select id="needBond"><option>是</option><option>否</option><option>待確認</option></select><label>履保金額</label><input id="amount"><label>履保比例</label><input id="rate" placeholder="例：決標金額5%"><label>繳納方式</label><input id="method" placeholder="銀行本票、履保保險、保證書、現金"><label>繳納期限</label><input id="deadline"><label>繳納狀態</label><select id="paidStatus"><option>未繳納</option><option>已繳納</option><option>部分轉入</option><option>不需繳納</option></select><label>繳納日期</label><input id="paidDate"><label>押標金轉入金額</label><input id="bidTransfer"><label>應退還日期</label><input id="returnDue"><label>退還條件</label><textarea id="returnCondition"></textarea><label>退還狀態</label><select id="returnStatus"><option>待退還</option><option>已退還</option><option>可能沒收</option><option>不需退還</option></select><label>退還日期</label><input id="returnDate"><label>扣款金額</label><input id="deductAmount"><label>扣款原因</label><textarea id="deductReason"></textarea><label>保固保證金金額</label><input id="warrantyAmount"><label>保固到期日</label><input id="warrantyDue"><button class="good" onclick="createBond()">建立履保</button><button onclick="updateBond()">更新履保</button></section>
+<section class="card span-6"><h2>履保提醒</h2><div class="status">履約保證金重點：
+1. 得標後是否需繳納履保。
+2. 押標金是否轉入履保。
+3. 履保退還是否要等驗收完成。
+4. 是否有扣款或沒收風險。
+5. 是否延伸為保固保證金。
+6. 保固到期日是否需要提醒。
+
+履保金會長時間占用資金，需與現金流一起管理。</div><div id="formResult" class="status">尚未建立。</div></section>
+<section class="card span-12"><h2>履約保證金明細</h2><div id="tableBox"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderKpis(d){d=d||{};const items=[['筆數',d.total||0],['需繳總額',d.requiredAmount||0],['已繳總額',d.paidAmount||0],['已退還',d.returnedAmount||0],['未退還',d.notReturnedAmount||0],['已扣款',d.deductedAmount||0],['保固金',d.warrantyBondAmount||0]];document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}
+function renderTable(rows){rows=rows||[];const box=document.getElementById('tableBox');if(!rows.length){box.innerHTML='<div class="status">無履約保證金資料</div>';return}const keys=['履保ID','標案ID','標案名稱','是否需要履保金','履保金額','履保比例','繳納狀態','押標金轉入金額','退還狀態','扣款金額','保固保證金金額','保固到期日','現金流狀態','風險狀態'];box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,120).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+function payload(){return {履保ID:val('bondId'),標案ID:val('tenderId')||val('keyword'),標案名稱:val('tenderName'),是否需要履保金:val('needBond'),履保金額:val('amount'),履保比例:val('rate'),繳納方式:val('method'),繳納期限:val('deadline'),繳納狀態:val('paidStatus'),繳納日期:val('paidDate'),押標金轉入金額:val('bidTransfer'),應退還日期:val('returnDue'),退還條件:val('returnCondition'),退還狀態:val('returnStatus'),退還日期:val('returnDate'),扣款金額:val('deductAmount'),扣款原因:val('deductReason'),保固保證金金額:val('warrantyAmount'),保固到期日:val('warrantyDue')}}
+async function createBond(){await api(Object.assign({action:'tender.performanceBond.create'},payload()),'formResult');queryBond();summaryBond()}
+async function updateBond(){await api(Object.assign({action:'tender.performanceBond.update'},payload()),'formResult');queryBond();summaryBond()}
+async function queryBond(){const r=await api({action:'tender.performanceBond.query',keyword:val('keyword')},'mainResult');renderTable(r.data&&r.data.rows)}
+async function summaryBond(){const r=await api({action:'tender.performanceBond.summary',keyword:val('keyword')},'mainResult');renderKpis(r.data)}
+async function fromBidBond(){await api({action:'tender.performanceBond.fromBidBond',keyword:val('keyword'),標案ID:val('keyword')},'mainResult');queryBond();summaryBond()}
+summaryBond();queryBond();
+</script>
+</body>
+</html>
