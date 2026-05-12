@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案 ERP 工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}.sidebar{background:#102542;color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{font-size:22px;font-weight:900;margin-bottom:8px}.sub{font-size:13px;opacity:.82;line-height:1.7;margin-bottom:18px}.nav button{display:block;width:100%;text-align:left;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px;margin:8px 0;font-weight:800;cursor:pointer}.nav button.active{background:#fff;color:#102542}.main{padding:22px}.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}.top h1{margin:0;font-size:28px}.runtime{font-size:13px;background:white;border:1px solid #e5eaf2;border-radius:14px;padding:12px;min-width:280px;line-height:1.6}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-8{grid-column:span 8}.span-6{grid-column:span 6}.span-4{grid-column:span 4}h2{margin:0 0 12px;font-size:20px}label{display:block;font-weight:900;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}textarea{min-height:92px}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.danger{background:#b42318}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}.notice{background:#ecfdf3;border:1px solid #abefc6;color:#067647;padding:12px;border-radius:14px;margin:10px 0;font-weight:900}.tabs{display:none}.tabs.active{display:block}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:28px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.span-8,.span-6,.span-4{grid-column:span 12}.top{display:block}.runtime{margin-top:12px}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar">
+  <div class="brand">Tender ERP</div>
+  <div class="sub">標案池 × 歷史分析 × 投標決策 × Pipeline × 每日智慧追蹤</div>
+  <div class="nav">
+    <button class="active" onclick="showTab('overview',this)">總覽</button>
+    <button onclick="showTab('pool',this)">標案池</button>
+    <button onclick="showTab('intel',this)">智慧分析</button>
+    <button onclick="showTab('decision',this)">投標決策</button>
+    <button onclick="showTab('pipeline',this)">流程追蹤</button>
+    <button onclick="showTab('scheduler',this)">每日排程</button>
+  </div>
+</aside>
+<main class="main">
+  <div class="top">
+    <div><h1>標案 ERP 工作台</h1><div class="sub" style="color:#667085">用 ERP 邏輯管理標案生命週期，不再全部擠在主 Dashboard。</div></div>
+    <div class="runtime" id="runtimeInfo">Runtime 載入中...</div>
+  </div>
+
+  <section id="overview" class="tabs active">
+    <div class="grid">
+      <div class="card span-12"><h2>標案營運總覽</h2><div class="kpis" id="kpiBox"></div><button onclick="loadTenderOverview()">重新整理</button><button class="secondary" onclick="location.href='./index.html'">回主系統</button><button class="secondary" onclick="location.href='../dashboard-v2/'">回 Dashboard v2</button><div id="overviewResult" class="status">尚未載入。</div></div>
+    </div>
+  </section>
+
+  <section id="pool" class="tabs">
+    <div class="grid">
+      <div class="card span-6"><h2>新增標案</h2><label>標案名稱</label><input id="tenderName"><label>機關名稱</label><input id="tenderAgency"><label>預算金額</label><input id="tenderBudget"><label>標案網址</label><input id="tenderUrl" value="https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic"><label>標案狀態</label><select id="tenderStatus"><option>新標案</option><option>評估中</option><option>決定投標</option><option>不投標</option><option>已投標</option><option>未得標</option><option>已得標</option><option>履約中</option><option>已結案</option></select><button onclick="createTender()">新增標案</button><div id="poolCreateResult" class="status">尚未新增。</div></div>
+      <div class="card span-6"><h2>查詢標案池</h2><label>關鍵字 / 標案ID</label><input id="tenderKeyword"><button onclick="queryTender()">查詢</button><button class="secondary" onclick="updateTenderStatus()">更新狀態</button><button class="secondary" onclick="openPcc()">開啟政府採購網</button><div id="poolResult" class="status">尚未查詢。</div></div>
+      <div class="card span-12"><h2>查詢結果</h2><div id="tablePool"></div></div>
+    </div>
+  </section>
+
+  <section id="intel" class="tabs">
+    <div class="grid">
+      <div class="card span-12"><h2>近5年歷史分析</h2><div class="notice">輸入標案ID、標案名稱或關鍵字，系統協助分析過往相似案、得標廠商、投標廠商與是否新標案。</div><label>標案ID / 關鍵字</label><input id="intelKeyword"><button class="good" onclick="analyzeHistory()">分析5年歷史</button><button onclick="queryHistory()">查詢歷史分析</button><button onclick="vendorSummary()">廠商摘要</button><div id="intelResult" class="status">尚未分析。</div><div id="tableIntel"></div></div>
+    </div>
+  </section>
+
+  <section id="decision" class="tabs">
+    <div class="grid">
+      <div class="card span-12"><h2>投標決策評分</h2><label>標案ID / 標案名稱</label><input id="decisionKeyword"><button class="good" onclick="scoreDecision()">產生投標分數</button><button onclick="queryDecision()">查詢評分</button><div id="decisionResult" class="status">尚未評分。</div><div id="tableDecision"></div></div>
+    </div>
+  </section>
+
+  <section id="pipeline" class="tabs">
+    <div class="grid">
+      <div class="card span-6"><h2>建立 / 更新流程</h2><label>標案ID / 關鍵字</label><input id="pipelineKeyword"><label>標案名稱</label><input id="pipelineTenderName"><label>目前階段</label><select id="pipelineStage"><option>發現標案</option><option>評估中</option><option>決定投標</option><option>備標中</option><option>已投標</option><option>開標等待</option><option>已得標</option><option>未得標</option><option>履約中</option><option>已結案</option></select><label>下一步行動</label><input id="pipelineNextAction"><label>下一步期限</label><input id="pipelineNextDue" type="date"><label>負責人</label><input id="pipelineOwner"><button class="good" onclick="createTenderPipeline()">建立流程</button><button onclick="updateTenderPipeline()">更新流程</button><button class="secondary" onclick="nextTenderPipeline()">下一階段</button><div id="pipelineResult" class="status">尚未操作。</div></div>
+      <div class="card span-6"><h2>查詢流程</h2><label>關鍵字</label><input id="pipelineSearch"><button onclick="queryTenderPipelineFromPage()">查詢流程</button><div class="status">流程階段：發現標案 → 評估中 → 決定投標 → 備標中 → 已投標 → 開標等待 → 已得標/未得標 → 履約中 → 已結案</div></div>
+      <div class="card span-12"><h2>流程表</h2><div id="tablePipeline"></div></div>
+    </div>
+  </section>
+
+  <section id="scheduler" class="tabs">
+    <div class="grid">
+      <div class="card span-12"><h2>每日標案智慧排程</h2><label>追蹤關鍵字</label><textarea id="dailyKeywords">就業,職涯,訓練,課程,活動,講座,公會,農糧,米食,AI</textarea><button class="good" onclick="runDailyIntel()">立即執行每日智慧分析</button><button onclick="installDailyIntel()">安裝每日排程</button><button class="secondary" onclick="checkDailyIntel()">檢查排程</button><div id="schedulerResult" class="status">尚未操作。</div></div>
+    </div>
+  </section>
+</main>
+</div>
+<script>
+const DEFAULT_API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function runtimeParams(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+async function api(params,target){const payload=runtimeParams(params);if(target)text(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:DEFAULT_API_URL});}else{const r=await fetch(DEFAULT_API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)text(target,JSON.stringify(res,null,2));return res}
+function text(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function showTab(id,btn){document.querySelectorAll('.tabs').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active')}
+function renderRuntime(){const p=profile();document.getElementById('runtimeInfo').innerHTML='Tenant：'+(p.tenantId||'-')+'<br>User：'+(p.userId||'-')+'<br>Plan / Role：'+(p.plan||'-')+' / '+(p.role||p.userRole||'-')}
+function renderTable(id,resp,keys,empty){const box=document.getElementById(id);if(!box||!resp||!resp.success||!resp.data)return;const rows=resp.data.rows||[];if(!rows.length){box.innerHTML='<div class="status">'+(empty||'查無資料')+'</div>';return}box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,50).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function loadTenderOverview(){const a=await api({action:'tender.query'},'overviewResult');const rows=a.data&&a.data.rows||[];const map={新標案:0,評估中:0,決定投標:0,履約中:0};rows.forEach(r=>{if(map[r.標案狀態]!==undefined)map[r.標案狀態]++});document.getElementById('kpiBox').innerHTML=Object.keys(map).map(k=>'<div class="kpi"><div class="num">'+map[k]+'</div><div class="name">'+k+'</div></div>').join('')}
+async function createTender(){await api({action:'tender.create',標案名稱:val('tenderName'),機關名稱:val('tenderAgency'),預算金額:val('tenderBudget'),標案網址:val('tenderUrl'),標案狀態:val('tenderStatus')},'poolCreateResult')}
+async function queryTender(){const r=await api({action:'tender.query',關鍵字:val('tenderKeyword')},'poolResult');renderTable('tablePool',r,['標案ID','標案名稱','機關名稱','預算金額','標案狀態','投標建議'],'查無標案')}
+async function updateTenderStatus(){await api({action:'tender.updateStatus',標案ID:val('tenderKeyword'),標案狀態:val('tenderStatus')},'poolResult')}
+function openPcc(){window.open('https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic','_blank')}
+async function analyzeHistory(){await api({action:'tender.history.analyze',標案ID:val('intelKeyword'),keyword:val('intelKeyword')},'intelResult')}
+async function queryHistory(){const r=await api({action:'tender.history.query',keyword:val('intelKeyword')},'intelResult');renderTable('tableIntel',r,['標案ID','標案名稱','是否疑似新標案','歷史相似案數','過往得標廠商','投標建議','風險等級'],'查無歷史分析')}
+async function vendorSummary(){await api({action:'tender.vendor.summary',keyword:val('intelKeyword')},'intelResult')}
+async function scoreDecision(){await api({action:'tender.decision.score',標案ID:val('decisionKeyword'),keyword:val('decisionKeyword'),標案名稱:val('decisionKeyword')},'decisionResult')}
+async function queryDecision(){const r=await api({action:'tender.decision.query',keyword:val('decisionKeyword')},'decisionResult');renderTable('tableDecision',r,['標案ID','標案名稱','總分','風險等級','投標建議','判斷摘要'],'查無投標評分')}
+async function createTenderPipeline(){await api({action:'tender.pipeline.create',標案ID:val('pipelineKeyword'),keyword:val('pipelineKeyword'),標案名稱:val('pipelineTenderName')||val('pipelineKeyword'),目前階段:val('pipelineStage'),下一步行動:val('pipelineNextAction'),下一步期限:val('pipelineNextDue'),負責人:val('pipelineOwner')},'pipelineResult')}
+async function updateTenderPipeline(){await api({action:'tender.pipeline.update',標案ID:val('pipelineKeyword'),目前階段:val('pipelineStage'),下一步行動:val('pipelineNextAction'),下一步期限:val('pipelineNextDue'),負責人:val('pipelineOwner')},'pipelineResult')}
+async function nextTenderPipeline(){await api({action:'tender.pipeline.next',標案ID:val('pipelineKeyword')},'pipelineResult')}
+async function queryTenderPipelineFromPage(){const key=val('pipelineSearch')||val('pipelineKeyword');const r=await api({action:'tender.pipeline.query',keyword:key,標案ID:key},'pipelineResult');renderTable('tablePipeline',r,['標案ID','標案名稱','目前階段','流程狀態','下一步行動','下一步期限','完成率'],'查無流程')}
+async function runDailyIntel(){await api({action:'tender.intel.daily',keywords:val('dailyKeywords')},'schedulerResult')}
+async function installDailyIntel(){await api({action:'tender.intel.install'},'schedulerResult')}
+async function checkDailyIntel(){await api({action:'tender.intel.health'},'schedulerResult')}
+renderRuntime();loadTenderOverview();
+</script>
+</body>
+</html>
