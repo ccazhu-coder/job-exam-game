@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案分析儀表板</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:28px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:28px}.sub{opacity:.9;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:28px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6,.span-4{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案分析儀表板</h1><div class="sub">Tender KPI Analytics｜標案總覽、流程分布、任務狀態、投標分數。</div></div></header>
+<main class="wrap">
+<div class="grid">
+<section class="card span-12"><h2>KPI 總覽</h2><button onclick="loadSummary()">載入 KPI</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><button class="secondary" onclick="location.href='./tender-ops.html'">任務與日曆</button><div class="kpis" id="kpiBox"></div><div id="summaryResult" class="status">尚未載入。</div></section>
+<section class="card span-6"><h2>流程 KPI</h2><button onclick="loadPipelineKpi()">載入流程分布</button><div id="pipelineBox"></div><div id="pipelineResult" class="status">尚未載入。</div></section>
+<section class="card span-6"><h2>任務 KPI</h2><button onclick="loadTaskKpi()">載入任務分布</button><div id="taskBox"></div><div id="taskResult" class="status">尚未載入。</div></section>
+</div>
+</main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderMap(id,map){const box=document.getElementById(id);const keys=Object.keys(map||{});if(!keys.length){box.innerHTML='<div class="status">無資料</div>';return}box.innerHTML='<table><thead><tr><th>項目</th><th>數量</th></tr></thead><tbody>'+keys.map(k=>'<tr><td>'+k+'</td><td>'+map[k]+'</td></tr>').join('')+'</tbody></table>'}
+async function loadSummary(){const r=await api({action:'tender.kpi.summary'},'summaryResult');const kpis=r.data&&r.data.kpis||[];document.getElementById('kpiBox').innerHTML=kpis.map(k=>'<div class="kpi"><div class="num">'+k.value+'</div><div class="name">'+k.name+'</div></div>').join('')}
+async function loadPipelineKpi(){const r=await api({action:'tender.kpi.pipeline'},'pipelineResult');renderMap('pipelineBox',r.data&&r.data.byStage)}
+async function loadTaskKpi(){const r=await api({action:'tender.kpi.tasks'},'taskResult');renderMap('taskBox',r.data&&r.data.byStatus)}
+loadSummary();
+</script>
+</body>
+</html>
