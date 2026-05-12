@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜保證金需求判斷工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:20px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}label{display:block;font-weight:900;margin:12px 0 6px}input,select{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>保證金需求判斷工作台</h1><div class="sub">先判斷是否需要押標金、履約保證金、保固保證金，再決定是否建立金額資料。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>保證金需求分析</h2><label>標案ID / 關鍵字</label><input id="keyword"><label>標案名稱</label><input id="tenderName"><div class="grid" style="margin-top:0"><div class="span-6"><label>人工確認：押標金</label><select id="bidNeed"><option value="">不指定</option><option>是</option><option>否</option></select></div><div class="span-6"><label>人工確認：履約保證金</label><select id="perfNeed"><option value="">不指定</option><option>是</option><option>否</option></select></div></div><button class="good" onclick="analyzeReq()">分析保證金需求</button><button onclick="queryReq()">查詢判斷結果</button><button class="secondary" onclick="applyReq()">套用：只建立需要的保證金</button><button class="secondary" onclick="location.href='./tender-bid-bond.html'">押標金工作台</button><button class="secondary" onclick="location.href='./tender-performance-bond.html'">履保工作台</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div class="kpis" id="kpiBox"></div><div id="mainResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>判斷原則</h2><div class="status">正式規則：
+1. 不預設每個標案都有押標金。
+2. 不預設每個標案都有履約保證金。
+3. 文件明確「免押標金」時，不建立押標金金額資料。
+4. 文件明確「免履保金」時，不建立履保金額資料。
+5. 文件不足時標記「待確認」。
+6. 只有判斷為「需要」才套用建立。</div></section>
+<section class="card span-6"><h2>常見判斷文字</h2><div class="status">會辨識：
+- 押標金
+- 投標保證金
+- 免押標金
+- 無須投標保證金
+- 履約保證金
+- 免履約保證金
+- 保固保證金
+- 保固期間
+
+之後可再接契約條款智慧分析。</div></section>
+<section class="card span-12"><h2>需求判斷明細</h2><div id="tableBox"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderKpis(rows){rows=rows||[];const latest=rows[rows.length-1]||{};const items=[['押標金',latest.押標金需求||'-'],['履保金',latest.履約保證金需求||'-'],['保固金',latest.保固保證金需求||'-'],['資料信心',latest.資料信心||'-']];document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}
+function renderTable(rows){rows=rows||[];const box=document.getElementById('tableBox');if(!rows.length){box.innerHTML='<div class="status">無判斷資料</div>';return}const keys=['需求ID','標案ID','標案名稱','押標金需求','押標金判斷依據','押標金金額','履約保證金需求','履保判斷依據','履保金額','保固保證金需求','資料信心','建議動作'];box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,120).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function analyzeReq(){const p={action:'tender.bondRequirement.analyze',keyword:val('keyword'),標案ID:val('keyword'),標案名稱:val('tenderName')};if(val('bidNeed'))p.是否需要押標金=val('bidNeed');if(val('perfNeed'))p.是否需要履保金=val('perfNeed');await api(p,'mainResult');queryReq()}
+async function queryReq(){const r=await api({action:'tender.bondRequirement.query',keyword:val('keyword')},'mainResult');const rows=(r.data&&r.data.rows)||[];renderKpis(rows);renderTable(rows)}
+async function applyReq(){await api({action:'tender.bondRequirement.apply',keyword:val('keyword'),標案ID:val('keyword')},'mainResult');queryReq()}
+queryReq();
+</script>
+</body>
+</html>
