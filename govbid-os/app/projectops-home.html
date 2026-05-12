@@ -1,1 +1,73 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ProjectOps ERP｜真正營運首頁</title><script src="./config.js"></script><script src="./govops-api-client.js"></script><style>body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:#fff;padding:30px 22px}main{max-width:1280px;margin:auto;padding:20px}.sub{opacity:.92;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:#fff;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 24px rgba(16,37,66,.06)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:24px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}.menu{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.menu a{display:block;background:#eef4ff;border:1px solid #dbe7ff;color:#173a63;text-decoration:none;border-radius:16px;padding:18px;font-weight:900}.menu small{display:block;margin-top:6px;color:#667085;font-weight:500;line-height:1.5}button,input{padding:12px;border-radius:12px;border:1px solid #d8e0eb;font-size:15px}button{background:#1d4e89;color:white;font-weight:900;cursor:pointer}.status{white-space:pre-wrap;background:#f8fafc;border:1px dashed #d0d5dd;border-radius:12px;padding:12px;margin-top:12px;max-height:420px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:9px;text-align:left}th{background:#f8fafc}@media(max-width:900px){.span-6{grid-column:span 12}.menu,.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.menu,.kpis{grid-template-columns:1fr}}</style></head><body><header><h1>ProjectOps ERP｜真正營運首頁</h1><div class="sub">政府標案 × 自辦課程 × 合作課程｜從專案建立、招生開課、任務派工、CRM、財務核銷到結案</div></header><main><section class="card"><div class="menu"><a href="./project-pool.html">專案池<small>新增政府標案、自辦課程、合作課程</small></a><a href="./registration-management.html">招生報名<small>招生設定、報名同步、錄取審核、名冊</small></a><a href="./task-assignment.html">任務派工<small>課前、當日、課後、核銷、結案任務</small></a><a href="./participant-crm-dashboard.html">學員CRM<small>學員主檔、參與歷程、回流分析</small></a><a href="./tender-execution.html">開課/履約執行<small>場次、出席、滿意度、成果附件</small></a><a href="./resource-master.html">資源主檔<small>講師、工作人員、合作廠商、場地</small></a><a href="./finance-secretary.html">財務核銷<small>收款、支出、核銷、未收款</small></a><a href="./runtime-health.html">系統健康<small>API、資料表、Queue、Email、Runtime</small></a></div></section><section class="card"><button onclick="loadDashboard()">載入今日營運總覽</button> <button onclick="loadHealth()">檢查系統健康</button><div id="kpiBox" class="kpis"></div><div id="result" class="status">尚未操作。</div></section><section class="card"><h2>全域搜尋</h2><input id="keyword" placeholder="搜尋專案、學員、場次、任務、Email" style="width:70%"> <button onclick="searchAll()">搜尋</button><div id="searchTable"></div></section></main><script>const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'';function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO'}}}function p(x){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId},x||{})}async function api(data){document.getElementById('result').textContent='處理中...';let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(data,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(data));res=await r.json()}document.getElementById('result').textContent=JSON.stringify(res,null,2);return res}function kpis(d){d=d||{};const items=[['專案',d.projects||d.total||0],['政府標案',d.政府標案||0],['自辦課程',d.自辦課程||0],['報名',d.registrations||0],['學員',d.participants||0],['任務',d.tasks||0]];document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}async function loadDashboard(){const a=await api(p({action:'project.dashboard'}));let d=a.data||{};try{const b=await api(p({action:'dashboard.runtime.summary'}));d=Object.assign({},b.data||{},d,{projects:d.total||0})}catch(e){}kpis(d)}async function loadHealth(){await api(p({action:'runtime.health.full'}))}async function searchAll(){const r=await api(p({action:'search.unified.query',keyword:document.getElementById('keyword').value}));const rows=(r.data&&r.data.results)||[];document.getElementById('searchTable').innerHTML=rows.length?'<table><thead><tr><th>來源</th><th>資料</th></tr></thead><tbody>'+rows.slice(0,100).map(x=>'<tr><td>'+safe(x.source)+'</td><td>'+safe(JSON.stringify(x.raw||x))+'</td></tr>').join('')+'</tbody></table>':'<div class="status">無搜尋結果</div>'}function safe(x){return String(x||'').replace(/[<>&]/g,'')}loadDashboard();</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ProjectOps ERP｜真正營運首頁</title>
+  <script src="./config.js"></script>
+  <script src="./govops-api-client.js"></script>
+  <style>
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','Microsoft JhengHei',sans-serif;background:#f5f7fb;color:#172033}
+    header{background:linear-gradient(135deg,#102542,#1d4e89);color:#fff;padding:30px 22px}
+    main{max-width:1280px;margin:auto;padding:20px}.sub{opacity:.92;line-height:1.7}
+    .card{background:#fff;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 24px rgba(16,37,66,.06);margin-bottom:14px}
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:24px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}
+    .menu{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.menu a{display:block;background:#eef4ff;border:1px solid #dbe7ff;color:#173a63;text-decoration:none;border-radius:16px;padding:18px;font-weight:900}.menu small{display:block;margin-top:6px;color:#667085;font-weight:500;line-height:1.5}
+    button,input{padding:12px;border-radius:12px;border:1px solid #d8e0eb;font-size:15px}button{background:#1d4e89;color:white;font-weight:900;cursor:pointer}.secondary{background:#e8eef7;color:#1d3557}
+    .status{white-space:pre-wrap;background:#f8fafc;border:1px dashed #d0d5dd;border-radius:12px;padding:12px;margin-top:12px;max-height:420px;overflow:auto}.warn{background:#fff8e6;border-color:#f2c94c}.ok{background:#ecfdf3;border-color:#12b76a}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:9px;text-align:left;vertical-align:top}th{background:#f8fafc}
+    @media(max-width:900px){.menu,.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.menu,.kpis{grid-template-columns:1fr}input{width:100%!important;margin-bottom:8px}button{width:100%;margin-top:6px}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>ProjectOps ERP｜真正營運首頁</h1>
+  <div class="sub">政府標案 × 自辦課程 × 合作課程｜從專案建立、招生開課、任務派工、CRM、財務核銷到結案</div>
+</header>
+<main>
+  <section class="card">
+    <div class="menu">
+      <a href="./project-pool.html">專案池<small>新增政府標案、自辦課程、合作課程</small></a>
+      <a href="./registration-management.html">招生報名<small>招生設定、報名同步、錄取審核、名冊</small></a>
+      <a href="./task-assignment.html">任務派工<small>課前、當日、課後、核銷、結案任務</small></a>
+      <a href="./participant-crm-dashboard.html">學員CRM<small>學員主檔、參與歷程、回流分析</small></a>
+      <a href="./tender-execution.html">開課/履約執行<small>場次、出席、滿意度、成果附件</small></a>
+      <a href="./resource-master.html">資源主檔<small>講師、工作人員、合作廠商、場地</small></a>
+      <a href="./finance-secretary.html">財務核銷<small>收款、支出、核銷、未收款</small></a>
+      <a href="./runtime-health.html">系統健康<small>API、資料表、Queue、Email、Runtime</small></a>
+    </div>
+  </section>
+  <section class="card">
+    <button onclick="loadDashboard()">載入今日營運總覽</button>
+    <button onclick="loadHealth()">檢查系統健康</button>
+    <button class="secondary" onclick="showConfig()">檢查前端設定</button>
+    <div id="kpiBox" class="kpis"></div>
+    <div id="result" class="status">系統待命中。若 KPI 無法載入，請先按「檢查前端設定」。</div>
+  </section>
+  <section class="card">
+    <h2>全域搜尋</h2>
+    <input id="keyword" placeholder="搜尋專案、學員、場次、任務、Email" style="width:70%">
+    <button onclick="searchAll()">搜尋</button>
+    <div id="searchTable"></div>
+  </section>
+</main>
+<script>
+const CONFIG_API_URL=(window.GOVOPS_CONFIG&&(window.GOVOPS_CONFIG.API_URL||window.GOVOPS_CONFIG.apiUrl))||'';
+const FALLBACK_API_URL='https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+const API_URL=CONFIG_API_URL||FALLBACK_API_URL;
+function $(id){return document.getElementById(id)}
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO'}}}
+function p(x){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.role||'owner',plan:u.plan||'pro'},x||{})}
+function show(msg,type){const el=$('result');el.className='status '+(type||'');el.textContent=typeof msg==='string'?msg:JSON.stringify(msg,null,2)}
+async function api(data,opt){opt=opt||{};if(!API_URL){show('找不到 API_URL，請確認 config.js 是否有 GOVOPS_CONFIG.API_URL。','warn');return{success:false,message:'missing API_URL',data:{}}}if(!opt.silent)show('處理中...');try{let res;if(window.GovOpsAPI&&typeof GovOpsAPI.request==='function'){res=await GovOpsAPI.request(data,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(data));res=await r.json()}if(!opt.silent)show(res,res&&res.success?'ok':'warn');return res}catch(err){const out={success:false,message:'前端呼叫 API 失敗',data:{error:String(err),apiUrl:API_URL}};if(!opt.silent)show(out,'warn');return out}}
+function kpis(d){d=d||{};const items=[['專案',d.projects||d.total||0],['政府標案',d.政府標案||0],['自辦課程',d.自辦課程||0],['報名',d.registrations||0],['學員',d.participants||0],['任務',d.tasks||0]];$('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+safe(x[1])+'</div><div class="name">'+safe(x[0])+'</div></div>').join('')}
+async function loadDashboard(){show('正在載入營運總覽...');let d={};const a=await api(p({action:'project.dashboard'}),{silent:true});if(a&&a.success)d=Object.assign(d,a.data||{});const b=await api(p({action:'dashboard.runtime.summary'}),{silent:true});if(b&&b.success)d=Object.assign(d,b.data||{},d,{projects:d.total||d.projects||0});kpis(d);show({success:true,message:'營運總覽載入完成',data:d},'ok')}
+async function loadHealth(){await api(p({action:'runtime.health.full'}))}
+async function searchAll(){const kw=$('keyword').value.trim();if(!kw){show('請先輸入搜尋關鍵字。','warn');return}$('searchTable').innerHTML='';const r=await api(p({action:'search.unified.query',keyword:kw}),{silent:true});const rows=(r.data&&r.data.results)||[];$('searchTable').innerHTML=rows.length?'<table><thead><tr><th>來源</th><th>摘要</th></tr></thead><tbody>'+rows.slice(0,100).map(x=>'<tr><td>'+safe(x.source)+'</td><td>'+safe(summary(x))+'</td></tr>').join('')+'</tbody></table>':'<div class="status">無搜尋結果</div>';show({success:r.success,message:r.message||'搜尋完成',total:rows.length},r.success?'ok':'warn')}
+function showConfig(){show({success:true,message:'前端設定檢查',data:{configApiUrl:CONFIG_API_URL||'(未設定，使用 fallback)',apiUrlInUse:API_URL,hasGovOpsAPI:!!(window.GovOpsAPI&&GovOpsAPI.request),profile:profile(),page:location.href}},'ok')}
+function safe(x){return String(x===undefined||x===null?'':x).replace(/[<>&]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;'}[c]})}
+function summary(x){const raw=x.raw||x;const keys=['專案名稱','標案名稱','活動名稱','姓名','任務名稱','Email','通知類型','source'];return keys.map(k=>raw[k]||x[k]?'【'+k+'】'+(raw[k]||x[k]):'').filter(Boolean).join(' ')||JSON.stringify(raw).slice(0,180)}
+loadDashboard();
+</script>
+</body>
+</html>
