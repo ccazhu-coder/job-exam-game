@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案老闆儀表板</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:26px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6,.span-4{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案老闆儀表板</h1><div class="sub">Executive Dashboard｜一頁掌握標案、財務、風險、推薦、任務與系統健康。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>一鍵更新總覽</h2><button class="good" onclick="loadExecutive()">載入老闆總覽</button><button class="secondary" onclick="location.href='./tender-agent.html'">AI標案顧問</button><button class="secondary" onclick="location.href='./tender-finance.html'">財務工作台</button><button class="secondary" onclick="location.href='./tender-erp.html'">標案ERP</button><div class="kpis" id="kpiBox"></div><div id="mainResult" class="status">尚未載入。</div></section>
+<section class="card span-6"><h2>AI 推薦清單</h2><div id="recommendBox"></div></section>
+<section class="card span-6"><h2>風險清單</h2><div id="riskBox"></div></section>
+<section class="card span-6"><h2>財務摘要</h2><div id="financeBox"></div></section>
+<section class="card span-6"><h2>待辦任務</h2><div id="taskBox"></div></section>
+<section class="card span-12"><h2>原始資料</h2><div id="rawBox" class="status">尚無資料。</div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p){const payload=params(p);let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}return res}
+function table(id,rows,keys,empty){const box=document.getElementById(id);rows=rows||[];if(!rows.length){box.innerHTML='<div class="status">'+(empty||'無資料')+'</div>';return}box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,20).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function loadExecutive(){set('mainResult','載入中...');const data={};data.kpi=await api({action:'tender.kpi.summary'});data.recommend=await api({action:'tender.recommend.query'});data.risk=await api({action:'tender.risk.query'});data.finance=await api({action:'tender.finance.query'});data.tasks=await api({action:'tender.task.query'});data.runtime=await api({action:'tender.runtime.health'});render(data);set('rawBox',JSON.stringify(data,null,2));set('mainResult','老闆總覽已更新。')}
+function render(data){const k=data.kpi.data||{};const rscore=data.runtime.data&&data.runtime.data.score||'-';const kpis=[{name:'標案總數',value:k.tenderTotal||0},{name:'高潛力標案',value:k.highPotentialTenderCount||0},{name:'平均投標分數',value:k.averageDecisionScore||0},{name:'待處理任務',value:k.openTaskCount||0},{name:'日曆提醒',value:k.calendarEventCount||0},{name:'系統健康',value:rscore}];document.getElementById('kpiBox').innerHTML=kpis.map(x=>'<div class="kpi"><div class="num">'+x.value+'</div><div class="name">'+x.name+'</div></div>').join('');table('recommendBox',(data.recommend.data&&data.recommend.data.rows)||[],['標案名稱','推薦等級','推薦結論','得標機率','主要理由'],'尚無推薦');table('riskBox',(data.risk.data&&data.risk.data.rows)||[],['標案名稱','風險等級','總風險分數','主要風險摘要','風險處理建議'],'尚無風險');table('financeBox',(data.finance.data&&data.finance.data.rows)||[],['標案名稱','簽約金額','可請款金額','核定金額','毛利','毛利率','未收款金額'],'尚無財務摘要');table('taskBox',(data.tasks.data&&data.tasks.data.rows)||[],['標案名稱','任務名稱','任務狀態','優先級','截止日期'],'尚無任務')}
+loadExecutive();
+</script>
+</body>
+</html>
