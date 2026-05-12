@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案結案報告工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:22px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}label{display:block;font-weight:900;margin:12px 0 6px}input,textarea{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}textarea{min-height:160px}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:400px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案結案報告工作台</h1><div class="sub">Closing Report｜驗收同步、結案資料、檢查清單、檢討建議與章節生成。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>結案報告作業</h2><label>標案ID / 關鍵字</label><input id="keyword"><label>標案名稱</label><input id="tenderName"><button class="good" onclick="syncAcceptance()">同步驗收結案報告</button><button onclick="querySync()">查詢同步資料</button><button onclick="generateChecklist()">產生檢查清單</button><button class="secondary" onclick="generateReview()">產生檢討建議</button><button class="secondary" onclick="generateReviewSection()">產生檢討建議章節</button><button class="secondary" onclick="location.href='./tender-timeline.html'">履約時程</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div class="kpis" id="kpiBox"></div><div id="mainResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>結案資料重點</h2><div class="status">正式結案應同步驗收條款：
+1. 結案報告章節。
+2. 成果照片。
+3. 簽到表/名冊。
+4. 滿意度問卷與統計。
+5. KPI與成果數據。
+6. 核銷附件。
+7. 驗收對照表。
+8. 檢討與改進建議。</div></section>
+<section class="card span-6"><h2>章節輸出</h2><textarea id="sectionOutput" placeholder="檢討建議章節會顯示在這裡"></textarea></section>
+<section class="card span-12"><h2>驗收同步明細</h2><div id="syncTable"></div></section>
+<section class="card span-12"><h2>檢討建議明細</h2><div id="reviewTable"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderKpis(syncRows,reviewRows){syncRows=syncRows||[];reviewRows=reviewRows||[];const items=[['同步筆數',syncRows.length],['待驗收',syncRows.filter(r=>r.驗收狀態==='待驗收').length],['待製作',syncRows.filter(r=>r.結案報告狀態==='待製作').length],['檢討建議',reviewRows.length],['高風險',reviewRows.filter(r=>r.風險等級==='高').length]];document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}
+function table(id,rows,keys,empty){rows=rows||[];const box=document.getElementById(id);if(!rows.length){box.innerHTML='<div class="status">'+(empty||'無資料')+'</div>';return}box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,120).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function syncAcceptance(){await api({action:'tender.acceptanceClosing.sync',keyword:val('keyword'),標案ID:val('keyword'),標案名稱:val('tenderName')},'mainResult');queryAll()}
+async function querySync(){const r=await api({action:'tender.acceptanceClosing.query',keyword:val('keyword')},'mainResult');const rows=(r.data&&r.data.rows)||[];table('syncTable',rows,['同步ID','標案ID','標案名稱','驗收條款摘要','結案報告章節','必要佐證資料','核銷附件需求','補正風險','驗收狀態','結案報告狀態'],'無同步資料');return rows}
+async function generateChecklist(){await api({action:'tender.acceptanceClosing.checklist',keyword:val('keyword'),標案ID:val('keyword')},'mainResult')}
+async function generateReview(){await api({action:'tender.closingReview.generate',keyword:val('keyword'),標案ID:val('keyword'),標案名稱:val('tenderName')},'mainResult');queryReview()}
+async function queryReview(){const r=await api({action:'tender.closingReview.query',keyword:val('keyword')},'mainResult');const rows=(r.data&&r.data.rows)||[];table('reviewTable',rows,['檢討ID','檢討類型','問題摘要','原因分析','影響層面','改善建議','後續追蹤事項','風險等級'],'無檢討建議');return rows}
+async function generateReviewSection(){const r=await api({action:'tender.closingReview.section',keyword:val('keyword')},'mainResult');document.getElementById('sectionOutput').value=(r.data&&r.data.content)||''}
+async function queryAll(){const s=await querySync();const r=await queryReview();renderKpis(s,r)}
+queryAll();
+</script>
+</body>
+</html>
