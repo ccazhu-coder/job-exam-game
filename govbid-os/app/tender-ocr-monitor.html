@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案 OCR 監控台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:30px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:30px}.sub{opacity:.92;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi{border:1px solid #e5eaf2;border-radius:16px;padding:14px;background:#f8fafc}.num{font-size:26px;font-weight:900;color:#1d4e89}.name{font-size:13px;color:#667085;margin-top:4px}label{display:block;font-weight:900;margin:12px 0 6px}input{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:900px){.span-6{grid-column:span 12}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.kpis{grid-template-columns:1fr}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案 OCR 監控台</h1><div class="sub">OCR Queue Worker｜等待 OCR、處理中、待解析、重試與失敗監控。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-12"><h2>OCR Runtime 總覽</h2><button class="good" onclick="loadHealth()">載入 OCR 健康</button><button onclick="runWorker()">手動執行 OCR Worker</button><button class="secondary" onclick="installWorker()">安裝 OCR Worker</button><button class="secondary" onclick="location.href='./tender-queue-monitor.html'">Queue 監控台</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div class="kpis" id="kpiBox"></div><div id="healthResult" class="status">尚未載入。</div></section>
+<section class="card span-6"><h2>加入 OCR 佇列</h2><label>標案ID / 關鍵字</label><input id="keyword"><button class="good" onclick="enqueueOCR()">將文件加入 OCR Queue</button><button onclick="queryOCR()">查詢 OCR Queue</button><div id="enqueueResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>OCR 說明</h2><div class="status">正式穩定流程：
+1. 領標文件先登錄。
+2. 文件進 OCR Queue。
+3. OCR Worker 分段處理。
+4. OCR 待解析後再交給 Document Parser。
+5. 失敗文件進 Retry / Dead Letter。
+
+注意：本頁是 OCR Runtime 監控，不在上傳時同步 OCR。</div></section>
+<section class="card span-12"><h2>OCR 明細</h2><div id="ocrTable"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function renderKpis(summary,installed){summary=summary||{};const items=[['Worker',installed?'已安裝':'未安裝'],['總數',summary.total||0],['等待',summary.waiting||0],['處理中',summary.processing||0],['待解析',summary.ready||0],['失敗',summary.failed||0]];document.getElementById('kpiBox').innerHTML=items.map(x=>'<div class="kpi"><div class="num">'+x[1]+'</div><div class="name">'+x[0]+'</div></div>').join('')}
+function renderRows(rows){rows=rows||[];const box=document.getElementById('ocrTable');if(!rows.length){box.innerHTML='<div class="status">無 OCR 佇列資料</div>';return}const keys=['OCRID','文件ID','標案ID','文件類型','檔案名稱','OCR狀態','OCR文字長度','重試次數','錯誤訊息'];box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,120).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function loadHealth(){const r=await api({action:'tender.ocr.worker.health'},'healthResult');renderKpis(r.data&&r.data.queue,r.data&&r.data.installed)}
+async function runWorker(){const r=await api({action:'tender.ocr.worker.run',limit:3},'healthResult');queryOCR();loadHealth()}
+async function installWorker(){await api({action:'tender.ocr.worker.install',everyMinutes:10},'healthResult');loadHealth()}
+async function enqueueOCR(){await api({action:'tender.ocr.enqueue',keyword:val('keyword'),標案ID:val('keyword')},'enqueueResult');queryOCR();loadHealth()}
+async function queryOCR(){const r=await api({action:'tender.ocr.query',keyword:val('keyword')},'enqueueResult');renderRows(r.data&&r.data.rows);renderKpis(r.data&&r.data.summary,true)}
+loadHealth();
+</script>
+</body>
+</html>
