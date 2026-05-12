@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovOps OS｜標案財務工作台</title>
+<script src="./config.js"></script>
+<script src="./saas-runtime.js"></script>
+<script src="./govops-api-client.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;background:#f5f7fb;color:#172033}header{background:linear-gradient(135deg,#102542,#1d4e89);color:white;padding:28px 20px}.wrap{max-width:1180px;margin:0 auto;padding:20px}h1{margin:0;font-size:28px}.sub{opacity:.9;line-height:1.7;margin-top:8px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:18px}.card{background:white;border:1px solid #e5eaf2;border-radius:18px;padding:18px;box-shadow:0 10px 28px rgba(16,37,66,.07)}.span-12{grid-column:span 12}.span-6{grid-column:span 6}label{display:block;font-weight:900;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #d8e0eb;border-radius:12px;font-size:15px;background:#fbfcff}button{border:0;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:900;cursor:pointer;background:#1d4e89;color:white;margin:8px 6px 0 0}.secondary{background:#e8eef7;color:#1d3557}.good{background:#12805c}.status{padding:12px;border-radius:12px;background:#f8fafc;border:1px dashed #d0d5dd;margin-top:12px;white-space:pre-wrap;line-height:1.7;max-height:360px;overflow:auto}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}th,td{border-bottom:1px solid #edf1f6;padding:10px 8px;text-align:left;vertical-align:top}th{background:#f8fafc;color:#344054}@media(max-width:800px){.span-6{grid-column:span 12}button{width:100%}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>標案財務工作台</h1><div class="sub">合約金額 × 可請款 × 核定 × 扣款 × 費用成本 × 毛利。</div></div></header>
+<main class="wrap"><div class="grid">
+<section class="card span-6"><h2>合約與請款主檔</h2><label>標案ID</label><input id="contractTenderId"><label>標案名稱</label><input id="contractTenderName"><label>簽約金額</label><input id="contractAmount"><label>可請款金額</label><input id="claimableAmount"><label>核定金額</label><input id="approvedAmount"><label>扣款金額</label><input id="deductAmount"><label>不可請款金額</label><input id="unclaimableAmount"><label>已請款金額</label><input id="invoicedAmount"><label>已收款金額</label><input id="receivedAmount"><label>不可請款原因</label><textarea id="unclaimableReason"></textarea><button class="good" onclick="createContract()">建立合約</button><button onclick="updateContract()">更新合約</button><button class="secondary" onclick="queryContract()">查詢合約</button><div id="contractResult" class="status">尚未操作。</div></section>
+<section class="card span-6"><h2>費用與核銷明細</h2><label>標案ID</label><input id="costTenderId"><label>科目</label><input id="costSubject" placeholder="印刷費、講師費、餐費、押標金"><label>金額</label><input id="costAmount"><label>費用階段</label><select id="costStage"><option>投標前</option><option>備標中</option><option>履約中</option><option>結案核銷</option></select><label>付款狀態</label><select id="payStatus"><option>未付款</option><option>已付款</option></select><label>憑證狀態</label><select id="receiptStatus"><option>未取得</option><option>已取得</option><option>不適用</option></select><button class="good" onclick="createCost()">新增費用</button><button onclick="queryCost()">查詢費用</button><button class="secondary" onclick="costSummary()">費用摘要</button><div id="costResult" class="status">尚未操作。</div></section>
+<section class="card span-12"><h2>財務摘要</h2><label>標案ID / 關鍵字</label><input id="financeKeyword"><button class="good" onclick="financeSummary()">產生財務摘要</button><button onclick="queryFinanceSummary()">查詢財務摘要</button><button class="secondary" onclick="location.href='./tender-erp.html'">回標案 ERP</button><div id="financeResult" class="status">尚未產生。</div><div id="tableBox"></div></section>
+</div></main>
+<script>
+const API_URL=(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||'https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+function profile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',role:'owner',plan:'pro'}}}
+function params(p){const u=profile();return Object.assign({tenantId:u.tenantId,userId:u.userId,userRole:u.userRole||u.role||'owner',plan:u.plan||'pro'},p||{})}
+function val(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function set(id,t){const e=document.getElementById(id);if(e)e.textContent=t}
+async function api(p,target){const payload=params(p);if(target)set(target,'處理中...');let res;if(window.GovOpsAPI&&GovOpsAPI.request){res=await GovOpsAPI.request(payload,{apiUrl:API_URL});}else{const r=await fetch(API_URL+'?'+new URLSearchParams(payload));res=await r.json();}if(target)set(target,JSON.stringify(res,null,2));return res}
+function render(resp,keys){const box=document.getElementById('tableBox');if(!resp||!resp.success||!resp.data){box.innerHTML='';return}const rows=resp.data.rows||[];if(!rows.length){box.innerHTML='<div class="status">查無資料</div>';return}box.innerHTML='<table><thead><tr>'+keys.map(k=>'<th>'+k+'</th>').join('')+'</tr></thead><tbody>'+rows.slice(0,80).map(r=>'<tr>'+keys.map(k=>'<td>'+(r[k]||'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>'}
+async function createContract(){await api({action:'tender.contract.create',標案ID:val('contractTenderId'),標案名稱:val('contractTenderName'),簽約金額:val('contractAmount'),可請款金額:val('claimableAmount'),核定金額:val('approvedAmount'),扣款金額:val('deductAmount'),不可請款金額:val('unclaimableAmount'),已請款金額:val('invoicedAmount'),已收款金額:val('receivedAmount'),不可請款原因:val('unclaimableReason')},'contractResult')}
+async function updateContract(){await api({action:'tender.contract.update',標案ID:val('contractTenderId'),簽約金額:val('contractAmount'),可請款金額:val('claimableAmount'),核定金額:val('approvedAmount'),扣款金額:val('deductAmount'),不可請款金額:val('unclaimableAmount'),已請款金額:val('invoicedAmount'),已收款金額:val('receivedAmount'),不可請款原因:val('unclaimableReason')},'contractResult')}
+async function queryContract(){const r=await api({action:'tender.contract.query',keyword:val('contractTenderId')},'contractResult');render(r,['標案ID','標案名稱','簽約金額','可請款金額','核定金額','已收款金額','未收款金額','合約狀態'])}
+async function createCost(){await api({action:'tender.reimb.create',標案ID:val('costTenderId'),科目:val('costSubject'),金額:val('costAmount'),費用階段:val('costStage'),付款狀態:val('payStatus'),憑證狀態:val('receiptStatus')},'costResult')}
+async function queryCost(){const r=await api({action:'tender.reimb.query',keyword:val('costTenderId')},'costResult');render(r,['費用ID','標案ID','費用階段','科目','金額','付款狀態','憑證狀態','請款狀態'])}
+async function costSummary(){await api({action:'tender.reimb.summary',keyword:val('costTenderId')},'costResult')}
+async function financeSummary(){await api({action:'tender.finance.summary',標案ID:val('financeKeyword'),keyword:val('financeKeyword')},'financeResult')}
+async function queryFinanceSummary(){const r=await api({action:'tender.finance.query',keyword:val('financeKeyword')},'financeResult');render(r,['標案ID','標案名稱','簽約金額','可請款金額','核定金額','總成本','毛利','毛利率','已收款金額','未收款金額'])}
+</script>
+</body>
+</html>
