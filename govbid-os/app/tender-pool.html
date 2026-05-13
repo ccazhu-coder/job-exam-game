@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜標案池</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.status-badge { padding:2px 10px; border-radius:12px; font-size:.75rem; font-weight:600; }
+.s-new    { background:#e3f2fd; color:#1565c0; }
+.s-watch  { background:#fff3e0; color:#e65100; }
+.s-bid    { background:#e8f5e9; color:#2e7d32; }
+.s-win    { background:#b2dfdb; color:#004d40; }
+.s-lose   { background:#fce4ec; color:#880e4f; }
+.s-pass   { background:#f5f5f5; color:#9e9e9e; }
+.pcc-link { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:6px; background:var(--navy); color:#fff; text-decoration:none; font-size:.85rem; font-weight:600; }
+.pcc-link:hover { opacity:.85; }
+.section-divider { border:none; border-top:2px solid var(--gray-200); margin:20px 0; }
+.analysis-box { background:#f8f9fa; border:1px solid var(--gray-200); border-radius:8px; padding:14px; margin-top:10px; }
+.analysis-link { display:block; padding:8px 12px; border-radius:6px; margin-bottom:6px; background:#fff; border:1px solid var(--gray-200); text-decoration:none; color:var(--navy); font-size:.85rem; }
+.analysis-link:hover { background:var(--navy); color:#fff; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">政府標案全流程營運系統</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title">
+    <h1>標案池</h1>
+    <p>搜尋政府採購網找標案 → 儲存追蹤 → 全文檢索歷史分析 → 決定投標</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- 左欄：搜尋與匯入 -->
+    <div class="span5">
+
+      <!-- Step 1: 搜尋政府採購網 -->
+      <section class="card">
+        <h2>① 搜尋政府採購網</h2>
+        <div class="hint" style="margin-bottom:12px">設定條件後點「開啟搜尋」，在政府採購網找到目標標案，再回此系統匯入。</div>
+        <div class="form-row">
+          <div class="field"><label>機關名稱</label><input id="srchOrg" placeholder="彰化縣政府、勞動部…"></div>
+          <div class="field"><label>採購類型</label>
+            <select id="srchType">
+              <option value="TENDER_DECLARATION">招標公告</option>
+              <option value="TENDER_AWARD">決標公告（歷史）</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>關鍵字</label><input id="srchKw" placeholder="教育訓練、勞務、顧問…"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>開始日期</label><input id="srchStart" type="date"></div>
+          <div class="field"><label>結束日期</label><input id="srchEnd" type="date"></div>
+        </div>
+        <div class="btns" style="margin-top:10px">
+          <button onclick="openPccSearch()">🔗 開啟政府採購網搜尋</button>
+          <button class="secondary" onclick="openPccHome()">前往採購網首頁</button>
+        </div>
+      </section>
+
+      <!-- Step 2: 全文檢索歷史分析 -->
+      <section class="card" style="margin-top:14px">
+        <h2>② 全文檢索歷史分析</h2>
+        <div class="hint" style="margin-bottom:12px">在投標前，查詢過去得標廠商、歷史金額、競爭對手。</div>
+        <div class="field" style="margin-bottom:8px"><label>關鍵字（標案名稱片段）</label><input id="ftKw" placeholder="例：教育訓練、職涯輔導、數位轉型…"></div>
+        <div class="field" style="margin-bottom:10px"><label>機關名稱（選填）</label><input id="ftOrg" placeholder="留空=全機關"></div>
+        <div class="analysis-box">
+          <div style="font-size:.82rem;font-weight:600;color:var(--navy);margin-bottom:8px">查詢方向：</div>
+          <a class="analysis-link" onclick="openFtSearch('決標')">📊 查歷史決標公告（得標廠商＋金額）</a>
+          <a class="analysis-link" onclick="openFtSearch('招標')">📋 查歷史招標公告（預算金額＋條件）</a>
+          <a class="analysis-link" onclick="openFtSearch('廠商')">🏢 查特定廠商得標紀錄</a>
+        </div>
+        <div id="ftNote" style="font-size:.78rem;color:var(--gray-500);margin-top:8px">點擊後將在新視窗開啟政府採購網全文檢索。</div>
+      </section>
+
+      <!-- Step 3: 匯入標案 -->
+      <section class="card" style="margin-top:14px">
+        <h2>③ 匯入標案到標案池</h2>
+        <div class="hint" style="margin-bottom:10px">在政府採購網找到標案後，填入案號或貼上網址，系統自動解析基本資料。</div>
+        <div class="field" style="margin-bottom:8px">
+          <label>標案案號或網址</label>
+          <div style="display:flex;gap:6px">
+            <input id="impInput" placeholder="案號如 114-066-045-344，或貼上整個網址" style="flex:1">
+            <button onclick="importTender()" style="flex:0 0 80px">解析匯入</button>
+          </div>
+        </div>
+        <div id="impMsg" class="msg" style="margin-bottom:10px"></div>
+
+        <hr class="section-divider">
+        <h2 style="margin-top:0">手動新增標案</h2>
+        <form id="tenderForm">
+          <div class="form-row">
+            <div class="field"><label>機關名稱＊</label><input name="機關名稱" required></div>
+            <div class="field"><label>標案案號＊</label><input name="標案案號" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field span12"><label>標案名稱＊</label><input name="標案名稱" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>採購性質</label>
+              <select name="採購性質">
+                <option>勞務</option><option>財物</option><option>工程</option>
+              </select>
+            </div>
+            <div class="field"><label>招標方式</label>
+              <select name="招標方式">
+                <option>最有利標</option><option>最低標</option><option>限制性招標</option><option>公開取得</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>預算金額（元）</label><input name="預算金額" type="number" min="0"></div>
+            <div class="field"><label>押標金（元）</label><input name="押標金" type="number" min="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>截止投標日</label><input name="截止投標日" type="date"></div>
+            <div class="field"><label>開標日期</label><input name="開標日期" type="date"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>履約期間</label><input name="履約期間" placeholder="例：簽約後180天"></div>
+            <div class="field"><label>評選方式</label><input name="評選方式" placeholder="例：最有利標70分門檻"></div>
+          </div>
+          <div class="field" style="margin-bottom:8px"><label>標案網址</label><input name="標案網址" placeholder="pcc.gov.tw 的標案連結"></div>
+          <div class="field" style="margin-bottom:10px"><label>備註</label><textarea name="備註" rows="2" style="width:100%;box-sizing:border-box"></textarea></div>
+          <div class="btns"><button type="submit" class="gold">新增到標案池</button></div>
+        </form>
+        <div id="tenderMsg" class="msg" style="margin-top:8px"></div>
+      </section>
+    </div>
+
+    <!-- 右欄：標案池總覽 -->
+    <div class="span7">
+      <section class="card">
+        <h2>標案池總覽</h2>
+        <div class="form-row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <div class="field"><input id="poolKw" placeholder="機關、案號、標案名稱…" onkeydown="if(event.key==='Enter')queryPool()"></div>
+          <div class="field" style="max-width:130px">
+            <select id="poolStatus" onchange="queryPool()">
+              <option value="">全部狀態</option>
+              <option value="新增">📌 新增</option>
+              <option value="有意願">👀 有意願</option>
+              <option value="確認投標">✅ 確認投標</option>
+              <option value="已投標">📤 已投標</option>
+              <option value="得標">🏆 得標</option>
+              <option value="未得標">❌ 未得標</option>
+              <option value="放棄">⛔ 放棄</option>
+            </select>
+          </div>
+          <button onclick="queryPool()">查詢</button>
+        </div>
+        <div id="poolMsg" class="msg">載入中…</div>
+        <div id="poolTable" style="margin-top:8px"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<!-- 編輯 Modal（動態注入） -->
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+// 預設日期
+(function(){
+  var today = new Date();
+  var y = today.getFullYear(), m = String(today.getMonth()+1).padStart(2,'0'), d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('srchEnd').value  = y+'-'+m+'-'+d;
+  var start = new Date(today); start.setMonth(start.getMonth()-1);
+  var sy=start.getFullYear(), sm=String(start.getMonth()+1).padStart(2,'0'), sd=String(start.getDate()).padStart(2,'0');
+  document.getElementById('srchStart').value = sy+'-'+sm+'-'+sd;
+})();
+
+// ── 政府採購網搜尋 ─────────────────────────────────────
+function openPccSearch(){
+  var kw    = document.getElementById('srchKw').value.trim();
+  var org   = document.getElementById('srchOrg').value.trim();
+  var type  = document.getElementById('srchType').value;
+  var start = document.getElementById('srchStart').value.replace(/-/g,'/');
+  var end   = document.getElementById('srchEnd').value.replace(/-/g,'/');
+
+  var params = new URLSearchParams({
+    action: 'search', searchMode: 'common', searchType: 'basic',
+    tenderType: type, keyword: kw, orgName: org,
+    radDate: 'isDate', tenderStartDate: start, tenderEndDate: end, pageIndex: 1
+  });
+  var url = 'https://web.pcc.gov.tw/tps/pss/tender.do?' + params.toString();
+  window.open(url, '_blank');
+}
+function openPccHome(){
+  window.open('https://web.pcc.gov.tw/', '_blank');
+}
+
+// ── 全文檢索 ──────────────────────────────────────────
+function openFtSearch(mode){
+  var kw  = document.getElementById('ftKw').value.trim();
+  var org = document.getElementById('ftOrg').value.trim();
+  if(!kw){ document.getElementById('ftNote').textContent='❌ 請先填入關鍵字'; return; }
+
+  var baseUrl = 'https://web.pcc.gov.tw/tps/pss/tender.do';
+  var tenderType = mode==='決標' ? 'TENDER_AWARD' : mode==='招標' ? 'TENDER_DECLARATION' : 'TENDER_AWARD';
+
+  var params = new URLSearchParams({
+    action: 'search', searchMode: 'common', searchType: 'basic',
+    tenderType: tenderType, keyword: kw, orgName: org,
+    radDate: 'limitDate', pageIndex: 1
+  });
+
+  if(mode==='廠商'){
+    // 廠商得標查詢
+    params = new URLSearchParams({
+      action: 'search', searchMode: 'common', searchType: 'basic',
+      tenderType: 'TENDER_AWARD', awardPrice: kw, pageIndex: 1
+    });
+    var url2 = 'https://web.pcc.gov.tw/tps/pss/tender.do?' + params.toString();
+    window.open(url2, '_blank');
+    return;
+  }
+  window.open(baseUrl + '?' + params.toString(), '_blank');
+}
+
+// ── 匯入標案（解析案號）─────────────────────────────
+async function importTender(){
+  var input = document.getElementById('impInput').value.trim();
+  if(!input){ document.getElementById('impMsg').textContent='❌ 請填入案號或網址'; return; }
+
+  // 從 URL 或直接輸入提取案號
+  var caseNo = input;
+  var urlMatch = input.match(/primaryKey=([^&\s]+)|tenderCaseNo=([^&\s]+)|[\?&]no=([^&\s]+)/);
+  if(urlMatch) caseNo = urlMatch[1]||urlMatch[2]||urlMatch[3];
+  // 從網址路徑提取（如 /114-066-045-344）
+  if(!urlMatch){ var pathMatch = input.match(/([A-Z0-9]{2,8}-\d{3}-\d{3}-\d{3}(?:-\d{2})?)/i); if(pathMatch) caseNo = pathMatch[1]; }
+
+  document.getElementById('impMsg').textContent='⏳ 嘗試從政府採購網取得案件資料…';
+  var r = await ERPALIGNED.api({action:'查詢採購公告', 標案案號: caseNo}, 'impMsg');
+  if(r && r.success && r.data && r.data.row){
+    // 自動填入表單
+    var row = r.data.row;
+    var form = document.getElementById('tenderForm');
+    Object.keys(row).forEach(function(k){
+      var el = form.querySelector('[name="'+k+'"]');
+      if(el && row[k]) el.value = row[k];
+    });
+    document.getElementById('impMsg').textContent='✅ 資料已帶入表單，請確認後新增';
+  } else {
+    // 無法自動解析，帶入案號讓使用者手動補
+    var el = document.getElementById('tenderForm').querySelector('[name="標案案號"]');
+    if(el) el.value = caseNo;
+    document.getElementById('impMsg').textContent='⚠️ 無法自動解析，已帶入案號，請手動補充其他資料後新增。';
+    // 開啟政府採購網查詢頁
+    if(caseNo) window.open('https://web.pcc.gov.tw/tps/pss/tender.do?action=search&searchMode=common&searchType=basic&tenderCaseNo='+encodeURIComponent(caseNo)+'&pageIndex=1','_blank');
+  }
+}
+
+// ── 新增標案 ──────────────────────────────────────────
+document.getElementById('tenderForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  var fd = new FormData(e.target), o = {action:'新增標案'};
+  fd.forEach(function(v,k){ if(v) o[k]=v; });
+  var r = await ERPALIGNED.api(o, 'tenderMsg');
+  if(r && r.success){ e.target.reset(); queryPool(); }
+});
+
+// ── 標案池查詢 ────────────────────────────────────────
+var _tenderStatusMap = {
+  '新增':'s-new','有意願':'s-watch','確認投標':'s-bid','已投標':'s-bid',
+  '得標':'s-win','未得標':'s-lose','放棄':'s-pass'
+};
+
+async function queryPool(){
+  var r = await ERPALIGNED.api({
+    action:'查詢標案池',
+    keyword: document.getElementById('poolKw').value,
+    狀態: document.getElementById('poolStatus').value
+  }, 'poolMsg');
+  if(!r||!r.success||!r.data){ document.getElementById('poolMsg').textContent=r?r.message:'查詢失敗'; return; }
+  var rows = r.data.rows||[];
+  if(!rows.length){ document.getElementById('poolMsg').textContent='查無標案'; document.getElementById('poolTable').innerHTML=''; return; }
+  document.getElementById('poolMsg').textContent='共 '+rows.length+' 筆';
+
+  var keys = ['機關名稱','標案案號','標案名稱','預算金額','截止投標日','採購性質','招標方式'];
+  var html = '<div class="table-wrap"><table><thead><tr><th>狀態</th>'+keys.map(function(k){return '<th>'+k+'</th>';}).join('')+'<th>操作</th></tr></thead><tbody>';
+
+  rows.forEach(function(row, idx){
+    var status = String(row['狀態']||'新增');
+    var cls = _tenderStatusMap[status]||'s-new';
+    html += '<tr>';
+    html += '<td><span class="status-badge '+cls+'">'+ERPALIGNED.esc(status)+'</span></td>';
+    keys.forEach(function(k){
+      var v = String(row[k]||'');
+      if(k==='預算金額' && v) v = Number(v).toLocaleString()+'元';
+      if(k==='標案名稱') html += '<td style="max-width:200px;white-space:normal">'+ERPALIGNED.esc(v)+'</td>';
+      else html += '<td>'+ERPALIGNED.esc(v)+'</td>';
+    });
+    html += '<td style="display:flex;gap:4px;flex-wrap:wrap">';
+    if(row['標案網址']) html += '<a href="'+ERPALIGNED.esc(row['標案網址'])+'" target="_blank" class="pcc-link" style="font-size:.7rem;padding:3px 7px">採購網</a>';
+    html += '<button class="secondary" style="font-size:.72rem;padding:3px 7px" onclick="openStatusMenu('+idx+')">更新狀態</button>';
+    html += '<button class="secondary" style="font-size:.72rem;padding:3px 7px" onclick="openAnalysis('+idx+')">歷史分析</button>';
+    html += '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('poolTable').innerHTML = html;
+  window._poolRows = rows;
+}
+
+function openStatusMenu(idx){
+  var row = window._poolRows[idx];
+  if(!row) return;
+  var statuses = ['有意願','確認投標','已投標','得標','未得標','放棄'];
+  var html = '<div style="padding:4px 0">';
+  statuses.forEach(function(s){
+    html += '<button class="secondary" style="display:block;width:100%;text-align:left;margin-bottom:4px;font-size:.82rem" onclick="updateStatus(\''+ERPALIGNED.esc(row['標案ID'])+'\'  ,\''+s+'\')">→ '+s+'</button>';
+  });
+  html += '</div>';
+  // 簡易 inline popup
+  var existing = document.getElementById('_statusPop');
+  if(existing) existing.remove();
+  var pop = document.createElement('div');
+  pop.id = '_statusPop';
+  pop.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border:1px solid var(--gray-200);border-radius:10px;padding:16px;z-index:9999;min-width:180px;box-shadow:0 4px 20px rgba(0,0,0,.15)';
+  pop.innerHTML = '<div style="font-weight:600;margin-bottom:10px;font-size:.9rem">'+ERPALIGNED.esc(row['標案名稱']||row['標案案號']||'').substring(0,30)+'</div>'+html+'<button class="secondary" style="width:100%;font-size:.8rem" onclick="document.getElementById(\'_statusPop\').remove()">取消</button>';
+  document.body.appendChild(pop);
+  document.addEventListener('click', function close(e){ if(!pop.contains(e.target)){ pop.remove(); document.removeEventListener('click',close); } }, {once:false});
+}
+
+async function updateStatus(tenderId, status){
+  var pop = document.getElementById('_statusPop');
+  if(pop) pop.remove();
+  var r = await ERPALIGNED.api({action:'更新標案狀態','標案ID':tenderId,'狀態':status}, 'poolMsg');
+  if(r && r.success) queryPool();
+}
+
+function openAnalysis(idx){
+  var row = window._poolRows[idx];
+  if(!row) return;
+  var name = row['標案名稱']||'';
+  var org  = row['機關名稱']||'';
+  // 取標案名稱的前幾個關鍵字
+  var kw = name.replace(/採購案|委託|勞務|財物|工程|案$/, '').trim().substring(0,15);
+  document.getElementById('ftKw').value  = kw;
+  document.getElementById('ftOrg').value = org;
+  // 滾動到全文檢索區
+  document.querySelector('#ftKw').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('ftNote').textContent = '已帶入「'+kw+'」，點選查詢方向開始分析';
+}
+
+queryPool();
+</script>
+</body>
+</html>
