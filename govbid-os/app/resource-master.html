@@ -3,33 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GovOps OS｜講師與工作人員主檔</title>
+<title>GovOps OS｜人員主檔</title>
 <link rel="stylesheet" href="./erp-page-style.css">
 <script src="./config.js"></script>
 </head>
 <body>
 <header><div class="wrap">
   <div class="brand">GovOps OS</div>
-  <div class="sub">對齊：24_講師主檔 / 25_工作人員主檔</div>
+  <div class="sub">24_講師主檔 / 25_工作人員主檔</div>
   <nav id="nav"></nav>
 </div></header>
 
 <main class="wrap">
   <div class="page-title">
-    <h1>講師與工作人員主檔</h1>
+    <h1>人員主檔</h1>
     <p>管理常用講師、攝影師、場務、司機等人員資料，含扣繳與匯款資訊</p>
   </div>
 
-  <!-- Tab 切換 -->
   <div class="btns" style="margin-bottom:16px">
     <button id="tabLec" class="gold" onclick="switchTab('lec')">講師主檔</button>
     <button id="tabStf" class="secondary" onclick="switchTab('stf')">工作人員主檔</button>
   </div>
 
-  <!-- ══════════════ 講師主檔 ══════════════ -->
+  <!-- ══ 講師 ══ -->
   <div id="secLec">
     <div class="grid">
-      <section class="card span6">
+      <section class="card span4">
         <h2>新增講師</h2>
         <form id="lecCreateForm">
           <div class="form-row">
@@ -43,54 +42,8 @@
           <div class="form-row">
             <div class="field"><label>時薪／課酬（元）</label><input name="時薪" type="number" min="0"></div>
             <div class="field"><label>評價</label>
-              <select name="評價">
-                <option value="">未評價</option>
-                <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-              </select>
+              <select name="評價"><option value="">未評價</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select>
             </div>
-          </div>
-          <div class="section-sep"><span>匯款資訊</span></div>
-          <div class="form-row">
-            <div class="field"><label>銀行</label><input name="銀行" placeholder="ex. 台灣銀行 004"></div>
-            <div class="field"><label>帳號</label><input name="帳號"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>戶名</label><input name="戶名"></div>
-            <div class="field"><label>統編／身分證</label><input name="統編/身分證"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>是否扣繳</label>
-              <select name="是否扣繳">
-                <option value="">未確認</option><option>是</option><option>否</option>
-              </select>
-            </div>
-            <div class="field"><label>扣繳類型</label>
-              <select name="扣繳類型">
-                <option>執行業務所得</option><option>薪資</option><option>稿費</option><option>其他</option>
-              </select>
-            </div>
-          </div>
-          <label>備註</label>
-          <textarea name="備註" rows="2"></textarea>
-          <div class="btns"><button type="submit">新增講師</button></div>
-        </form>
-        <div id="lecCreateMsg" class="msg" style="margin-top:10px">尚未新增。</div>
-      </section>
-
-      <section class="card span6">
-        <h2>修改講師</h2>
-        <form id="lecUpdateForm">
-          <div class="form-row">
-            <div class="field"><label>講師ID＊</label><input name="講師ID" required placeholder="LEC-…"></div>
-            <div class="field"><label>姓名</label><input name="姓名"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>電話</label><input name="電話" type="tel"></div>
-            <div class="field"><label>Email</label><input name="Email" type="email"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>專業領域</label><input name="專業領域"></div>
-            <div class="field"><label>時薪／課酬</label><input name="時薪" type="number" min="0"></div>
           </div>
           <div class="section-sep"><span>匯款資訊</span></div>
           <div class="form-row">
@@ -103,42 +56,34 @@
           </div>
           <div class="form-row">
             <div class="field"><label>是否扣繳</label>
-              <select name="是否扣繳">
-                <option value="">不變更</option><option>是</option><option>否</option>
-              </select>
+              <select name="是否扣繳"><option value="">未確認</option><option>是</option><option>否</option></select>
             </div>
-            <div class="field"><label>評價</label>
-              <select name="評價">
-                <option value="">不變更</option>
-                <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-              </select>
+            <div class="field"><label>扣繳類型</label>
+              <select name="扣繳類型"><option>執行業務所得</option><option>薪資</option><option>稿費</option><option>其他</option></select>
             </div>
           </div>
-          <label>備註</label>
-          <textarea name="備註" rows="2"></textarea>
-          <div class="btns"><button type="submit" class="secondary">修改講師</button></div>
+          <label>備註</label><textarea name="備註" rows="2"></textarea>
+          <div class="btns"><button type="submit">＋ 新增講師</button></div>
         </form>
-        <div id="lecUpdateMsg" class="msg" style="margin-top:10px">尚未修改。</div>
+        <div id="lecCreateMsg" class="msg" style="margin-top:8px">尚未新增。</div>
       </section>
 
-      <section class="card span12">
+      <section class="card span8">
         <h2>查詢講師</h2>
         <div class="form-row">
-          <div class="field"><input id="lecKeyword" placeholder="姓名、電話、專業領域、備註"></div>
-          <div class="field" style="max-width:160px">
-            <button onclick="queryLec()">查詢</button>
-          </div>
+          <div class="field"><input id="lecKeyword" placeholder="姓名、電話、專業領域、備註" onkeydown="if(event.key==='Enter')queryLec()"></div>
+          <div class="field" style="max-width:110px"><button onclick="queryLec()">查詢</button></div>
         </div>
         <div id="lecQueryMsg" class="msg">尚未查詢。</div>
-        <div id="lecTable"></div>
+        <div id="lecTable" style="margin-top:8px"></div>
       </section>
     </div>
   </div>
 
-  <!-- ══════════════ 工作人員主檔 ══════════════ -->
+  <!-- ══ 工作人員 ══ -->
   <div id="secStf" style="display:none">
     <div class="grid">
-      <section class="card span6">
+      <section class="card span4">
         <h2>新增工作人員</h2>
         <form id="stfCreateForm">
           <div class="form-row">
@@ -147,7 +92,7 @@
           </div>
           <div class="form-row">
             <div class="field"><label>Email</label><input name="Email" type="email"></div>
-            <div class="field"><label>職務類型＊</label>
+            <div class="field"><label>職務類型</label>
               <select name="職務類型">
                 <option>攝影</option><option>錄影</option><option>主持</option>
                 <option>場務</option><option>行政協助</option><option>交通接送</option>
@@ -158,10 +103,7 @@
           <div class="form-row">
             <div class="field"><label>時薪（元）</label><input name="時薪" type="number" min="0"></div>
             <div class="field"><label>評價</label>
-              <select name="評價">
-                <option value="">未評價</option>
-                <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-              </select>
+              <select name="評價"><option value="">未評價</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select>
             </div>
           </div>
           <div class="section-sep"><span>匯款資訊</span></div>
@@ -175,79 +117,30 @@
           </div>
           <div class="form-row">
             <div class="field"><label>是否扣繳</label>
-              <select name="是否扣繳">
-                <option value="">未確認</option><option>是</option><option>否</option>
-              </select>
+              <select name="是否扣繳"><option value="">未確認</option><option>是</option><option>否</option></select>
             </div>
           </div>
-          <label>備註</label>
-          <textarea name="備註" rows="2"></textarea>
-          <div class="btns"><button type="submit">新增工作人員</button></div>
+          <label>備註</label><textarea name="備註" rows="2"></textarea>
+          <div class="btns"><button type="submit">＋ 新增工作人員</button></div>
         </form>
-        <div id="stfCreateMsg" class="msg" style="margin-top:10px">尚未新增。</div>
+        <div id="stfCreateMsg" class="msg" style="margin-top:8px">尚未新增。</div>
       </section>
 
-      <section class="card span6">
-        <h2>修改工作人員</h2>
-        <form id="stfUpdateForm">
-          <div class="form-row">
-            <div class="field"><label>人員ID＊</label><input name="人員ID" required placeholder="STF-…"></div>
-            <div class="field"><label>姓名</label><input name="姓名"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>電話</label><input name="電話" type="tel"></div>
-            <div class="field"><label>職務類型</label>
-              <select name="職務類型">
-                <option value="">不變更</option>
-                <option>攝影</option><option>錄影</option><option>主持</option>
-                <option>場務</option><option>行政協助</option><option>交通接送</option>
-                <option>餐飲服務</option><option>技術支援</option><option>其他</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>時薪</label><input name="時薪" type="number" min="0"></div>
-            <div class="field"><label>評價</label>
-              <select name="評價">
-                <option value="">不變更</option>
-                <option>5</option><option>4</option><option>3</option><option>2</option><option>1</option>
-              </select>
-            </div>
-          </div>
-          <div class="section-sep"><span>匯款資訊</span></div>
-          <div class="form-row">
-            <div class="field"><label>銀行</label><input name="銀行"></div>
-            <div class="field"><label>帳號</label><input name="帳號"></div>
-          </div>
-          <div class="form-row">
-            <div class="field"><label>戶名</label><input name="戶名"></div>
-            <div class="field"><label>統編／身分證</label><input name="統編/身分證"></div>
-          </div>
-          <label>備註</label>
-          <textarea name="備註" rows="2"></textarea>
-          <div class="btns"><button type="submit" class="secondary">修改工作人員</button></div>
-        </form>
-        <div id="stfUpdateMsg" class="msg" style="margin-top:10px">尚未修改。</div>
-      </section>
-
-      <section class="card span12">
+      <section class="card span8">
         <h2>查詢工作人員</h2>
         <div class="form-row">
-          <div class="field"><input id="stfKeyword" placeholder="姓名、電話、備註"></div>
-          <div class="field" style="max-width:200px">
-            <select id="stfType">
-              <option value="">全部職務</option>
+          <div class="field"><input id="stfKeyword" placeholder="姓名、電話、備註" onkeydown="if(event.key==='Enter')queryStf()"></div>
+          <div class="field" style="max-width:160px">
+            <select id="stfType"><option value="">全部職務</option>
               <option>攝影</option><option>錄影</option><option>主持</option>
               <option>場務</option><option>行政協助</option><option>交通接送</option>
               <option>餐飲服務</option><option>技術支援</option><option>其他</option>
             </select>
           </div>
-          <div class="field" style="max-width:120px">
-            <button onclick="queryStf()">查詢</button>
-          </div>
+          <div class="field" style="max-width:100px"><button onclick="queryStf()">查詢</button></div>
         </div>
         <div id="stfQueryMsg" class="msg">尚未查詢。</div>
-        <div id="stfTable"></div>
+        <div id="stfTable" style="margin-top:8px"></div>
       </section>
     </div>
   </div>
@@ -258,64 +151,86 @@
 <script>
 document.getElementById('nav').innerHTML = ERPALIGNED.nav();
 
-// ── Tab 切換 ──────────────────────────────────────
+// ── Tab ──────────────────────────────────────────
 function switchTab(tab) {
   document.getElementById('secLec').style.display = tab === 'lec' ? '' : 'none';
   document.getElementById('secStf').style.display = tab === 'stf' ? '' : 'none';
   document.getElementById('tabLec').className = tab === 'lec' ? 'gold' : 'secondary';
   document.getElementById('tabStf').className = tab === 'stf' ? 'gold' : 'secondary';
-  if (tab === 'lec') queryLec();
-  else queryStf();
-}
-
-// ── 工具函式 ─────────────────────────────────────
-function formObj(id, action) {
-  const fd = new FormData(document.getElementById(id));
-  const o = { action };
-  fd.forEach((v, k) => { if (v) o[k] = v; });
-  return o;
+  tab === 'lec' ? queryLec() : queryStf();
 }
 
 // ── 講師 ─────────────────────────────────────────
+const LEC_FIELDS = [
+  {name:'講師ID', label:'講師 ID', readonly:true},
+  {name:'姓名', label:'姓名'},
+  {name:'電話', label:'電話', type:'tel'},
+  {name:'Email', label:'Email', type:'email'},
+  {name:'專業領域', label:'專業領域'},
+  {name:'時薪', label:'時薪／課酬（元）', type:'number'},
+  {name:'銀行', label:'銀行'},
+  {name:'帳號', label:'帳號'},
+  {name:'戶名', label:'戶名'},
+  {name:'統編/身分證', label:'統編／身分證'},
+  {name:'是否扣繳', label:'是否扣繳', type:'select', options:['','是','否']},
+  {name:'扣繳類型', label:'扣繳類型', type:'select', options:['執行業務所得','薪資','稿費','其他']},
+  {name:'評價', label:'評價', type:'select', options:['','5','4','3','2','1']},
+  {name:'備註', label:'備註', type:'textarea'}
+];
+
 document.getElementById('lecCreateForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const r = await ERPALIGNED.api(formObj('lecCreateForm', '新增講師'), 'lecCreateMsg');
+  const fd = new FormData(e.target);
+  const o = {action:'新增講師'}; fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r = await ERPALIGNED.api(o, 'lecCreateMsg');
   if (r && r.success) { e.target.reset(); queryLec(); }
 });
-document.getElementById('lecUpdateForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const r = await ERPALIGNED.api(formObj('lecUpdateForm', '修改講師'), 'lecUpdateMsg');
-  if (r && r.success) queryLec();
-});
+
+function openLecEdit(row) {
+  ERPALIGNED.showEditModal('編輯講師：' + (row['姓名']||''), LEC_FIELDS, row, '修改講師', '講師ID', queryLec);
+}
+
 async function queryLec() {
-  const r = await ERPALIGNED.api({
-    action: '查詢講師',
-    keyword: document.getElementById('lecKeyword').value
-  }, 'lecQueryMsg');
-  ERPALIGNED.renderTable(r, 'lecTable');
+  const r = await ERPALIGNED.api({action:'查詢講師', keyword: document.getElementById('lecKeyword').value}, 'lecQueryMsg');
+  ERPALIGNED.renderTableWithEdit(r, 'lecTable', openLecEdit,
+    ['講師ID','姓名','電話','專業領域','時薪','銀行','是否扣繳','評價']);
 }
 
 // ── 工作人員 ─────────────────────────────────────
+const STF_FIELDS = [
+  {name:'人員ID', label:'人員 ID', readonly:true},
+  {name:'姓名', label:'姓名'},
+  {name:'電話', label:'電話', type:'tel'},
+  {name:'Email', label:'Email', type:'email'},
+  {name:'職務類型', label:'職務類型', type:'select', options:['攝影','錄影','主持','場務','行政協助','交通接送','餐飲服務','技術支援','其他']},
+  {name:'時薪', label:'時薪（元）', type:'number'},
+  {name:'銀行', label:'銀行'},
+  {name:'帳號', label:'帳號'},
+  {name:'戶名', label:'戶名'},
+  {name:'統編/身分證', label:'統編／身分證'},
+  {name:'是否扣繳', label:'是否扣繳', type:'select', options:['','是','否']},
+  {name:'評價', label:'評價', type:'select', options:['','5','4','3','2','1']},
+  {name:'備註', label:'備註', type:'textarea'}
+];
+
 document.getElementById('stfCreateForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const r = await ERPALIGNED.api(formObj('stfCreateForm', '新增工作人員'), 'stfCreateMsg');
+  const fd = new FormData(e.target);
+  const o = {action:'新增工作人員'}; fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r = await ERPALIGNED.api(o, 'stfCreateMsg');
   if (r && r.success) { e.target.reset(); queryStf(); }
 });
-document.getElementById('stfUpdateForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const r = await ERPALIGNED.api(formObj('stfUpdateForm', '修改工作人員'), 'stfUpdateMsg');
-  if (r && r.success) queryStf();
-});
-async function queryStf() {
-  const r = await ERPALIGNED.api({
-    action: '查詢工作人員',
-    keyword: document.getElementById('stfKeyword').value,
-    職務類型: document.getElementById('stfType').value
-  }, 'stfQueryMsg');
-  ERPALIGNED.renderTable(r, 'stfTable');
+
+function openStfEdit(row) {
+  ERPALIGNED.showEditModal('編輯工作人員：' + (row['姓名']||''), STF_FIELDS, row, '修改工作人員', '人員ID', queryStf);
 }
 
-// 初始載入
+async function queryStf() {
+  const r = await ERPALIGNED.api({action:'查詢工作人員', keyword: document.getElementById('stfKeyword').value, 職務類型: document.getElementById('stfType').value}, 'stfQueryMsg');
+  ERPALIGNED.renderTableWithEdit(r, 'stfTable', openStfEdit,
+    ['人員ID','姓名','電話','職務類型','時薪','銀行','是否扣繳','評價']);
+}
+
 queryLec();
 </script>
 </body>
