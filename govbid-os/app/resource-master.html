@@ -231,7 +231,9 @@ async function queryStf() {
     ['人員ID','姓名','電話','職務類型','時薪','銀行','是否扣繳','評價']);
 }
 
-queryLec();
+// 支援 ?tab=stf 從 dashboard 快速跳至工作人員分頁
+const _tab = new URLSearchParams(location.search).get('tab');
+if(_tab === 'stf') switchTab('stf'); else queryLec();
 </script>
 </body>
 </html>
