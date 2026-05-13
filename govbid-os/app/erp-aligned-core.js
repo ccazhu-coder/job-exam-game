@@ -143,8 +143,45 @@
       ['crm.html','CRM'],['archive.html','核銷'],
       ['finance-secretary.html','財務'],['pre-launch-qa.html','驗收']
     ];
-    return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('')
+    return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
   }
 
-  window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,$,params,format,esc};
+  function userChip(){
+    try{
+      const p=JSON.parse(localStorage.getItem('govops_profile')||'{}');
+      if(!p||!p.userId)return '';
+      const name=p.userName||p.orgName||p.email||'使用者';
+      const LABELS={owner:'負責人',admin:'管理者',finance:'財務',staff:'行政',viewer:'檢視者'};
+      const role=LABELS[p.role||p.userRole]||'';
+      return '<span style="font-size:.76rem;color:rgba(255,255,255,.7);margin-left:8px">'+
+        _escNav(name)+(role?'('+_escNav(role)+')':'')+'</span>'+
+        '<button onclick="if(window.GovOpsSessionGuard)GovOpsSessionGuard.logout();else{[\'govops_profile\',\'govops_auth\'].forEach(k=>localStorage.removeItem(k));location.href=\'./dashboard.html\'}" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:4px 11px;border-radius:5px;font-size:.74rem;cursor:pointer;margin-left:4px">登出</button>';
+    }catch(e){return '';}
+  }
+  function _escNav(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,userChip,$,params,format,esc};
+
+  // ── 自動初始化：Guard + UserChip ──────────────────────
+  document.addEventListener('DOMContentLoaded',function(){
+    const isDashboard=/dashboard\.html/i.test(location.pathname)||location.pathname.endsWith('/')||location.pathname.endsWith('/govbid-os/app/');
+    if(!isDashboard){
+      // Guard：未登入跳回 dashboard
+      try{
+        const p=JSON.parse(localStorage.getItem('govops_profile')||'null');
+        if(!p||!p.userId){
+          location.href='./dashboard.html?redirect='+encodeURIComponent(location.pathname);
+          return;
+        }
+      }catch(e){location.href='./dashboard.html';return;}
+    }
+    // UserChip：在 header 右側插入使用者資訊+登出
+    const wrap=document.querySelector('header .wrap');
+    if(wrap){
+      const chip=document.createElement('div');
+      chip.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:4px';
+      chip.innerHTML=userChip();
+      wrap.appendChild(chip);
+    }
+  });
 })();
