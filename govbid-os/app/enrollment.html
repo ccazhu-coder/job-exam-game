@@ -81,32 +81,31 @@
       <section class="card span5">
         <h2>報名表單同步</h2>
         <div class="hint" style="margin-bottom:12px">
-          現在只要貼上「Google 試算表網址」，系統會自動抓試算表ID；分頁名稱請用下方預設 Form_Responses。
+          選取活動後，若曾設定過表單連結會自動帶入。欄位名稱自動識別，不需精確對應。
         </div>
         <div class="field" style="margin-bottom:8px">
           <label>系統活動編號</label>
           <div style="display:flex;gap:6px">
-            <input id="syncCamId" placeholder="新增活動後自動帶入" style="flex:1">
+            <input id="syncCamId" placeholder="選取或輸入活動編號" style="flex:1" oninput="loadSyncSettings()">
             <button type="button" class="secondary" onclick="pickCampaignForSync()" style="flex:0 0 58px;font-size:.78rem">選取</button>
           </div>
         </div>
         <div class="field" style="margin-bottom:4px">
           <label>線上報名表單連結 / 回覆試算表連結</label>
-          <input id="syncSheetUrl" placeholder="貼上 Google 試算表網址，系統會自動抓ID" oninput="autoExtractSheetId()">
+          <input id="syncSheetUrl" placeholder="貼上 Google 試算表網址，系統自動抓 ID" oninput="autoExtractSheetId()">
         </div>
         <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:8px">例：https://docs.google.com/spreadsheets/d/試算表ID/edit…</div>
         <div class="field" style="margin-bottom:8px">
-          <label>表單回覆試算表ID（系統自動產生）</label>
-          <input id="syncSheetId" placeholder="貼上網址後自動帶入，不用手動剪貼" readonly style="background:var(--gray-100)">
+          <label>試算表 ID（系統自動產生）</label>
+          <input id="syncSheetId" placeholder="貼上網址後自動帶入" readonly style="background:var(--gray-100)">
         </div>
         <div class="field" style="margin-bottom:4px">
-          <label>表單回覆分頁名稱（留空=自動取第一個工作表）</label>
+          <label>分頁名稱（留空=自動取第一個工作表）</label>
           <input id="syncSheetName" placeholder="例：Form_Responses、表單回覆 1（留空自動）">
         </div>
-        <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:12px">欄位自動識別：含「姓名」「電話/手機」「Email/信箱」「公司/單位」「身份/類型」等關鍵字即可匹配。</div>
+        <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:12px">欄位自動識別：含「姓名」「電話/手機」「Email/郵件/信箱」「公司/單位」「身份/類型」「用餐」等關鍵字即可匹配。</div>
         <div class="btns" style="flex-wrap:wrap;gap:6px">
-          <button onclick="autoExtractSheetId()">自動抓試算表ID</button>
-          <button class="secondary" onclick="saveSyncSettings()">儲存表單設定</button>
+          <button class="secondary" onclick="autoExtractSheetId()">自動抓試算表ID</button>
           <button class="gold" onclick="doSyncImport()">同步最新報名資料</button>
         </div>
         <div id="syncMsg" class="msg" style="margin-top:10px">尚未同步。</div>
@@ -327,7 +326,19 @@ function _pickCam(targetId){
     '選取招生活動');
 }
 function pickCampaignForReg()   { _pickCam('regCamId'); }
-function pickCampaignForSync()  { _pickCam('syncCamId'); }
+function pickCampaignForSync()  {
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期','報名截止日','報名連結'],
+    function(row){
+      document.getElementById('syncCamId').value = row['招生活動ID']||'';
+      // 從 campaign 的 報名連結 欄位自動帶入（後端已存）
+      if(row['報名連結']){
+        document.getElementById('syncSheetUrl').value = row['報名連結'];
+        autoExtractSheetId();
+      }
+      loadSyncSettings();
+    }, '選取招生活動');
+}
 function pickCampaignForBatch() { _pickCam('batchCamId'); }
 function pickCampaignForAtt()   { _pickCam('attCamId'); }
 function pickCampaignForNotif() { _pickCam('ntfCamId'); }
@@ -349,29 +360,46 @@ async function queryCampaigns(){
 function autoExtractSheetId(){
   var url = document.getElementById('syncSheetUrl').value.trim();
   var m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
-  if(m){ document.getElementById('syncSheetId').value = m[1]; }
+  if(m) document.getElementById('syncSheetId').value = m[1];
 }
-function saveSyncSettings(){
+
+function loadSyncSettings(){
   var camId = document.getElementById('syncCamId').value.trim();
-  var sheetId = document.getElementById('syncSheetId').value.trim();
-  var sheetName = document.getElementById('syncSheetName').value.trim();
-  if(!camId || !sheetId){ document.getElementById('syncMsg').textContent='❌ 活動編號和試算表ID必填'; return; }
-  localStorage.setItem('syncSettings_'+camId, JSON.stringify({sheetId:sheetId,sheetName:sheetName}));
-  document.getElementById('syncMsg').textContent='✅ 表單設定已儲存（活動：'+camId+'）';
+  if(!camId) return;
+  var saved = localStorage.getItem('syncSettings_'+camId);
+  if(saved){
+    try {
+      var s = JSON.parse(saved);
+      if(s.sheetUrl)  document.getElementById('syncSheetUrl').value  = s.sheetUrl;
+      if(s.sheetId)   document.getElementById('syncSheetId').value   = s.sheetId;
+      if(s.sheetName) document.getElementById('syncSheetName').value = s.sheetName;
+      document.getElementById('syncMsg').textContent = '✅ 已自動帶入上次設定（' + camId + '）';
+    } catch(e) {}
+  }
 }
+
+function _saveSyncToLocal(camId, sheetUrl, sheetId, sheetName){
+  localStorage.setItem('syncSettings_'+camId, JSON.stringify({sheetUrl:sheetUrl, sheetId:sheetId, sheetName:sheetName}));
+}
+
 async function doSyncImport(){
   autoExtractSheetId();
-  var camId = document.getElementById('syncCamId').value.trim();
-  var sheetId = document.getElementById('syncSheetId').value.trim();
+  var camId     = document.getElementById('syncCamId').value.trim();
+  var sheetUrl  = document.getElementById('syncSheetUrl').value.trim();
+  var sheetId   = document.getElementById('syncSheetId').value.trim();
   var sheetName = document.getElementById('syncSheetName').value.trim();
   if(!camId || !sheetId){ document.getElementById('syncMsg').textContent='❌ 活動編號和試算表ID必填'; return; }
   document.getElementById('syncMsg').textContent='⏳ 同步中，資料量大時需要約 30~60 秒，請稍候…';
   var r = await ERPALIGNED.api({action:'匯入線上報名','招生活動ID':camId,'sheetId':sheetId,'sheetName':sheetName},'syncMsg');
   if(r && r.success){
+    // 儲存設定到 localStorage 和後端 campaign 報名連結
+    _saveSyncToLocal(camId, sheetUrl, sheetId, sheetName);
+    if(sheetUrl) ERPALIGNED.api({action:'修改招生活動','招生活動ID':camId,'報名連結':sheetUrl}, null);
     queryRegistrations();
-  } else if(!r) {
-    // timeout — data may have been written, refresh to check
-    document.getElementById('syncMsg').textContent='⚠️ 操作逾時，但資料可能已成功同步。請至下方「查詢」確認，或稍後重新整理。';
+  } else if(!r){
+    document.getElementById('syncMsg').textContent='⚠️ 操作逾時，但資料可能已成功同步。請至下方「查詢」確認。';
+    // 仍然儲存設定，避免使用者重新輸入
+    if(sheetId) _saveSyncToLocal(camId, sheetUrl, sheetId, sheetName);
     queryRegistrations();
   }
 }
