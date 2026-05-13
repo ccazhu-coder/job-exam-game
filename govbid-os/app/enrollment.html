@@ -217,16 +217,29 @@
   <!-- ══ 通知管理 ══ -->
   <div id="secNotif" style="display:none">
     <div class="grid">
+      <!-- 左：設定發送 -->
       <section class="card span4">
         <h2>發送通知</h2>
-        <div class="hint" style="margin-bottom:10px">依活動編號或報名ID發送通知。有 LINE_ID 者直接推播，無則記為待發送。</div>
         <div class="field" style="margin-bottom:8px">
           <label>系統活動編號</label>
           <div style="display:flex;gap:6px">
-            <input id="ntfCamId" placeholder="CAM-… (留空=依報名ID)" style="flex:1">
+            <input id="ntfCamId" placeholder="選取活動後自動載入名單" style="flex:1" oninput="clearNtfList()">
             <button type="button" class="secondary" onclick="pickCampaignForNotif()" style="flex:0 0 58px;font-size:.78rem">選取</button>
           </div>
         </div>
+        <div class="field" style="margin-bottom:8px">
+          <label>篩選審核狀態（可多選，留空=全部）</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="ntfStatusFilter">
+            <label style="font-size:.82rem;display:flex;align-items:center;gap:3px"><input type="checkbox" value="已入選" checked> 已入選</label>
+            <label style="font-size:.82rem;display:flex;align-items:center;gap:3px"><input type="checkbox" value="候補"> 候補</label>
+            <label style="font-size:.82rem;display:flex;align-items:center;gap:3px"><input type="checkbox" value="已確認參加"> 已確認參加</label>
+            <label style="font-size:.82rem;display:flex;align-items:center;gap:3px"><input type="checkbox" value="待審查"> 待審查</label>
+            <label style="font-size:.82rem;display:flex;align-items:center;gap:3px"><input type="checkbox" value="全部"> 全部</label>
+          </div>
+        </div>
+        <div class="btns" style="margin-bottom:8px"><button class="secondary" onclick="loadNtfList()">載入收件人名單</button></div>
+        <div id="ntfListMsg" class="msg" style="margin-bottom:8px"></div>
+
         <div class="field" style="margin-bottom:8px">
           <label>通知類型</label>
           <select id="ntfType">
@@ -242,7 +255,7 @@
           <label>自訂內容（留空=自動產生）</label>
           <textarea id="ntfContent" rows="3" placeholder="留空將依通知類型自動產生訊息…" style="width:100%;box-sizing:border-box"></textarea>
         </div>
-        <div class="btns"><button onclick="sendNotif()">發送通知</button></div>
+        <div class="btns"><button class="gold" onclick="sendNotif()">發送通知給以上名單</button></div>
         <div id="ntfMsg" class="msg" style="margin-top:8px">尚未發送。</div>
 
         <hr style="margin:18px 0;border-color:var(--gray-200)">
@@ -253,7 +266,13 @@
         <div id="bcMsg" class="msg" style="margin-top:8px">尚未廣播。</div>
       </section>
 
+      <!-- 右：收件人名單 + 通知紀錄 -->
       <section class="card span8">
+        <h2>收件人名單預覽</h2>
+        <div class="hint" style="margin-bottom:8px">選取活動並點「載入收件人名單」後，確認對象再發送。</div>
+        <div id="ntfPreviewMsg" class="msg">尚未載入。</div>
+        <div id="ntfPreviewTable" style="margin-top:8px;margin-bottom:20px"></div>
+
         <h2>通知紀錄查詢</h2>
         <div class="form-row">
           <div class="field"><input id="ntfLogKw" placeholder="姓名、電話、通知類型…" onkeydown="if(event.key==='Enter')queryNotifLog()"></div>
@@ -341,7 +360,7 @@ function pickCampaignForSync()  {
 }
 function pickCampaignForBatch() { _pickCam('batchCamId'); }
 function pickCampaignForAtt()   { _pickCam('attCamId'); }
-function pickCampaignForNotif() { _pickCam('ntfCamId'); }
+// pickCampaignForNotif defined in 通知管理 section below
 
 // ── 招生活動 ─────────────────────────────────────────
 document.getElementById('campaignForm').addEventListener('submit', async function(e){
@@ -485,13 +504,72 @@ async function batchApprove(){
 }
 
 // ── 通知管理 ─────────────────────────────────────────
+var _ntfRows = []; // 收件人快取
+
+function clearNtfList(){
+  _ntfRows = [];
+  document.getElementById('ntfPreviewMsg').textContent = '';
+  document.getElementById('ntfPreviewTable').innerHTML = '';
+}
+
+function pickCampaignForNotif(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期'],
+    function(row){
+      document.getElementById('ntfCamId').value = row['招生活動ID']||'';
+      clearNtfList();
+      loadNtfList();
+    }, '選取招生活動');
+}
+
+async function loadNtfList(){
+  var camId = document.getElementById('ntfCamId').value.trim();
+  if(!camId){ document.getElementById('ntfListMsg').textContent='❌ 請先選取活動'; return; }
+
+  // 取得勾選的審核狀態
+  var checked = [];
+  document.querySelectorAll('#ntfStatusFilter input[type=checkbox]:checked').forEach(function(cb){
+    checked.push(cb.value);
+  });
+  var showAll = checked.indexOf('全部') >= 0 || checked.length === 0;
+
+  document.getElementById('ntfListMsg').textContent = '⏳ 載入中…';
+  var r = await ERPALIGNED.api({action:'查詢報名資料庫', keyword: camId}, null);
+  if(!r || !r.success || !r.data){ document.getElementById('ntfListMsg').textContent='❌ 載入失敗'; return; }
+
+  var all = r.data.rows || [];
+  _ntfRows = showAll ? all : all.filter(function(row){
+    return checked.indexOf(String(row['審核狀態']||row['報名狀態']||'')) >= 0;
+  });
+
+  document.getElementById('ntfListMsg').textContent = '收件人共 '+_ntfRows.length+' 人（篩選自 '+all.length+' 筆報名）';
+
+  // 預覽表格
+  var keys = ['姓名','電話','Email','審核狀態','服務單位'];
+  var html = '<div class="table-wrap"><table><thead><tr>'+keys.map(function(k){return '<th>'+k+'</th>';}).join('')+'</tr></thead><tbody>';
+  _ntfRows.forEach(function(row){
+    var status = String(row['審核狀態']||row['報名狀態']||'');
+    var color = status==='已入選'?'var(--gold)':status==='候補'?'var(--navy)':status==='待審查'?'#888':'var(--danger)';
+    html += '<tr>'+keys.map(function(k){
+      if(k==='審核狀態') return '<td><span style="color:'+color+';font-weight:600">'+ERPALIGNED.esc(status)+'</span></td>';
+      return '<td>'+ERPALIGNED.esc(String(row[k]||''))+'</td>';
+    }).join('')+'</tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('ntfPreviewTable').innerHTML = _ntfRows.length ? html : '';
+}
+
 async function sendNotif(){
-  var camId=document.getElementById('ntfCamId').value.trim();
-  var type=document.getElementById('ntfType').value;
-  var content=document.getElementById('ntfContent').value.trim();
-  var o={action:'發送通知','通知類型':type};
-  if(camId) o['招生活動ID']=camId;
-  if(content) o['通知內容']=content;
+  var camId = document.getElementById('ntfCamId').value.trim();
+  var type  = document.getElementById('ntfType').value;
+  var content = document.getElementById('ntfContent').value.trim();
+
+  if(!camId){ document.getElementById('ntfMsg').textContent='❌ 請先選取活動並載入名單'; return; }
+  if(!_ntfRows.length){ document.getElementById('ntfMsg').textContent='❌ 收件人名單為空，請先點「載入收件人名單」'; return; }
+
+  document.getElementById('ntfMsg').textContent='⏳ 發送中（'+_ntfRows.length+' 人）…';
+  var o = {action:'發送通知','通知類型':type,'招生活動ID':camId};
+  if(content) o['通知內容'] = content;
   await ERPALIGNED.api(o,'ntfMsg');
   queryNotifLog();
 }
