@@ -55,8 +55,24 @@ const ACT_CREATE = [
 ];
 const ACT_EDIT = [
   {name:'活動ID', label:'活動 ID', readonly:true},
-  ...ACT_CREATE,
-  {name:'工作人員', label:'工作人員'},
+  {name:'專案計畫名稱', label:'所屬專案'},
+  {name:'活動名稱', label:'活動名稱'},
+  {name:'活動類型', label:'活動類型'},
+  {name:'活動日期', label:'活動日期', type:'date'},
+  {name:'活動地點', label:'活動地點'},
+  {name:'開始時間', label:'開始時間', type:'time'},
+  {name:'結束時間', label:'結束時間', type:'time'},
+  {name:'講師', label:'講師',
+    type:'picker', pickerAction:'查詢講師', pickerTitle:'選取講師',
+    pickerKeys:['講師ID','姓名','電話','專業領域'],
+    autoFill:{'聯絡電話':'電話'}},
+  {name:'聯絡電話', label:'聯絡電話'},
+  {name:'聯絡人', label:'聯絡人',
+    type:'picker', pickerAction:'查詢工作人員', pickerTitle:'選取聯絡人',
+    pickerKeys:['人員ID','姓名','電話','職務類型']},
+  {name:'工作人員', label:'工作人員',
+    type:'picker-append', pickerAction:'查詢工作人員', pickerTitle:'選取工作人員（可多選）',
+    pickerKeys:['人員ID','姓名','電話','職務類型']},
   {name:'狀態', label:'狀態', type:'select', options:['規劃中','招生中','已完成','已取消']},
   {name:'備註', label:'變更原因／備註', type:'textarea'}
 ];
