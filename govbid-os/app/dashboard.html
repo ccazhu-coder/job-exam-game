@@ -7,50 +7,52 @@
 <link rel="stylesheet" href="./erp-page-style.css">
 <script src="./config.js"></script>
 <style>
-/* ── 登入畫面 ── */
 #loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
-.login-card{background:var(--white);border-radius:16px;padding:36px 32px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-.login-card .logo{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px}
-.login-card .logo::before{content:'';display:block;width:5px;height:1.3em;background:var(--gold);border-radius:3px}
-.login-card .tagline{font-size:.84rem;color:var(--gray-500);margin-bottom:24px}
+.login-card{background:var(--white);border-radius:16px;padding:36px 32px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-logo{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.login-logo::before{content:'';display:block;width:5px;height:1.3em;background:var(--gold);border-radius:3px}
+.login-tagline{font-size:.84rem;color:var(--gray-500);margin-bottom:24px}
 .login-card label{font-size:.82rem;font-weight:600;color:var(--navy-mid);display:block;margin:12px 0 4px}
-.login-card input,.login-card select{width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.9rem;font-family:var(--font);background:var(--white);transition:border-color var(--transition)}
+.login-card input,.login-card select{width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.9rem;font-family:var(--font);background:var(--white)}
 .login-card input:focus,.login-card select:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,58,92,.1)}
-.login-card .login-btn{width:100%;margin-top:20px;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:.95rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:var(--transition)}
-.login-card .login-btn:hover{background:var(--navy-mid)}
-.login-divider{text-align:center;font-size:.78rem;color:var(--gray-300);margin:14px 0;position:relative}
+.login-btn{width:100%;margin-top:20px;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:.95rem;font-weight:700;cursor:pointer;font-family:var(--font)}
+.login-btn:hover{background:var(--navy-mid)}
+.login-btn.gold-btn{background:var(--gold);color:var(--navy)}
+.login-btn.gold-btn:hover{background:var(--gold-light)}
+.login-divider{text-align:center;font-size:.78rem;color:var(--gray-300);margin:16px 0;position:relative}
 .login-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--gray-200)}
-.login-divider span{background:var(--white);padding:0 10px;position:relative}
-.login-error{background:rgba(192,57,43,.1);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:var(--radius);padding:10px 14px;font-size:.84rem;margin-top:12px;display:none}
-
-/* ── User chip in header ── */
-.user-chip{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
-.user-name{font-size:.78rem;color:rgba(255,255,255,.8);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.logout-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:5px 12px;border-radius:var(--radius);font-size:.76rem;cursor:pointer;font-family:var(--font);transition:var(--transition)}
-.logout-btn:hover{background:rgba(192,57,43,.25);color:#fff;border-color:rgba(192,57,43,.4)}
+.login-divider span{background:var(--white);padding:0 12px;position:relative}
+.login-saved{background:var(--gold-pale);border:1px solid var(--gold);border-radius:var(--radius);padding:12px 14px;font-size:.85rem;color:var(--navy);margin-bottom:12px}
+.login-saved strong{display:block;font-size:.95rem;margin-bottom:2px}
+.login-err{background:rgba(192,57,43,.1);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:var(--radius);padding:10px 14px;font-size:.84rem;margin-top:12px;display:none}
+.switch-link{display:block;text-align:center;margin-top:10px;font-size:.8rem;color:var(--gray-500);cursor:pointer;text-decoration:underline}
+.switch-link:hover{color:var(--navy)}
 </style>
 </head>
 <body>
 
-<!-- ══ 登入畫面（未登入時顯示） ══ -->
+<!-- ══ 登入畫面 ══ -->
 <div id="loginScreen">
   <div class="login-card">
-    <div class="logo">GovOps OS</div>
-    <div class="tagline">政府標案全流程營運系統　— 內部使用版</div>
+    <div class="login-logo">GovOps OS</div>
+    <div class="login-tagline">政府標案全流程營運系統 — 內部使用</div>
 
-    <!-- 新使用者注冊 -->
+    <!-- 已有帳號：快速進入 -->
+    <div id="savedSection" style="display:none">
+      <div id="savedInfo" class="login-saved"></div>
+      <button class="login-btn gold-btn" onclick="doQuickLogin()">進入系統</button>
+      <a class="switch-link" onclick="showRegister()">不是這個帳號？切換 / 重新建立</a>
+    </div>
+
+    <!-- 新帳號：注冊 -->
     <div id="regSection">
-      <label>工作室／公司名稱＊</label>
-      <input id="lOrgName" placeholder="例如：璞策顧問工作室">
-      <label>使用者姓名＊</label>
-      <input id="lUserName" placeholder="您的姓名">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label>Email</label>
-          <input id="lEmail" type="email" placeholder="example@mail.com">
-        </div>
-        <div>
-          <label>使用者角色</label>
+      <div class="form-row">
+        <div class="field"><label>工作室／公司名稱＊</label><input id="lOrgName" placeholder="例如：璞策顧問工作室"></div>
+        <div class="field"><label>使用者姓名＊</label><input id="lUserName" placeholder="您的姓名"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Email</label><input id="lEmail" type="email" placeholder="example@mail.com"></div>
+        <div class="field"><label>角色</label>
           <select id="lRole">
             <option value="owner">負責人</option>
             <option value="admin">管理者</option>
@@ -65,36 +67,23 @@
       <button class="login-btn" onclick="doRegister()">建立帳號並進入系統</button>
     </div>
 
-    <div class="login-divider"><span>已有帳號？</span></div>
-
-    <!-- 回頭使用者快速登入 -->
-    <div id="quickSection">
-      <div style="font-size:.82rem;color:var(--gray-500);margin-bottom:6px">偵測到已儲存的帳號設定，可直接進入：</div>
-      <div id="savedUserInfo" style="background:var(--gold-pale);border:1px solid var(--gold);border-radius:var(--radius);padding:10px 14px;font-size:.85rem;color:var(--navy);margin-bottom:10px"></div>
-      <button class="login-btn" onclick="doQuickLogin()" style="background:var(--gold);color:var(--navy)">直接進入系統</button>
-      <button onclick="clearAndReset()" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--gray-200);color:var(--gray-500);border-radius:var(--radius);padding:8px;font-size:.8rem;cursor:pointer;font-family:var(--font)">切換帳號 / 重新建立</button>
-    </div>
-
-    <div id="loginError" class="login-error"></div>
+    <div id="loginErr" class="login-err"></div>
   </div>
 </div>
 
-<!-- ══ 儀表板（已登入時顯示） ══ -->
+<!-- ══ 主系統畫面 ══ -->
 <div id="appScreen" style="display:none">
   <header><div class="wrap">
     <div class="brand">GovOps OS</div>
-    <div class="sub">政府標案全流程營運系統</div>
+    <div class="sub" id="dashSub">政府標案全流程營運系統</div>
     <nav id="nav"></nav>
-    <div class="user-chip">
-      <span class="user-name" id="headerUserName">—</span>
-      <button class="logout-btn" onclick="doLogout()">登出</button>
-    </div>
+    <!-- userChip 由 ERPALIGNED.appendUserChip() 動態插入 -->
   </div></header>
 
   <main class="wrap">
     <div class="page-title">
       <h1>營運儀表板</h1>
-      <p id="dashSubtitle">載入中…</p>
+      <p id="dashSubtitle">—</p>
     </div>
 
     <div id="kpis" class="kpis" style="margin-bottom:16px">
@@ -141,69 +130,69 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
-<script src="./session-guard.js"></script>
 <script>
-// ── 工具 ─────────────────────────────────────────────
-function makeId(prefix){ return prefix+'-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*1000); }
-function safeJSON(k){ try{var r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;} }
 const ROLE_LABELS = {owner:'負責人',admin:'管理者',finance:'財務人員',staff:'行政人員',viewer:'檢視者'};
+function makeId(p){return p+'-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*1000);}
+function safeJSON(k){try{var r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;}}
 
-// ── 登入狀態判斷 ──────────────────────────────────────
+// ── 啟動 ──────────────────────────────────────────────
 function checkAuth(){
   const profile = safeJSON('govops_profile');
-  if(profile && profile.userId){
-    // 已登入：顯示儀表板
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display = '';
-    const name = profile.userName || profile.orgName || profile.email || '使用者';
-    const role = ROLE_LABELS[profile.role||profile.userRole] || profile.roleLabel || '';
-    document.getElementById('headerUserName').textContent = name + (role?' ('+role+')':'');
-    document.getElementById('dashSubtitle').textContent =
-      (profile.orgName||'') + '　角色：' + (role||'—');
-    document.getElementById('nav').innerHTML = ERPALIGNED.nav();
-    loadDashboard();
-    healthCheck();
+  if(profile && profile.userId && profile.orgName){
+    enterApp(profile);
   } else {
-    // 未登入：顯示登入畫面
-    document.getElementById('loginScreen').style.display = '';
-    document.getElementById('appScreen').style.display = 'none';
-    initLoginUI();
+    showLoginScreen(profile);
   }
 }
 
-function initLoginUI(){
-  const saved = safeJSON('govops_profile');
+function showLoginScreen(saved){
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('appScreen').style.display='none';
   if(saved && saved.userId){
-    // 有舊帳號
-    document.getElementById('quickSection').style.display = '';
-    document.getElementById('savedUserInfo').textContent =
-      (saved.orgName||saved.userName||'') + '　' + (ROLE_LABELS[saved.role||saved.userRole]||'') +
-      (saved.email ? '　' + saved.email : '');
-    document.getElementById('regSection').style.display = 'none';
+    // 有舊 session 但可能資料不完整，讓使用者確認進入或重建
+    document.getElementById('savedSection').style.display='';
+    document.getElementById('regSection').style.display='none';
+    const name = saved.userName||saved.orgName||saved.email||'使用者';
+    const role = ROLE_LABELS[saved.role||saved.userRole]||'';
+    document.getElementById('savedInfo').innerHTML =
+      '<strong>'+ERPALIGNED.esc(name)+'</strong>' +
+      (role?'<span style="color:var(--gray-500)">'+ERPALIGNED.esc(role)+'</span>':'') +
+      (saved.email?'<div style="font-size:.8rem;color:var(--gray-500);margin-top:2px">'+ERPALIGNED.esc(saved.email)+'</div>':'');
   } else {
-    document.getElementById('quickSection').style.display = 'none';
-    document.getElementById('regSection').style.display = '';
+    document.getElementById('savedSection').style.display='none';
+    document.getElementById('regSection').style.display='';
   }
 }
 
-function clearAndReset(){
+function showRegister(){
   ['govops_profile','govops_auth'].forEach(k=>localStorage.removeItem(k));
-  document.getElementById('quickSection').style.display = 'none';
-  document.getElementById('regSection').style.display = '';
-  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('savedSection').style.display='none';
+  document.getElementById('regSection').style.display='';
 }
 
+function enterApp(profile){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('appScreen').style.display='';
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  const name = profile.userName||profile.orgName||profile.email||'使用者';
+  const role = ROLE_LABELS[profile.role||profile.userRole]||'';
+  document.getElementById('dashSubtitle').textContent =
+    (profile.orgName||name) + (role?'　角色：'+role:'');
+  // 插入 userChip（只插一次）
+  ERPALIGNED.appendUserChip('#appScreen header .wrap');
+  loadDashboard();
+  healthCheck();
+}
+
+// ── 登錄 ──────────────────────────────────────────────
 function doRegister(){
   const orgName = document.getElementById('lOrgName').value.trim();
   const userName = document.getElementById('lUserName').value.trim();
-  if(!orgName||!userName){
-    showError('請填寫工作室名稱和使用者姓名。'); return;
-  }
+  if(!orgName||!userName){ showErr('請填寫工作室名稱和使用者姓名。'); return; }
   const role = document.getElementById('lRole').value;
-  const old = safeJSON('govops_profile') || {};
   const profile = {
-    tenantId: old.tenantId || makeId('TENANT'),
-    userId: old.userId || makeId('USR'),
+    tenantId: makeId('TENANT'),
+    userId: makeId('USR'),
     orgName, userName,
     email: document.getElementById('lEmail').value.trim(),
     role, userRole: role,
@@ -215,24 +204,28 @@ function doRegister(){
   };
   localStorage.setItem('govops_profile', JSON.stringify(profile));
   localStorage.setItem('govops_auth', JSON.stringify({tenantId:profile.tenantId,userId:profile.userId,userRole:role,plan:'enterprise',status:'active'}));
-  checkAuth();
+  enterApp(profile);
 }
 
 function doQuickLogin(){
-  checkAuth();
+  const profile = safeJSON('govops_profile');
+  if(profile && profile.userId) enterApp(profile);
+  else showRegister();
 }
 
 function doLogout(){
   ['govops_profile','govops_auth'].forEach(k=>localStorage.removeItem(k));
+  const chip = document.getElementById('_erpChip');
+  if(chip) chip.remove();
   checkAuth();
 }
 
-function showError(msg){
-  const el = document.getElementById('loginError');
-  el.textContent = msg; el.style.display = '';
+function showErr(msg){
+  const el=document.getElementById('loginErr');
+  el.textContent=msg; el.style.display='';
 }
 
-// ── 儀表板功能 ────────────────────────────────────────
+// ── 儀表板 ────────────────────────────────────────────
 async function loadDashboard(){
   const r=await ERPALIGNED.api({action:'取得ERP儀表板'},'dashMsg');
   const d=r.data||{};
@@ -242,13 +235,12 @@ async function loadDashboard(){
   if(rows.length)ERPALIGNED.renderTable({data:{rows}},'table');
   else document.getElementById('table').innerHTML='<div class="empty">目前無待處理項目</div>';
 }
-async function loadOverview(){await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg'),'table')}
+async function loadOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function loadRisk(){const r=await ERPALIGNED.api({action:'ERP風險報告'},'dashMsg');const d=r.data||{};const rows=[...(d.逾期任務||[]),...(d.未收款||[]),...(d.核銷缺件||[])];ERPALIGNED.renderTable({data:{rows}},'table')}
 async function loadMarketing(){const r=await ERPALIGNED.api({action:'行銷名單'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function loadReturn(){const r=await ERPALIGNED.api({action:'回流學員分析'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
 
-// ── 啟動 ──────────────────────────────────────────────
 checkAuth();
 </script>
 </body>
