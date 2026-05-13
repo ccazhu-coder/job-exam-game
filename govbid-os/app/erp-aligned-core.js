@@ -114,6 +114,25 @@
 
   function _removeModal(id){const el=document.getElementById(id);if(el)el.remove();}
 
+  // ── 主表單內嵌選取器（在 Modal 中使用）─────────────────
+  // 調用方式：_mpick(pickerAction, displayKeys, title, inputId, autoFillMap, appendMode)
+  window._mpick = function(action, keys, title, inputId, autoFill, append) {
+    showPickerModal(action, keys, function(row) {
+      const target = document.getElementById(inputId);
+      if(target) {
+        const val = row['姓名'] || row[keys && keys[1]] || '';
+        target.value = append ? (target.value ? target.value + '、' + val : val) : val;
+      }
+      if(autoFill) {
+        Object.keys(autoFill).forEach(function(formField){
+          const rowKey = autoFill[formField];
+          const el = document.getElementById('_pf_' + formField.replace(/[^a-zA-Z0-9]/g,'_'));
+          if(el && row[rowKey] !== undefined) el.value = row[rowKey] || '';
+        });
+      }
+    }, title);
+  };
+
   function _buildFormHtml(fields,rowData){
     const rows=[];let buf=[];
     fields.forEach((f,i)=>{
@@ -123,6 +142,17 @@
         input='<select name="'+esc(f.name)+'">'+opts+'</select>';
       }else if(f.type==='textarea'){
         input='<textarea name="'+esc(f.name)+'" rows="2">'+esc(rowData[f.name]||'')+'</textarea>';
+      }else if(f.type==='picker'||f.type==='picker-append'){
+        const pfId='_pf_'+f.name.replace(/[^a-zA-Z0-9]/g,'_');
+        const aFill=JSON.stringify(f.autoFill||{});
+        const pKeys=JSON.stringify(f.pickerKeys||[]);
+        const pTitle=JSON.stringify(f.pickerTitle||'選取');
+        const pAction=JSON.stringify(f.pickerAction||'');
+        const append=f.type==='picker-append'||f.append?'true':'false';
+        input='<div style="display:flex;gap:6px">'+
+          '<input id="'+pfId+'" name="'+esc(f.name)+'" value="'+esc(rowData[f.name]||'')+'" style="flex:1">'+
+          '<button type="button" class="secondary" style="flex:0 0 58px;padding:8px 10px;font-size:.78rem" '+
+          'onclick="_mpick('+pAction+','+pKeys+','+pTitle+',\''+pfId+'\','+aFill+','+append+')">選取</button></div>';
       }else{
         input='<input name="'+esc(f.name)+'" type="'+(f.type||'text')+'" value="'+esc(rowData[f.name]||'')+'"'+(f.readonly?' readonly style="background:var(--gray-100);cursor:not-allowed"':'')+'>';
       }
