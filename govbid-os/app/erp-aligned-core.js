@@ -1,9 +1,9 @@
-/* GovOps OS｜ERP Aligned Core v2 — 深海軍藍×古金色 */
+/* GovOps OS｜ERP Aligned Core v4 — 深海軍藍×古金色 */
 (function(){
-  const API_ACTIONS={dashboard:'取得ERP儀表板',projectCreate:'新增專案',projectQuery:'查詢專案',activityCreate:'新增活動',activityQuery:'查詢活動',vendorCreate:'新增合作廠商',vendorQuery:'查詢合作廠商',crmQuery:'查詢學員CRM',archiveQuery:'查詢核銷缺件',enrollmentQuery:'查詢招生活動'};
   function $(id){return document.getElementById(id)}
   function profile(){try{return Object.assign({tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'},JSON.parse(localStorage.getItem('govops_profile')||'{}'),JSON.parse(localStorage.getItem('govops_auth')||'{}'))}catch(e){return{tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'}}}
   function params(obj){const p=profile();return Object.assign({tenantId:p.tenantId||'TENANT-COMMERCIAL',userId:p.userId||'USR-OWNER',userRole:p.userRole||p.role||'owner',plan:'enterprise'},obj||{})}
+
   async function api(obj,targetId){
     const t=$(targetId);
     if(t){t.textContent='處理中…';t.style.opacity='.6'}
@@ -14,36 +14,137 @@
       if(t){t.textContent=format(res);t.style.opacity='1'}
       return res
     }catch(e){
-      const res={success:false,message:'系統暫時無法完成操作，請確認後端是否正常。'};
+      const res={success:false,message:'系統暫時無法完成操作。'};
       if(t){t.textContent=res.message;t.style.opacity='1'}
       return res
     }
   }
+
   function format(res){
     if(!res)return'系統沒有回應';
     const ok=res.success!==false;
     let s=(ok?'✅ ':'❌ ')+(res.message||'操作完成');
     const d=res.data||{};
-    ['專案ID','場次ID','活動ID','廠商ID','學員ID','CRM_ID','報名ID','driveUrl'].forEach(k=>{if(d[k])s+='\n'+k+'：'+d[k]});
+    ['專案ID','活動ID','廠商ID','學員ID','CRM_ID','講師ID','人員ID','報名ID','driveUrl'].forEach(k=>{if(d[k])s+='\n'+k+'：'+d[k]});
     if(d.新增筆數!==undefined)s+='\n新增筆數：'+d.新增筆數;
-    if(d.建立筆數!==undefined)s+='\n建立筆數：'+d.建立筆數;
-    if(d.使用分頁)s+='\n分頁：'+d.使用分頁;
     return s
   }
+
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+  // ── 標準表格 ────────────────────────────────────────────
   function renderTable(res,id){
     const box=$(id);if(!box)return;
     const d=(res&&res.data)||{};
-    const arr=d.rows||d.資料||d.專案||d.廠商||d.學員||d.歸檔清單||d.核銷缺件||d.文件||d.簽到表||d.行銷名單||d.回流學員||d.activities||[];
+    const arr=d.rows||d.資料||d.專案||d.廠商||d.學員||d.歸檔清單||d.核銷缺件||d.文件||d.簽到表||d.行銷名單||d.回流學員||[];
     if(!Array.isArray(arr)||!arr.length){box.innerHTML='<div class="empty">查無資料</div>';return}
     const keys=Object.keys(arr[0]).filter(k=>k!=='_row').slice(0,10);
     box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+arr.slice(0,200).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(r[k]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
   }
+
+  // ── 可編輯表格（每行有「編輯」按鈕） ────────────────────
+  function renderTableWithEdit(res,id,onEdit,displayKeys){
+    const box=$(id);if(!box)return;
+    const d=(res&&res.data)||{};
+    const arr=d.rows||d.資料||d.專案||d.廠商||d.學員||[];
+    if(!Array.isArray(arr)||!arr.length){box.innerHTML='<div class="empty">查無資料</div>';return}
+    const keys=displayKeys||Object.keys(arr[0]).filter(k=>k!=='_row').slice(0,8);
+    window.__editRows__=arr;window.__onEditRow__=onEdit;
+    box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'<th style="width:58px;text-align:center">操作</th></tr></thead><tbody>'+arr.slice(0,200).map((r,i)=>'<tr>'+keys.map(k=>'<td>'+esc(r[k]??'')+'</td>').join('')+'<td style="text-align:center"><button class="ghost" style="padding:3px 10px;font-size:.76rem" onclick="window.__onEditRow__(window.__editRows__['+i+'])">編輯</button></td></tr>').join('')+'</tbody></table></div>'
+  }
+
+  // ── 編輯 Modal ────────────────────────────────────────
+  function showEditModal(title,fields,rowData,actionName,idField,afterSave){
+    _removeModal('_govopsModal');
+    const formId='_modalEditForm';
+    const html=_buildFormHtml(fields,rowData);
+    const modal=document.createElement('div');
+    modal.id='_govopsModal';modal.className='modal-backdrop';
+    modal.innerHTML='<div class="modal"><h2>'+esc(title)+'</h2><form id="'+formId+'">'+html+'</form><div class="btns" style="margin-top:14px;justify-content:flex-end"><button class="secondary" id="_modalCancel">取消</button><button class="gold" id="_modalSave">儲存變更</button></div><div id="_modalMsg" class="msg" style="margin-top:8px;min-height:0;display:none"></div></div>';
+    document.body.appendChild(modal);
+    $('_modalCancel').onclick=()=>modal.remove();
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+    $('_modalSave').onclick=async()=>{
+      const msgEl=$('_modalMsg');msgEl.style.display='block';msgEl.textContent='儲存中…';
+      const fd=new FormData($(formId));
+      const payload={action:actionName};
+      if(idField)payload[idField]=rowData[idField];
+      fd.forEach((v,k)=>{if(v!=='')payload[k]=v;});
+      const r=await api(payload,'_modalMsg');
+      if(r&&r.success)setTimeout(()=>{modal.remove();if(afterSave)afterSave();},700);
+    };
+  }
+
+  // ── 選取器 Modal（選廠商、講師、工作人員） ────────────
+  // usage: showPickerModal('查詢講師', ['講師ID','姓名','電話','專業領域'], onSelect)
+  // onSelect(row) — caller decides what to do with the selected row
+  function showPickerModal(queryAction,displayKeys,onSelect,title){
+    _removeModal('_pickerModal');
+    const modal=document.createElement('div');
+    modal.id='_pickerModal';modal.className='modal-backdrop';
+    modal.innerHTML='<div class="modal" style="max-width:680px"><h2>'+(title||'選取資料')+'</h2>'+
+      '<div class="form-row" style="margin-bottom:10px">'+
+      '<div class="field"><input id="_pickerKw" placeholder="關鍵字篩選…" autocomplete="off" onkeydown="if(event.key===\'Enter\')_pickerSearch()"></div>'+
+      '<div class="field" style="max-width:90px"><button onclick="_pickerSearch()">搜尋</button></div></div>'+
+      '<div id="_pickerResult" class="msg" style="min-height:40px">輸入關鍵字或直接搜尋…</div>'+
+      '<div id="_pickerTable" style="margin-top:8px"></div>'+
+      '<div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="secondary" onclick="document.getElementById(\'_pickerModal\').remove()">取消</button></div></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove();});
+
+    window._pickerSearch=async()=>{
+      const kw=$('_pickerKw').value;
+      const r=await api({action:queryAction,keyword:kw},'_pickerResult');
+      const d=(r&&r.data)||{};
+      const arr=d.rows||[];
+      if(!Array.isArray(arr)||!arr.length){$('_pickerTable').innerHTML='<div class="empty">查無資料</div>';return}
+      const keys=displayKeys||Object.keys(arr[0]).filter(k=>k!=='_row').slice(0,6);
+      window._pickerRows=arr;
+      $('_pickerTable').innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'<th style="width:58px;text-align:center">選取</th></tr></thead><tbody>'+
+        arr.slice(0,50).map((row,i)=>'<tr>'+keys.map(k=>'<td>'+esc(row[k]??'')+'</td>').join('')+'<td style="text-align:center"><button class="gold" style="padding:3px 10px;font-size:.76rem" onclick="_pickerSelect('+i+')">選取</button></td></tr>').join('')+
+        '</tbody></table></div>';
+      window._pickerSelect=i=>{
+        modal.remove();
+        if(onSelect)onSelect(window._pickerRows[i]);
+      };
+    };
+    // Auto-search on open
+    window._pickerSearch();
+  }
+
+  function _removeModal(id){const el=document.getElementById(id);if(el)el.remove();}
+
+  function _buildFormHtml(fields,rowData){
+    const rows=[];let buf=[];
+    fields.forEach((f,i)=>{
+      let input;
+      if(f.type==='select'){
+        const opts=(f.options||[]).map(o=>{const val=typeof o==='object'?o.value:o;const lbl=typeof o==='object'?o.label:o;const sel=String(rowData[f.name]||'')===String(val)?' selected':'';return'<option value="'+esc(val)+'"'+sel+'>'+esc(lbl)+'</option>';}).join('');
+        input='<select name="'+esc(f.name)+'">'+opts+'</select>';
+      }else if(f.type==='textarea'){
+        input='<textarea name="'+esc(f.name)+'" rows="2">'+esc(rowData[f.name]||'')+'</textarea>';
+      }else{
+        input='<input name="'+esc(f.name)+'" type="'+(f.type||'text')+'" value="'+esc(rowData[f.name]||'')+'"'+(f.readonly?' readonly style="background:var(--gray-100);cursor:not-allowed"':'')+'>';
+      }
+      buf.push('<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>');
+      if(buf.length===2||i===fields.length-1){rows.push('<div class="form-row">'+buf.join('')+'</div>');buf=[];}
+    });
+    return rows.join('');
+  }
+
   function dateTW(id){const v=$(id)&&$(id).value;if(!v)return'';const a=v.split('-');return a[0]+'/'+a[1]+'/'+a[2]}
+
   function nav(){
     const path=location.pathname.split('/').pop()||'index.html';
-    const pages=[['dashboard.html','儀表板'],['projects.html','專案'],['activities.html','活動'],['enrollment.html','招生報名'],['course-ops.html','課程執行'],['vendors.html','廠商'],['crm.html','CRM'],['archive.html','核銷'],['finance-secretary.html','財務'],['pre-launch-qa.html','驗收']];
+    const pages=[
+      ['dashboard.html','儀表板'],['projects.html','專案'],['activities.html','活動'],
+      ['enrollment.html','招生報名'],['course-ops.html','課程執行'],
+      ['vendors.html','廠商'],['resource-master.html','人員主檔'],
+      ['crm.html','CRM'],['archive.html','核銷'],
+      ['finance-secretary.html','財務'],['pre-launch-qa.html','驗收']
+    ];
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('')
   }
-  window.ERPALIGNED={API_ACTIONS,api,renderTable,dateTW,nav,$,params,format,esc};
+
+  window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,$,params,format,esc};
 })();
