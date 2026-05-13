@@ -168,7 +168,7 @@
     const path=location.pathname.split('/').pop()||'index.html';
     const pages=[
       ['dashboard.html','儀表板'],['projects.html','專案'],['activities.html','活動'],
-      ['enrollment.html','招生報名'],['course-ops.html','課程執行'],
+      ['enrollment.html','招生報名'],['course-sop.html','開課SOP'],['course-ops.html','課程執行'],
       ['vendors.html','廠商'],['resource-master.html','人員主檔'],
       ['crm.html','CRM'],['archive.html','核銷'],
       ['finance-secretary.html','財務']
