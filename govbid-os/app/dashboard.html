@@ -1,1 +1,91 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GovOps OS｜營運儀表板</title><link rel="stylesheet" href="./erp-page-style.css"></head><body><header><div class="wrap"><div class="brand">GovOps OS｜營運儀表板</div><div class="sub">對齊：營運儀表板／應收帳款／收款紀錄／專案損益</div><nav id="nav"></nav></div></header><main class="wrap"><section class="card span12"><h2>整體營運查詢</h2><div class="hint">正式上線版：儀表板也要可查詢，不只顯示數字。</div><div class="btns"><button onclick="loadDashboard()">查詢營運儀表板</button><button class="secondary" onclick="loadProjectOverview()">查詢專案總覽</button><button class="secondary" onclick="loadRisk()">查詢風險報告</button></div><div id="msg" class="msg">尚未查詢。</div><div id="kpis" class="kpis" style="margin-top:12px"></div><div id="table"></div></section></main><script src="./config.js"></script><script src="./govops-api-client.js"></script><script src="./erp-aligned-core.js"></script><script>document.getElementById('nav').innerHTML=ERPALIGNED.nav();async function loadDashboard(){const r=await ERPALIGNED.api({action:'取得ERP儀表板'},'msg');const d=r.data||{};document.getElementById('kpis').innerHTML=['專案總數','活動總數','今日待辦','未收款金額','已收收入','支出總額','損益','核銷缺件'].map(k=>'<div class="kpi"><div class="num">'+(d[k]??0)+'</div><div class="name">'+k+'</div></div>').join('');ERPALIGNED.renderTable({data:{rows:d.未收款||d.今日任務||d.核銷缺件明細||[]}},'table')}async function loadProjectOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'msg');ERPALIGNED.renderTable(r,'table')}async function loadRisk(){const r=await ERPALIGNED.api({action:'ERP風險報告'},'msg');ERPALIGNED.renderTable({data:{rows:[...(r.data?.逾期任務||[]),...(r.data?.未收款||[]),...(r.data?.核銷缺件||[])]}},'table')}loadDashboard();</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜營運儀表板</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">政府標案全流程營運系統</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title">
+    <h1>營運儀表板</h1>
+    <p>即時掌握專案、活動、財務、核銷全貌</p>
+  </div>
+
+  <div id="kpis" class="kpis" style="margin-bottom:16px">
+    <div class="kpi"><div class="num">—</div><div class="name">載入中</div></div>
+  </div>
+
+  <div class="grid">
+    <section class="card span8">
+      <h2>資料總覽</h2>
+      <div class="btns">
+        <button onclick="loadDashboard()">刷新儀表板</button>
+        <button class="secondary" onclick="loadOverview()">專案總覽</button>
+        <button class="secondary" onclick="loadRisk()">風險報告</button>
+        <button class="secondary" onclick="loadMarketing()">行銷名單</button>
+        <button class="secondary" onclick="loadReturn()">回流學員</button>
+      </div>
+      <div id="dashMsg" class="msg" style="margin-top:12px">載入中…</div>
+      <div id="table" style="margin-top:12px"></div>
+    </section>
+
+    <section class="card span4">
+      <h2>快速操作</h2>
+      <div class="btns" style="flex-direction:column;align-items:stretch">
+        <button class="gold" onclick="location.href='./projects.html'">＋ 新增專案</button>
+        <button class="secondary" onclick="location.href='./activities.html'">＋ 新增活動</button>
+        <button class="secondary" onclick="location.href='./enrollment.html'">＋ 招生報名</button>
+        <button class="secondary" onclick="location.href='./vendors.html'">＋ 新增廠商</button>
+        <button class="secondary" onclick="location.href='./crm.html'">學員 CRM</button>
+        <button class="secondary" onclick="location.href='./archive.html'">核銷歸檔</button>
+        <button class="ghost" onclick="location.href='./finance-secretary.html'">財務秘書</button>
+      </div>
+      <div class="section-sep" style="margin-top:18px"><span>系統狀態</span></div>
+      <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
+      <div class="btns" style="margin-top:8px">
+        <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
+        <button class="secondary" onclick="location.href='./pre-launch-qa.html'" style="font-size:.78rem;padding:6px 12px">驗收頁面</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+async function loadDashboard() {
+  const r = await ERPALIGNED.api({action:'取得ERP儀表板'}, 'dashMsg');
+  const d = r.data || {};
+  const kpiDefs = [
+    ['專案總數','','navy'],['活動總數','','navy'],['今日待辦','','warn'],
+    ['未收款金額','元','danger'],['已收收入','元','ok'],['支出總額','元',''],
+    ['損益','元',''],['核銷缺件','件','warn']
+  ];
+  document.getElementById('kpis').innerHTML = kpiDefs.map(([k,u,cls])=>
+    '<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+(d[k]??'—')+'</div><div class="name">'+k+(u?'('+u+')':'')+'</div></div>'
+  ).join('');
+  const rows = d.未收款||d.今日任務||d.核銷缺件明細||[];
+  if(rows.length) ERPALIGNED.renderTable({data:{rows}}, 'table');
+  else document.getElementById('table').innerHTML = '<div class="empty">目前無待處理項目</div>';
+}
+async function loadOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
+async function loadRisk(){const r=await ERPALIGNED.api({action:'ERP風險報告'},'dashMsg');const d=r.data||{};const rows=[...(d.逾期任務||[]),...(d.未收款||[]),...(d.核銷缺件||[])];ERPALIGNED.renderTable({data:{rows}},'table')}
+async function loadMarketing(){const r=await ERPALIGNED.api({action:'行銷名單'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
+async function loadReturn(){const r=await ERPALIGNED.api({action:'回流學員分析'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
+async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
+
+loadDashboard();
+healthCheck();
+</script>
+</body>
+</html>
