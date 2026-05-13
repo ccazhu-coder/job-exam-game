@@ -119,3 +119,9 @@ tbody tr:last-child{border-bottom:none}
   .btns{gap:6px}
   button{padding:8px 14px;font-size:.82rem}
 }
+
+/* ── Compatibility aliases ── */
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.row > div{display:flex;flex-direction:column;gap:3px}
+button.green{background:var(--gold);color:var(--navy);border-color:var(--gold)}
+button.green:hover{background:var(--gold-light);border-color:var(--gold-light)}
