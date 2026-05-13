@@ -1,1 +1,142 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GovOps OS｜廠商管理</title><link rel="stylesheet" href="./erp-page-style.css"></head><body><header><div class="wrap"><div class="brand">GovOps OS｜廠商管理</div><div class="sub">對齊：23_合作廠商主檔｜新增、修改、查詢｜含支付、匯款、發票、扣繳</div><nav id="nav"></nav></div></header><main class="wrap"><div class="grid"><section class="card span6"><h2>新增合作廠商</h2><form id="createForm"><label>名稱＊</label><input name="名稱" required><label>類型</label><select name="類型"><option>場地</option><option>餐廳/餐飲</option><option>原材料/物料</option><option>印刷/設計</option><option>交通/接駁</option><option>設備租借</option><option>住宿</option><option>保險</option><option>攝影錄影</option><option>講師</option><option>工作人員</option><option>其他廠商</option></select><div class="row"><div><label>聯絡人</label><input name="聯絡人"></div><div><label>電話</label><input name="電話"></div></div><label>Email</label><input name="Email" type="email"><div class="row"><div><label>支付方式</label><select name="支付方式"><option>匯款</option><option>現金</option><option>LINE Pay</option><option>支票</option><option>其他</option></select></div><div><label>預設單價</label><input name="預設單價" type="number"></div></div><div class="row"><div><label>銀行</label><input name="銀行"></div><div><label>帳號</label><input name="帳號"></div></div><div class="row"><div><label>戶名</label><input name="戶名"></div><div><label>統編/身分證</label><input name="統編/身分證"></div></div><div class="row"><div><label>是否開發票</label><select name="是否開發票"><option value="">未確認</option><option>是</option><option>否</option></select></div><div><label>是否扣繳</label><select name="是否扣繳"><option value="">未確認</option><option>是</option><option>否</option></select></div></div><div class="row"><div><label>扣繳類型</label><input name="扣繳類型" placeholder="講師費、薪資、執行業務所得"></div><div><label>常用</label><select name="常用"><option value="">未設定</option><option>是</option><option>否</option></select></div></div><label>評價</label><select name="評價"><option value="">未評價</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select><label>備註</label><textarea name="備註"></textarea><button>新增廠商</button></form><div id="createMsg" class="msg">尚未新增。</div></section><section class="card span6"><h2>修改合作廠商</h2><form id="updateForm"><label>廠商編號＊</label><input name="廠商編號" required><label>名稱</label><input name="名稱"><label>類型</label><input name="類型"><div class="row"><div><label>聯絡人</label><input name="聯絡人"></div><div><label>電話</label><input name="電話"></div></div><label>Email</label><input name="Email" type="email"><div class="row"><div><label>支付方式</label><input name="支付方式"></div><div><label>預設單價</label><input name="預設單價" type="number"></div></div><div class="row"><div><label>銀行</label><input name="銀行"></div><div><label>帳號</label><input name="帳號"></div></div><div class="row"><div><label>戶名</label><input name="戶名"></div><div><label>統編/身分證</label><input name="統編/身分證"></div></div><div class="row"><div><label>是否開發票</label><select name="是否開發票"><option value="">不變更</option><option>是</option><option>否</option></select></div><div><label>是否扣繳</label><select name="是否扣繳"><option value="">不變更</option><option>是</option><option>否</option></select></div></div><div class="row"><div><label>扣繳類型</label><input name="扣繳類型"></div><div><label>常用</label><select name="常用"><option value="">不變更</option><option>是</option><option>否</option></select></div></div><label>評價</label><select name="評價"><option value="">不變更</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select><label>備註</label><textarea name="備註"></textarea><button class="green">修改廠商</button></form><div id="updateMsg" class="msg">尚未修改。</div></section><section class="card span12"><h2>查詢合作廠商</h2><div class="row"><input id="keyword" placeholder="名稱、類型、電話、銀行、統編/身分證、備註"><button onclick="queryVendors()">查詢廠商</button></div><div class="row" style="margin-top:10px"><select id="type"><option value="">全部類型</option><option>場地</option><option>餐廳/餐飲</option><option>印刷/設計</option><option>交通/接駁</option><option>設備租借</option><option>講師</option><option>工作人員</option></select><select id="favorite"><option value="">全部常用狀態</option><option>是</option><option>否</option></select></div><div id="queryMsg" class="msg">尚未查詢。</div><div id="table"></div></section></div></main><script src="./config.js"></script><script src="./govops-api-client.js"></script><script src="./erp-aligned-core.js"></script><script>document.getElementById('nav').innerHTML=ERPALIGNED.nav();function obj(id,action){const fd=new FormData(document.getElementById(id));const o={action};fd.forEach((v,k)=>{if(v)o[k]=v});return o}document.getElementById('createForm').addEventListener('submit',async e=>{e.preventDefault();await ERPALIGNED.api(obj('createForm','新增合作廠商'),'createMsg');queryVendors();});document.getElementById('updateForm').addEventListener('submit',async e=>{e.preventDefault();await ERPALIGNED.api(obj('updateForm','修改合作廠商'),'updateMsg');queryVendors();});async function queryVendors(){const r=await ERPALIGNED.api({action:'查詢合作廠商',keyword:document.getElementById('keyword').value,類型:document.getElementById('type').value,常用:document.getElementById('favorite').value},'queryMsg');ERPALIGNED.renderTable(r,'table')}queryVendors();</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜廠商管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">對齊：23_合作廠商主檔</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title">
+    <h1>廠商管理</h1>
+    <p>含支付方式、匯款資訊、發票、扣繳；查詢結果點「編輯」修改</p>
+  </div>
+  <div class="grid">
+    <section class="card span4">
+      <h2>新增合作廠商</h2>
+      <form id="createForm">
+        <div class="form-row">
+          <div class="field"><label>名稱＊</label><input name="名稱" required></div>
+          <div class="field"><label>類型</label>
+            <select name="類型">
+              <option>場地</option><option>餐廳/餐飲</option><option>原材料/物料</option>
+              <option>印刷/設計</option><option>交通/接駁</option><option>設備租借</option>
+              <option>住宿</option><option>保險</option><option>攝影錄影</option>
+              <option>其他廠商</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>聯絡人</label><input name="聯絡人"></div>
+          <div class="field"><label>電話</label><input name="電話" type="tel"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Email</label><input name="Email" type="email"></div>
+          <div class="field"><label>預設單價</label><input name="預設單價" type="number" min="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>支付方式</label>
+            <select name="支付方式"><option>匯款</option><option>現金</option><option>LINE Pay</option><option>支票</option><option>其他</option></select>
+          </div>
+          <div class="field"><label>常用</label>
+            <select name="常用"><option value="">未設定</option><option>是</option><option>否</option></select>
+          </div>
+        </div>
+        <div class="section-sep"><span>匯款</span></div>
+        <div class="form-row">
+          <div class="field"><label>銀行</label><input name="銀行"></div>
+          <div class="field"><label>帳號</label><input name="帳號"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>戶名</label><input name="戶名"></div>
+          <div class="field"><label>統編/身分證</label><input name="統編/身分證"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>是否開發票</label>
+            <select name="是否開發票"><option value="">未確認</option><option>是</option><option>否</option></select>
+          </div>
+          <div class="field"><label>是否扣繳</label>
+            <select name="是否扣繳"><option value="">未確認</option><option>是</option><option>否</option></select>
+          </div>
+        </div>
+        <label>備註</label><textarea name="備註" rows="2"></textarea>
+        <div class="btns"><button type="submit">＋ 新增廠商</button></div>
+      </form>
+      <div id="createMsg" class="msg" style="margin-top:8px">尚未新增。</div>
+    </section>
+
+    <section class="card span8">
+      <h2>查詢廠商</h2>
+      <div class="form-row">
+        <div class="field"><input id="keyword" placeholder="名稱、電話、銀行、統編" onkeydown="if(event.key==='Enter')queryVendors()"></div>
+        <div class="field" style="max-width:160px">
+          <select id="vtype">
+            <option value="">全部類型</option>
+            <option>場地</option><option>餐廳/餐飲</option><option>印刷/設計</option>
+            <option>交通/接駁</option><option>設備租借</option><option>攝影錄影</option><option>其他廠商</option>
+          </select>
+        </div>
+        <div class="field" style="max-width:100px">
+          <select id="vfav"><option value="">全部</option><option>是</option><option>否</option></select>
+        </div>
+        <div class="field" style="max-width:100px"><button onclick="queryVendors()">查詢</button></div>
+      </div>
+      <div id="queryMsg" class="msg">尚未查詢。</div>
+      <div id="table" style="margin-top:8px"></div>
+    </section>
+  </div>
+</main>
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+document.getElementById('createForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const o = {action:'新增合作廠商'}; fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r = await ERPALIGNED.api(o, 'createMsg');
+  if (r && r.success) { e.target.reset(); queryVendors(); }
+});
+
+const VEN_EDIT_FIELDS = [
+  {name:'廠商編號', label:'廠商編號', readonly:true},
+  {name:'名稱', label:'名稱'},
+  {name:'類型', label:'類型', type:'select', options:['場地','餐廳/餐飲','原材料/物料','印刷/設計','交通/接駁','設備租借','住宿','保險','攝影錄影','其他廠商']},
+  {name:'聯絡人', label:'聯絡人'},
+  {name:'電話', label:'電話', type:'tel'},
+  {name:'Email', label:'Email', type:'email'},
+  {name:'支付方式', label:'支付方式', type:'select', options:['匯款','現金','LINE Pay','支票','其他']},
+  {name:'預設單價', label:'預設單價', type:'number'},
+  {name:'銀行', label:'銀行'},
+  {name:'帳號', label:'帳號'},
+  {name:'戶名', label:'戶名'},
+  {name:'統編/身分證', label:'統編／身分證'},
+  {name:'是否開發票', label:'是否開發票', type:'select', options:['','是','否']},
+  {name:'是否扣繳', label:'是否扣繳', type:'select', options:['','是','否']},
+  {name:'常用', label:'常用', type:'select', options:['','是','否']},
+  {name:'評價', label:'評價', type:'select', options:['','5','4','3','2','1']},
+  {name:'備註', label:'備註', type:'textarea'}
+];
+
+function openVenEdit(row) {
+  ERPALIGNED.showEditModal('編輯廠商：' + (row['名稱']||''), VEN_EDIT_FIELDS, row, '修改合作廠商', '廠商編號', queryVendors);
+}
+
+async function queryVendors() {
+  const r = await ERPALIGNED.api({action:'查詢合作廠商', keyword: document.getElementById('keyword').value, 類型: document.getElementById('vtype').value, 常用: document.getElementById('vfav').value}, 'queryMsg');
+  ERPALIGNED.renderTableWithEdit(r, 'table', openVenEdit,
+    ['廠商編號','名稱','類型','電話','支付方式','銀行','常用','評價']);
+}
+
+queryVendors();
+</script>
+</body>
+</html>
