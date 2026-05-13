@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜開課前SOP</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.sop-phase { margin-bottom:24px; }
+.sop-phase-title {
+  display:flex; align-items:center; gap:10px;
+  font-size:1rem; font-weight:700; color:var(--navy);
+  padding:8px 14px; border-radius:8px; margin-bottom:10px;
+}
+.sop-phase-d15 { background:#e8f0fe; }
+.sop-phase-d7  { background:#fff3cd; }
+.sop-phase-d5  { background:#fde8e8; }
+.sop-phase-d2  { background:#fce4d6; }
+.sop-item {
+  display:flex; align-items:flex-start; gap:10px;
+  padding:10px 14px; border-radius:8px; margin-bottom:6px;
+  background:#fff; border:1px solid var(--gray-200);
+  transition:background .15s;
+}
+.sop-item.done { background:#f0faf0; border-color:#b2dfdb; opacity:.75; }
+.sop-item.overdue { border-color:#f44336; background:#fff5f5; }
+.sop-item.soon { border-color:#ff9800; background:#fffde7; }
+.sop-item input[type=checkbox] { margin-top:3px; width:16px; height:16px; cursor:pointer; flex-shrink:0; }
+.sop-item-body { flex:1; }
+.sop-item-task { font-weight:600; font-size:.92rem; color:var(--navy); }
+.sop-item.done .sop-item-task { text-decoration:line-through; color:var(--gray-500); }
+.sop-item-desc { font-size:.8rem; color:var(--gray-500); margin-top:2px; }
+.sop-item-meta { font-size:.75rem; margin-top:4px; display:flex; gap:8px; flex-wrap:wrap; }
+.badge { padding:2px 8px; border-radius:12px; font-size:.72rem; font-weight:600; }
+.badge-cat-講師 { background:#e3f2fd; color:#1565c0; }
+.badge-cat-場地 { background:#e8f5e9; color:#2e7d32; }
+.badge-cat-學員 { background:#fce4ec; color:#c62828; }
+.badge-cat-長官 { background:#f3e5f5; color:#6a1b9a; }
+.badge-cat-物品 { background:#fff8e1; color:#f57f17; }
+.badge-cat-餐點 { background:#fbe9e7; color:#bf360c; }
+.badge-done  { background:#e8f5e9; color:#2e7d32; }
+.badge-overdue { background:#ffebee; color:#c62828; }
+.badge-soon  { background:#fff3e0; color:#e65100; }
+.sop-progress { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.sop-progress-bar { flex:1; height:12px; background:var(--gray-200); border-radius:6px; overflow:hidden; }
+.sop-progress-fill { height:100%; background:var(--gold); border-radius:6px; transition:width .3s; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">政府標案全流程營運系統</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title">
+    <h1>開課前SOP作業清單</h1>
+    <p>依開課日期自動產生 D-15 / D-7 / D-5 / D-2 階段作業，追蹤完成狀態</p>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="form-row" style="align-items:flex-end">
+      <div class="field" style="max-width:360px">
+        <label>選取活動</label>
+        <div style="display:flex;gap:6px">
+          <input id="actId" placeholder="活動ID（ACT-…）" style="flex:1">
+          <button type="button" class="secondary" onclick="pickAct()" style="flex:0 0 58px">選取</button>
+        </div>
+      </div>
+      <div class="field" style="max-width:220px">
+        <label>活動名稱</label>
+        <input id="actName" readonly style="background:var(--gray-100)">
+      </div>
+      <div class="field" style="max-width:160px">
+        <label>開課日期</label>
+        <input id="actDate" readonly style="background:var(--gray-100)">
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <button onclick="loadSop()">載入／產生SOP清單</button>
+        <button class="secondary" onclick="batchDone()">批次完成選取項目</button>
+      </div>
+    </div>
+    <div id="sopMsg" class="msg" style="margin-top:8px"></div>
+  </div>
+
+  <!-- 進度條 -->
+  <div id="sopProgressArea" style="display:none" class="card" style="padding:12px 18px">
+    <div class="sop-progress">
+      <span style="font-size:.85rem;color:var(--navy);font-weight:600" id="sopProgressTxt"></span>
+      <div class="sop-progress-bar"><div class="sop-progress-fill" id="sopProgressFill" style="width:0%"></div></div>
+      <span style="font-size:.85rem;color:var(--gray-500)" id="sopProgressPct">0%</span>
+    </div>
+  </div>
+
+  <div id="sopBody"></div>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+var _sopRows = [];
+
+function pickAct(){
+  ERPALIGNED.showPickerModal('查詢活動',
+    ['活動ID','活動名稱','活動日期','活動地點','講師','狀態'],
+    function(row){
+      document.getElementById('actId').value   = row['活動ID']||'';
+      document.getElementById('actName').value  = row['活動名稱']||'';
+      document.getElementById('actDate').value  = String(row['活動日期']||'').replace(/\//g,'-');
+      loadSop();
+    }, '選取活動');
+}
+
+async function loadSop(){
+  var actId = document.getElementById('actId').value.trim();
+  if(!actId){ document.getElementById('sopMsg').textContent='❌ 請先選取活動'; return; }
+  document.getElementById('sopMsg').textContent='⏳ 載入中…';
+
+  // 先嘗試查詢現有
+  var r = await ERPALIGNED.api({action:'查詢SOP','活動ID':actId},'sopMsg');
+  if(!r){ document.getElementById('sopMsg').textContent='❌ 載入失敗'; return; }
+
+  if(r.success && r.data && r.data.rows && r.data.rows.length > 0){
+    _sopRows = r.data.rows;
+    renderSop();
+  } else {
+    // 尚無清單，自動產生
+    document.getElementById('sopMsg').textContent='⏳ 首次使用，自動產生SOP清單…';
+    var g = await ERPALIGNED.api({action:'產生SOP作業清單','活動ID':actId},'sopMsg');
+    if(g && g.success){
+      var r2 = await ERPALIGNED.api({action:'查詢SOP','活動ID':actId}, null);
+      if(r2 && r2.data && r2.data.rows){ _sopRows = r2.data.rows; renderSop(); }
+    }
+  }
+}
+
+function renderSop(){
+  var courseDate = document.getElementById('actDate').value || '';
+  var now = new Date(); now.setHours(0,0,0,0);
+
+  var phases = [
+    {key:'d15', label:'📅 D-15 — 開課前15天', days:15, cls:'sop-phase-d15'},
+    {key:'d7',  label:'🏫 D-7  — 開課前7天',  days:7,  cls:'sop-phase-d7'},
+    {key:'d5',  label:'👥 D-5  — 開課前5天',  days:5,  cls:'sop-phase-d5'},
+    {key:'d2',  label:'📦 D-2  — 開課前2天',  days:2,  cls:'sop-phase-d2'},
+  ];
+
+  // 計算每個任務的到期日和狀態
+  var courseDateObj = courseDate ? new Date(courseDate) : null;
+  if(courseDateObj) courseDateObj.setHours(0,0,0,0);
+
+  function getDue(dDays){
+    if(!courseDateObj) return null;
+    var d = new Date(courseDateObj); d.setDate(d.getDate() - dDays); return d;
+  }
+  function diffDays(d){ if(!d) return null; return Math.round((d - now)/(1000*60*60*24)); }
+
+  // 統計完成數
+  var total = _sopRows.length;
+  var doneCount = _sopRows.filter(function(r){ return String(r['完成狀態']||'')==='已完成'; }).length;
+  var pct = total ? Math.round(doneCount/total*100) : 0;
+
+  document.getElementById('sopProgressArea').style.display = '';
+  document.getElementById('sopProgressTxt').textContent = '完成進度：'+doneCount+' / '+total+' 項';
+  document.getElementById('sopProgressFill').style.width = pct+'%';
+  document.getElementById('sopProgressPct').textContent = pct+'%';
+
+  var html = '';
+  phases.forEach(function(ph){
+    var rows = _sopRows.filter(function(r){ return parseInt(r['D_天數']||0) === ph.days; });
+    if(!rows.length) return;
+    var dueDate = getDue(ph.days);
+    var diff = diffDays(dueDate);
+    var dueTxt = dueDate ? ('截止：'+dueDate.toLocaleDateString('zh-TW')) : '';
+    var urgency = '';
+    if(diff !== null){
+      if(diff < 0) urgency = '⚠️ 已逾期 '+Math.abs(diff)+' 天';
+      else if(diff === 0) urgency = '🔴 今日截止';
+      else if(diff <= 3) urgency = '🟡 還剩 '+diff+' 天';
+      else urgency = '🟢 還剩 '+diff+' 天';
+    }
+
+    html += '<div class="sop-phase"><div class="sop-phase-title '+ph.cls+'">';
+    html += ph.label;
+    if(dueTxt) html += ' <span style="font-size:.8rem;font-weight:400;margin-left:8px">'+ERPALIGNED.esc(dueTxt)+'</span>';
+    if(urgency) html += ' <span style="font-size:.8rem;margin-left:4px">'+urgency+'</span>';
+    html += '</div>';
+
+    rows.forEach(function(row){
+      var done = String(row['完成狀態']||'') === '已完成';
+      var isOverdue = !done && diff !== null && diff < 0;
+      var isSoon    = !done && diff !== null && diff >= 0 && diff <= 3;
+      var cls = done ? 'done' : isOverdue ? 'overdue' : isSoon ? 'soon' : '';
+      var cat = row['類別'] || row['負責類型'] || '';
+
+      html += '<div class="sop-item '+cls+'" id="sop-'+ERPALIGNED.esc(row['SOP_ID'])+'">';
+      html += '<input type="checkbox" '+(done?'checked':'')+' onchange="toggleSop(\''+ERPALIGNED.esc(row['SOP_ID'])+'\',this.checked)">';
+      html += '<div class="sop-item-body">';
+      html += '<div class="sop-item-task">'+ERPALIGNED.esc(row['任務名稱']||'')+'</div>';
+      if(row['說明']) html += '<div class="sop-item-desc">'+ERPALIGNED.esc(String(row['說明']||''))+'</div>';
+      html += '<div class="sop-item-meta">';
+      html += '<span class="badge badge-cat-'+cat+'">'+ERPALIGNED.esc(cat)+'</span>';
+      if(done) html += '<span class="badge badge-done">✅ 完成' + (row['完成時間']?' '+String(row['完成時間']).substring(0,10):'')+'</span>';
+      else if(isOverdue) html += '<span class="badge badge-overdue">⚠️ 逾期</span>';
+      else if(isSoon) html += '<span class="badge badge-soon">⏰ 即將到期</span>';
+      if(row['備註']) html += '<span style="font-size:.75rem;color:var(--gray-500)">備註：'+ERPALIGNED.esc(String(row['備註']))+'</span>';
+      html += '</div></div></div>';
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('sopBody').innerHTML = html || '<div class="msg">尚無SOP資料</div>';
+  document.getElementById('sopMsg').textContent = '已載入 '+total+' 項作業（完成 '+doneCount+' 項）';
+}
+
+async function toggleSop(sopId, checked){
+  var status = checked ? '已完成' : '待辦';
+  var profile = JSON.parse(localStorage.getItem('govops_profile')||'{}');
+  var r = await ERPALIGNED.api({action:'更新SOP完成狀態','SOP_ID':sopId,'完成狀態':status,'完成人員':profile.userName||''}, null);
+  if(r && r.success){
+    // 更新本地快取
+    _sopRows.forEach(function(row){ if(row['SOP_ID']===sopId){ row['完成狀態']=status; row['完成時間']=checked?new Date().toLocaleDateString('zh-TW'):''; } });
+    renderSop();
+  } else {
+    alert('更新失敗，請重試');
+    // 還原 checkbox
+    var el = document.getElementById('sop-'+sopId);
+    if(el){ var cb = el.querySelector('input[type=checkbox]'); if(cb) cb.checked = !checked; }
+  }
+}
+
+async function batchDone(){
+  var checked = [];
+  document.querySelectorAll('#sopBody input[type=checkbox]:checked').forEach(function(cb){
+    var item = cb.closest('.sop-item');
+    if(item && !item.classList.contains('done')){
+      var id = item.id.replace('sop-','');
+      if(id) checked.push(id);
+    }
+  });
+  if(!checked.length){ alert('請先在名單中勾選未完成的項目'); return; }
+  var profile = JSON.parse(localStorage.getItem('govops_profile')||'{}');
+  var r = await ERPALIGNED.api({action:'批次完成SOP','SOP_IDs':checked.join(','),'完成人員':profile.userName||''},'sopMsg');
+  if(r && r.success){ await loadSop(); }
+}
+</script>
+</body>
+</html>
