@@ -141,7 +141,7 @@
       ['enrollment.html','招生報名'],['course-ops.html','課程執行'],
       ['vendors.html','廠商'],['resource-master.html','人員主檔'],
       ['crm.html','CRM'],['archive.html','核銷'],
-      ['finance-secretary.html','財務'],['pre-launch-qa.html','驗收']
+      ['finance-secretary.html','財務']
     ];
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
   }
