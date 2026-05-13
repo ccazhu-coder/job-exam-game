@@ -1,1 +1,98 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GovOps OS｜專案管理</title><link rel="stylesheet" href="./erp-page-style.css"></head><body><header><div class="wrap"><div class="brand">GovOps OS｜專案管理</div><div class="sub">對齊：01_專案主檔｜每個模組必備：新增、修改、查詢</div><nav id="nav"></nav></div></header><main class="wrap"><div class="grid"><section class="card span6"><h2>新增專案</h2><form id="createForm"><label>專案計畫名稱＊</label><input name="專案計畫名稱" required><div class="row"><div><label>專案類型</label><select name="專案類型"><option>政府標案</option><option>自辦活動</option><option>委託課程</option><option>公會計畫</option><option>其他</option></select></div><div><label>主辦／委託單位</label><input name="主辦單位"></div></div><div class="row"><div><label>開始日期</label><input name="開始日期" type="date"></div><div><label>結束日期</label><input name="結束日期" type="date"></div></div><label>專案說明</label><textarea name="專案說明"></textarea><button>新增專案</button></form><div id="createMsg" class="msg">尚未新增。</div></section><section class="card span6"><h2>修改專案</h2><form id="updateForm"><label>專案ID＊</label><input name="專案ID" required><label>變更原因＊</label><input name="變更原因" required><label>專案計畫名稱</label><input name="專案計畫名稱"><div class="row"><div><label>專案類型</label><input name="專案類型"></div><div><label>契約金額</label><input name="契約金額" type="number"></div></div><label>狀態</label><select name="status"><option value="">不變更</option><option value="active">進行中</option><option value="closed">已結案</option><option value="cancelled">已取消</option></select><button class="green">修改專案</button></form><div id="updateMsg" class="msg">尚未修改。</div></section><section class="card span12"><h2>查詢專案</h2><div class="hint">可輸入專案名稱、專案ID、主辦單位、狀態關鍵字。</div><div class="row"><input id="keyword" placeholder="關鍵字"><button onclick="queryProjects()">查詢專案</button></div><div id="queryMsg" class="msg">尚未查詢。</div><div id="table"></div></section></div></main><script src="./config.js"></script><script src="./govops-api-client.js"></script><script src="./erp-aligned-core.js"></script><script>document.getElementById('nav').innerHTML=ERPALIGNED.nav();document.getElementById('createForm').addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target);const obj={action:'新增專案'};fd.forEach((v,k)=>obj[k]=v);await ERPALIGNED.api(obj,'createMsg');queryProjects();});document.getElementById('updateForm').addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target);const obj={action:'修改專案'};fd.forEach((v,k)=>{if(v)obj[k]=v});await ERPALIGNED.api(obj,'updateMsg');queryProjects();});async function queryProjects(){const r=await ERPALIGNED.api({action:'查詢專案',keyword:document.getElementById('keyword').value},'queryMsg');ERPALIGNED.renderTable(r,'table')}queryProjects();</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜專案管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">對齊：01_專案主檔</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title">
+    <h1>專案管理</h1>
+    <p>新增與查詢專案，查詢結果點「編輯」修改資料</p>
+  </div>
+  <div class="grid">
+    <section class="card span4">
+      <h2>新增專案</h2>
+      <form id="createForm">
+        <div class="form-row">
+          <div class="field"><label>專案計畫名稱＊</label><input name="專案計畫名稱" required></div>
+          <div class="field"><label>專案類型</label>
+            <select name="專案類型">
+              <option>政府標案</option><option>自辦活動</option><option>委託課程</option><option>公會計畫</option><option>其他</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>主辦／委託單位</label><input name="主辦單位"></div>
+          <div class="field"><label>契約金額（元）</label><input name="契約金額" type="number" min="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>開始日期</label><input name="開始日期" type="date"></div>
+          <div class="field"><label>結束日期</label><input name="結束日期" type="date"></div>
+        </div>
+        <label>專案說明</label>
+        <textarea name="專案說明" rows="3"></textarea>
+        <div class="btns"><button type="submit">新增專案</button></div>
+      </form>
+      <div id="createMsg" class="msg" style="margin-top:8px">尚未新增。</div>
+    </section>
+
+    <section class="card span8">
+      <h2>查詢專案</h2>
+      <div class="form-row">
+        <div class="field"><input id="keyword" placeholder="專案名稱、主辦單位、狀態、ID" onkeydown="if(event.key==='Enter')queryProjects()"></div>
+        <div class="field" style="max-width:110px"><button onclick="queryProjects()">查詢</button></div>
+      </div>
+      <div id="queryMsg" class="msg">尚未查詢。</div>
+      <div id="table" style="margin-top:8px"></div>
+    </section>
+  </div>
+</main>
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+document.getElementById('createForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const o = {action:'新增專案'}; fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r = await ERPALIGNED.api(o, 'createMsg');
+  if (r && r.success) { e.target.reset(); queryProjects(); }
+});
+
+const PROJ_EDIT_FIELDS = [
+  {name:'專案ID', label:'專案 ID', readonly:true},
+  {name:'專案計畫名稱', label:'專案計畫名稱'},
+  {name:'專案類型', label:'專案類型', type:'select', options:['政府標案','自辦活動','委託課程','公會計畫','其他']},
+  {name:'主辦單位', label:'主辦／委託單位'},
+  {name:'契約金額', label:'契約金額（元）', type:'number'},
+  {name:'開始日期', label:'開始日期', type:'date'},
+  {name:'結束日期', label:'結束日期', type:'date'},
+  {name:'狀態', label:'狀態', type:'select', options:['active','closed','cancelled']},
+  {name:'專案說明', label:'專案說明', type:'textarea'},
+  {name:'變更原因', label:'變更原因＊', type:'textarea'}
+];
+
+function openProjEdit(row) {
+  ERPALIGNED.showEditModal('編輯專案：' + (row['專案計畫名稱']||''), PROJ_EDIT_FIELDS, row, '修改專案', '專案ID', queryProjects);
+}
+
+async function queryProjects() {
+  const r = await ERPALIGNED.api({action:'查詢專案', keyword: document.getElementById('keyword').value}, 'queryMsg');
+  ERPALIGNED.renderTableWithEdit(r, 'table', openProjEdit,
+    ['專案ID','專案計畫名稱','專案類型','主辦單位','契約金額','開始日期','結束日期','狀態']);
+}
+
+queryProjects();
+</script>
+</body>
+</html>
