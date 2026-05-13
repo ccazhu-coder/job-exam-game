@@ -99,10 +99,11 @@
           <label>表單回覆試算表ID（系統自動產生）</label>
           <input id="syncSheetId" placeholder="貼上網址後自動帶入，不用手動剪貼" readonly style="background:var(--gray-100)">
         </div>
-        <div class="field" style="margin-bottom:12px">
-          <label>表單回覆分頁名稱</label>
-          <input id="syncSheetName" value="Form_Responses">
+        <div class="field" style="margin-bottom:4px">
+          <label>表單回覆分頁名稱（留空=自動取第一個工作表）</label>
+          <input id="syncSheetName" placeholder="例：Form_Responses、表單回覆 1（留空自動）">
         </div>
+        <div style="font-size:.78rem;color:var(--gray-500);margin-bottom:12px">欄位自動識別：含「姓名」「電話/手機」「Email/信箱」「公司/單位」「身份/類型」等關鍵字即可匹配。</div>
         <div class="btns" style="flex-wrap:wrap;gap:6px">
           <button onclick="autoExtractSheetId()">自動抓試算表ID</button>
           <button class="secondary" onclick="saveSyncSettings()">儲存表單設定</button>
