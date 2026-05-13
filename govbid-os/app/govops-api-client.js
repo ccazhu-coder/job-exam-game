@@ -1,10 +1,10 @@
-/* GovOps OS Shared API Client v1.0.3
+/* GovOps OS Shared API Client v1.0.4
  * 目的：統一前端 API 呼叫、SaaS session 注入、JSON 防呆、錯誤中文化與 timeout。
  * 產品化更新：整合 Product Core actions，不另外建立第二套 API client。
  */
 (function(){
   const DEFAULT_TIMEOUT_MS=25000;
-  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbx1bhCaRf2c85JQhECQRnrLVinTIYemFd9uN4c997zzYLacNWMne_AogYq-BWyJRPlDLQ/exec';
+  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxazsoFaFUvfAeF3hVCNXaax04qsctQrHCocwKZXKbEj4Kt6T0kKmdw7YRHybz_DOJlfg/exec';
   function getDefaultApiUrl(){
     if(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)return window.GOVOPS_CONFIG.API_URL;
     return window.GOVOPS_API_URL || window.API_URL || DEFAULT_API_URL;
