@@ -1,4 +1,4 @@
-/**
+﻿/**
  * GovOps OS｜ALL-IN-ONE Apps Script 正式後端
  * 目的：一次解決前端找不到 action 的問題。
  * 使用方式：
@@ -16,17 +16,19 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var params = {};
   try {
-    if (e && e.postData && e.postData.contents) {
-      params = JSON.parse(e.postData.contents) || {};
-    } else if (e && e.parameter) {
-      params = e.parameter || {};
+    var raw = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var parsed = JSON.parse(raw);
+    if (parsed && parsed.events && Array.isArray(parsed.events)) {
+      if (typeof govopsLineHandleWebhook_ === 'function') {
+        return ContentService.createTextOutput(JSON.stringify(govopsLineHandleWebhook_(raw))).setMimeType(ContentService.MimeType.JSON);
+      }
     }
+    var params = parsed.action ? parsed : ((e && e.parameter) ? e.parameter : {});
+    return govopsMainRouter_(params);
   } catch (err) {
-    params = (e && e.parameter) ? e.parameter : {};
+    return govopsMainRouter_((e && e.parameter) ? e.parameter : {});
   }
-  return govopsMainRouter_(params);
 }
 
 function govopsMainRouter_(params) {
@@ -49,6 +51,7 @@ function govopsMainRouter_(params) {
   result = govopsProductionRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  if (typeof govopsLineRoute_ === 'function') { result = govopsLineRoute_(params, action); if (result) return jsonOutput(result); }
   result = govopsSimpleFallbackRoute_(params, action);
   if (result) return jsonOutput(result);
 
