@@ -132,7 +132,10 @@
             <div class="field"><label>身分別</label><input name="身分別" placeholder="就業者、在職者…"></div>
             <div class="field"><label>來源渠道</label><input name="報名來源" placeholder="LINE、官網…"></div>
           </div>
-          <div class="field" style="margin-bottom:8px"><label>服務單位</label><input name="服務單位"></div>
+          <div class="form-row">
+            <div class="field"><label>服務單位</label><input name="服務單位"></div>
+            <div class="field"><label>用餐習慣</label><input name="用餐習慣" placeholder="葷食、素食…"></div>
+          </div>
           <div class="field" style="margin-bottom:10px"><label>備註</label><textarea name="備註" rows="2" style="width:100%;box-sizing:border-box"></textarea></div>
           <div class="btns"><button type="submit">新增報名</button></div>
         </form>
@@ -360,10 +363,17 @@ async function doSyncImport(){
   autoExtractSheetId();
   var camId = document.getElementById('syncCamId').value.trim();
   var sheetId = document.getElementById('syncSheetId').value.trim();
-  var sheetName = document.getElementById('syncSheetName').value.trim() || 'Form_Responses';
+  var sheetName = document.getElementById('syncSheetName').value.trim();
   if(!camId || !sheetId){ document.getElementById('syncMsg').textContent='❌ 活動編號和試算表ID必填'; return; }
+  document.getElementById('syncMsg').textContent='⏳ 同步中，資料量大時需要約 30~60 秒，請稍候…';
   var r = await ERPALIGNED.api({action:'匯入線上報名','招生活動ID':camId,'sheetId':sheetId,'sheetName':sheetName},'syncMsg');
-  if(r&&r.success) queryRegistrations();
+  if(r && r.success){
+    queryRegistrations();
+  } else if(!r) {
+    // timeout — data may have been written, refresh to check
+    document.getElementById('syncMsg').textContent='⚠️ 操作逾時，但資料可能已成功同步。請至下方「查詢」確認，或稍後重新整理。';
+    queryRegistrations();
+  }
 }
 
 // ── 手動新增報名 ──────────────────────────────────────
