@@ -10,87 +10,31 @@
 <body>
 <header><div class="wrap">
   <div class="brand">GovOps OS</div>
-  <div class="sub">對齊：23_合作廠商主檔</div>
+  <div class="sub">政府標案全流程營運系統</div>
   <nav id="nav"></nav>
 </div></header>
 <main class="wrap">
   <div class="page-title">
     <h1>廠商管理</h1>
-    <p>含支付方式、匯款資訊、發票、扣繳；查詢結果點「編輯」修改</p>
+    <p>管理合作廠商、匯款資訊與發票扣繳設定</p>
   </div>
-  <div class="grid">
-    <section class="card span4">
-      <h2>新增合作廠商</h2>
-      <form id="createForm">
-        <div class="form-row">
-          <div class="field"><label>名稱＊</label><input name="名稱" required></div>
-          <div class="field"><label>類型</label>
-            <select name="類型">
-              <option>場地</option><option>餐廳/餐飲</option><option>原材料/物料</option>
-              <option>印刷/設計</option><option>交通/接駁</option><option>設備租借</option>
-              <option>住宿</option><option>保險</option><option>攝影錄影</option>
-              <option>其他廠商</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="field"><label>聯絡人</label><input name="聯絡人"></div>
-          <div class="field"><label>電話</label><input name="電話" type="tel"></div>
-        </div>
-        <div class="form-row">
-          <div class="field"><label>Email</label><input name="Email" type="email"></div>
-          <div class="field"><label>預設單價</label><input name="預設單價" type="number" min="0"></div>
-        </div>
-        <div class="form-row">
-          <div class="field"><label>支付方式</label>
-            <select name="支付方式"><option>匯款</option><option>現金</option><option>LINE Pay</option><option>支票</option><option>其他</option></select>
-          </div>
-          <div class="field"><label>常用</label>
-            <select name="常用"><option value="">未設定</option><option>是</option><option>否</option></select>
-          </div>
-        </div>
-        <div class="section-sep"><span>匯款</span></div>
-        <div class="form-row">
-          <div class="field"><label>銀行</label><input name="銀行"></div>
-          <div class="field"><label>帳號</label><input name="帳號"></div>
-        </div>
-        <div class="form-row">
-          <div class="field"><label>戶名</label><input name="戶名"></div>
-          <div class="field"><label>統編/身分證</label><input name="統編/身分證"></div>
-        </div>
-        <div class="form-row">
-          <div class="field"><label>是否開發票</label>
-            <select name="是否開發票"><option value="">未確認</option><option>是</option><option>否</option></select>
-          </div>
-          <div class="field"><label>是否扣繳</label>
-            <select name="是否扣繳"><option value="">未確認</option><option>是</option><option>否</option></select>
-          </div>
-        </div>
-        <label>備註</label><textarea name="備註" rows="2"></textarea>
-        <div class="btns"><button type="submit">＋ 新增廠商</button></div>
-      </form>
-      <div id="createMsg" class="msg" style="margin-top:8px">尚未新增。</div>
-    </section>
-
-    <section class="card span8">
-      <h2>查詢廠商</h2>
-      <div class="form-row">
-        <div class="field"><input id="keyword" placeholder="名稱、電話、銀行、統編" onkeydown="if(event.key==='Enter')queryVendors()"></div>
-        <div class="field" style="max-width:160px">
-          <select id="vtype">
-            <option value="">全部類型</option>
-            <option>場地</option><option>餐廳/餐飲</option><option>印刷/設計</option>
-            <option>交通/接駁</option><option>設備租借</option><option>攝影錄影</option><option>其他廠商</option>
-          </select>
-        </div>
-        <div class="field" style="max-width:100px">
-          <select id="vfav"><option value="">全部</option><option>是</option><option>否</option></select>
-        </div>
-        <div class="field" style="max-width:100px"><button onclick="queryVendors()">查詢</button></div>
-      </div>
-      <div id="queryMsg" class="msg">尚未查詢。</div>
-      <div id="table" style="margin-top:8px"></div>
-    </section>
+  <div class="card">
+    <div class="btns" style="margin-bottom:10px;flex-wrap:wrap">
+      <button class="gold" onclick="openCreate()">＋ 新增廠商</button>
+      <select id="vtype" onchange="query()" style="max-width:140px">
+        <option value="">全部類型</option>
+        <option>場地</option><option>餐廳/餐飲</option><option>印刷/設計</option>
+        <option>交通/接駁</option><option>設備租借</option><option>攝影錄影</option><option>其他廠商</option>
+      </select>
+      <select id="vfav" onchange="query()" style="max-width:100px">
+        <option value="">全部</option><option>是</option><option>否</option>
+      </select>
+      <div style="flex:1"></div>
+      <input id="keyword" placeholder="名稱、電話、銀行、統編…" style="max-width:220px;margin:0" onkeydown="if(event.key==='Enter')query()">
+      <button onclick="query()">查詢</button>
+    </div>
+    <div id="queryMsg" class="msg">載入中…</div>
+    <div id="table" style="margin-top:8px"></div>
   </div>
 </main>
 <script src="./govops-api-client.js"></script>
@@ -98,23 +42,14 @@
 <script>
 document.getElementById('nav').innerHTML = ERPALIGNED.nav();
 
-document.getElementById('createForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  const o = {action:'新增合作廠商'}; fd.forEach((v,k)=>{if(v)o[k]=v;});
-  const r = await ERPALIGNED.api(o, 'createMsg');
-  if (r && r.success) { e.target.reset(); queryVendors(); }
-});
-
-const VEN_EDIT_FIELDS = [
-  {name:'廠商編號', label:'廠商編號', readonly:true},
-  {name:'名稱', label:'名稱'},
+const VEN_F = [
+  {name:'名稱', label:'名稱＊'},
   {name:'類型', label:'類型', type:'select', options:['場地','餐廳/餐飲','原材料/物料','印刷/設計','交通/接駁','設備租借','住宿','保險','攝影錄影','其他廠商']},
   {name:'聯絡人', label:'聯絡人'},
   {name:'電話', label:'電話', type:'tel'},
   {name:'Email', label:'Email', type:'email'},
   {name:'支付方式', label:'支付方式', type:'select', options:['匯款','現金','LINE Pay','支票','其他']},
-  {name:'預設單價', label:'預設單價', type:'number'},
+  {name:'預設單價', label:'預設單價（元）', type:'number'},
   {name:'銀行', label:'銀行'},
   {name:'帳號', label:'帳號'},
   {name:'戶名', label:'戶名'},
@@ -125,18 +60,15 @@ const VEN_EDIT_FIELDS = [
   {name:'評價', label:'評價', type:'select', options:['','5','4','3','2','1']},
   {name:'備註', label:'備註', type:'textarea'}
 ];
+const VEN_EDIT = [{name:'廠商編號',label:'廠商編號',readonly:true},...VEN_F];
 
-function openVenEdit(row) {
-  ERPALIGNED.showEditModal('編輯廠商：' + (row['名稱']||''), VEN_EDIT_FIELDS, row, '修改合作廠商', '廠商編號', queryVendors);
+function openCreate(){ERPALIGNED.showEditModal('新增合作廠商',VEN_F,{},'新增合作廠商',null,query);}
+function openEdit(row){ERPALIGNED.showEditModal('編輯廠商：'+row['名稱'],VEN_EDIT,row,'修改合作廠商','廠商編號',query);}
+async function query(){
+  const r=await ERPALIGNED.api({action:'查詢合作廠商',keyword:document.getElementById('keyword').value,類型:document.getElementById('vtype').value,常用:document.getElementById('vfav').value},'queryMsg');
+  ERPALIGNED.renderTableWithEdit(r,'table',openEdit,['廠商編號','名稱','類型','電話','支付方式','銀行','常用','評價']);
 }
-
-async function queryVendors() {
-  const r = await ERPALIGNED.api({action:'查詢合作廠商', keyword: document.getElementById('keyword').value, 類型: document.getElementById('vtype').value, 常用: document.getElementById('vfav').value}, 'queryMsg');
-  ERPALIGNED.renderTableWithEdit(r, 'table', openVenEdit,
-    ['廠商編號','名稱','類型','電話','支付方式','銀行','常用','評價']);
-}
-
-queryVendors();
+query();
 </script>
 </body>
 </html>
