@@ -1,7 +1,7 @@
 window.GOVOPS_CONFIG = {
   ENV: 'production',
-  VERSION: '2026.05.13-codegs-allinone-final',
+  VERSION: '2026.05.13-allinone-v2',
   APP_NAME: 'GovOps OS',
   PLAN: 'enterprise',
-  API_URL: 'https://script.google.com/macros/s/AKfycbz_nUqKGMIAAcAgdJM68NV8FevV9HQ4hEs9VK5oK9PbS77xvpOHlKkR5d7NzJdgMa-fSA/exec'
+  API_URL: 'https://script.google.com/macros/s/AKfycbxGSf_wVrwBHKpJigE3Azh0_gouy84BZnhYG5KioBtPw0FRCVTAiIYmh_u0smzb6ZxPxA/exec'
 };
