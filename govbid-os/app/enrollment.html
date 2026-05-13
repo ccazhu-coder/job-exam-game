@@ -455,22 +455,24 @@ async function doReview(){
   var regId=document.getElementById('revRegId').value.trim();
   var result=document.getElementById('revResult').value;
   var reason=document.getElementById('revReason').value.trim();
-  if(!regId){ document.getElementById('revActionMsg').textContent='❌ 請填入報名編號'; return; }
+  if(!regId){ document.getElementById('revActionMsg').textContent='❌ 請填入報名編號（REG-…）'; return; }
+  if(!regId.startsWith('REG-')){ document.getElementById('revActionMsg').textContent='❌ 格式錯誤：請填報名ID（REG-…），不是活動ID（ENR-…）'; return; }
   var r=await ERPALIGNED.api({action:'審查報名','報名ID':regId,'審查結果':result,'審查原因':reason},'revActionMsg');
   if(r&&r.success) queryPending();
 }
 async function queryApproved(){
-  var r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:'已入選'},'revMsg');
+  var r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:''},'revMsg');
   if(r&&r.data&&r.data.rows){
-    var rows=r.data.rows.filter(function(x){ return x['審核狀態']==='已入選'||x['報名狀態']==='已入選'; });
+    var approved=['已入選','核准','已確認參加'];
+    var rows=r.data.rows.filter(function(x){ return approved.indexOf(String(x['審核狀態']||x['報名狀態']||''))>=0; });
     document.getElementById('revMsg').textContent='入選名單：共 '+rows.length+' 筆';
     ERPALIGNED.renderTable({success:true,data:{rows:rows}},'revTable');
   }
 }
 async function queryWaitlist(){
-  var r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:'候補'},'revMsg');
+  var r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:''},'revMsg');
   if(r&&r.data&&r.data.rows){
-    var rows=r.data.rows.filter(function(x){ return x['審核狀態']==='候補'||x['報名狀態']==='候補'; });
+    var rows=r.data.rows.filter(function(x){ return String(x['審核狀態']||x['報名狀態']||'')==='候補'; });
     document.getElementById('revMsg').textContent='候補名單：共 '+rows.length+' 筆';
     ERPALIGNED.renderTable({success:true,data:{rows:rows}},'revTable');
   }
