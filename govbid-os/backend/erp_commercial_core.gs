@@ -1,7 +1,6 @@
 /**
- * GovOps OS ERP Commercial Core
- * 真正 ERP 商用化後端核心：Schema / Master / Project / Activity / Audit
- * 使用方式：貼到 Apps Script 專案，並在主 router 轉接 action。
+ * GovOps OS ERP Commercial Core v2
+ * 真正 ERP 商用化後端核心：Schema / Master / Project / Activity / CRM / Finance / Audit
  */
 
 const ERP_TABLES = {
@@ -21,371 +20,60 @@ const ERP_TABLES = {
   audit_logs: ['logId','tenantId','userId','action','targetTable','targetId','payloadSummary','result','errorMessage','createdAt']
 };
 
-const ERP_DEFAULT_RESOURCE_TYPES = [
-  ['講師資料','人力資源'],
-  ['講師專業類型','分類主檔'],
-  ['工作人員資料','人力資源'],
-  ['合作廠商資料','外部資源'],
-  ['場地資料','合作廠商資料'],
-  ['餐飲廠商','合作廠商資料'],
-  ['印刷設計','合作廠商資料'],
-  ['交通接駁','合作廠商資料'],
-  ['設備租借','合作廠商資料'],
-  ['行政協力','外部資源'],
-  ['其他','其他']
-];
+const ERP_DEFAULT_RESOURCE_TYPES = [['講師資料','人力資源'],['講師專業類型','分類主檔'],['工作人員資料','人力資源'],['合作廠商資料','外部資源'],['場地資料','合作廠商資料'],['餐飲廠商','合作廠商資料'],['印刷設計','合作廠商資料'],['交通接駁','合作廠商資料'],['設備租借','合作廠商資料'],['行政協力','外部資源'],['其他','其他']];
+const ERP_DEFAULT_TASKS = [['講義製作','講義',-30],['講義確認','講義',-15],['課前提醒','提醒',-7],['交通路線確認','交通',-2],['物品準備','行政',-1],['現場報到','報到',0],['照片與紀錄','成果',0],['成果報告','報告',7],['核銷資料整理','核銷',7]];
 
-function erpNow_(){
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');
-}
-
-function erpUuid_(prefix){
-  return (prefix || 'ERP') + '-' + new Date().getTime() + '-' + Math.floor(Math.random() * 10000);
-}
-
-function erpGetSpreadsheet_(){
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
+function erpNow_(){return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd HH:mm:ss');}
+function erpDateAdd_(dateText, days){const d=new Date(dateText);if(isNaN(d.getTime()))return '';d.setDate(d.getDate()+days);return Utilities.formatDate(d, Session.getScriptTimeZone() || 'Asia/Taipei', 'yyyy/MM/dd');}
+function erpUuid_(prefix){return (prefix || 'ERP') + '-' + new Date().getTime() + '-' + Math.floor(Math.random() * 10000);}
+function erpGetSpreadsheet_(){return SpreadsheetApp.getActiveSpreadsheet();}
+function erpTenantId_(params){return String((params && (params.tenantId || params['組織ID'])) || 'TENANT-COMMERCIAL');}
+function erpUserId_(params){return String((params && (params.userId || params['使用者ID'])) || 'USR-OWNER');}
+function erpOk_(message, data){return { success: true, message: message || '操作完成', data: data || {} };}
+function erpFail_(message, data){return { success: false, message: message || '操作失敗', data: data || {} };}
 
 function erpEnsureSheet_(name, headers){
-  const ss = erpGetSpreadsheet_();
-  let sh = ss.getSheetByName(name);
-  if (!sh) sh = ss.insertSheet(name);
+  const ss = erpGetSpreadsheet_(); let sh = ss.getSheetByName(name); if (!sh) sh = ss.insertSheet(name);
   const first = sh.getRange(1, 1, 1, Math.max(headers.length, 1)).getValues()[0];
   const empty = first.every(v => String(v || '').trim() === '');
-  if (empty) {
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sh.setFrozenRows(1);
-  } else {
-    const current = first.map(v => String(v || '').trim());
-    const missing = headers.filter(h => current.indexOf(h) === -1);
-    if (missing.length) {
-      sh.getRange(1, current.length + 1, 1, missing.length).setValues([missing]);
-    }
-  }
+  if (empty) { sh.getRange(1, 1, 1, headers.length).setValues([headers]); sh.setFrozenRows(1); }
+  else { const current = first.map(v => String(v || '').trim()); const missing = headers.filter(h => current.indexOf(h) === -1); if (missing.length) sh.getRange(1, current.length + 1, 1, missing.length).setValues([missing]); }
   return sh;
 }
+function erpAppend_(tableName, obj){const headers=ERP_TABLES[tableName];const sh=erpEnsureSheet_(tableName,headers);sh.appendRow(headers.map(h=>obj[h]!==undefined?obj[h]:''));return obj;}
+function erpReadRows_(tableName){const headers=ERP_TABLES[tableName];const sh=erpEnsureSheet_(tableName,headers);const last=sh.getLastRow();if(last<2)return[];const values=sh.getRange(2,1,last-1,sh.getLastColumn()).getValues();const actual=sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);return values.map((row,i)=>{const o={_row:i+2};actual.forEach((h,idx)=>o[h]=row[idx]);return o;});}
+function erpUpdateRow_(tableName,rowNumber,patch){const sh=erpEnsureSheet_(tableName,ERP_TABLES[tableName]);const headers=sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].map(String);headers.forEach((h,idx)=>{if(patch[h]!==undefined)sh.getRange(rowNumber,idx+1).setValue(patch[h]);});}
+function erpAudit_(params,action,targetTable,targetId,result,errorMessage){try{erpAppend_('audit_logs',{logId:erpUuid_('LOG'),tenantId:erpTenantId_(params),userId:erpUserId_(params),action:action,targetTable:targetTable||'',targetId:targetId||'',payloadSummary:JSON.stringify(params||{}).slice(0,800),result:result||'success',errorMessage:errorMessage||'',createdAt:erpNow_()});}catch(err){}}
 
-function erpInitCommercialSchema(params){
-  Object.keys(ERP_TABLES).forEach(name => erpEnsureSheet_(name, ERP_TABLES[name]));
-  const tenantId = erpTenantId_(params);
-  erpSeedResourceTypes_(tenantId);
-  erpAudit_(params, '初始化ERP商用資料表', 'system', '', 'success', '');
-  return erpOk_('ERP 商用資料表初始化完成', { tables: Object.keys(ERP_TABLES) });
-}
+function erpInitCommercialSchema(params){Object.keys(ERP_TABLES).forEach(name=>erpEnsureSheet_(name,ERP_TABLES[name]));erpSeedResourceTypes_(erpTenantId_(params));erpAudit_(params,'初始化ERP商用資料表','system','','success','');return erpOk_('ERP 商用資料表初始化完成',{tables:Object.keys(ERP_TABLES)});}
+function erpSeedResourceTypes_(tenantId){const rows=erpReadRows_('resource_types');ERP_DEFAULT_RESOURCE_TYPES.forEach(pair=>{if(!rows.some(r=>r.tenantId===tenantId&&r.typeName===pair[0]))erpAppend_('resource_types',{typeId:erpUuid_('RT'),tenantId:tenantId,typeName:pair[0],parentType:pair[1],status:'active',createdAt:erpNow_(),updatedAt:erpNow_()});});}
 
-function erpSeedResourceTypes_(tenantId){
-  const sh = erpEnsureSheet_('resource_types', ERP_TABLES.resource_types);
-  const rows = erpReadRows_('resource_types');
-  ERP_DEFAULT_RESOURCE_TYPES.forEach(pair => {
-    const exists = rows.some(r => r.tenantId === tenantId && r.typeName === pair[0]);
-    if (!exists) {
-      erpAppend_('resource_types', {
-        typeId: erpUuid_('RT'),
-        tenantId: tenantId,
-        typeName: pair[0],
-        parentType: pair[1],
-        status: 'active',
-        createdAt: erpNow_(),
-        updatedAt: erpNow_()
-      });
-    }
-  });
-}
+function erpSaveMaster(params){const tenantId=erpTenantId_(params);const resourceType=params['資料類型']||params.resourceType||params.masterKind||'資源主檔';const resourceName=params['名稱']||params.resourceName||params.masterName||params['資源名稱'];if(!resourceName)return erpFail_('請填寫名稱');const obj=erpAppend_('resources',{resourceId:erpUuid_('RES'),tenantId:tenantId,resourceType:resourceType,resourceName:resourceName,specialty:params['自訂類型']||params.specialty||params.masterType||params['講師專業類型']||'',contactName:params['聯絡人']||params.contactName||params.masterContact||'',contactPhone:params['聯絡電話']||params.contactPhone||params.masterPhone||'',email:params.email||params.Email||'',address:params['地址']||params.address||params.masterExtra||'',taxId:params.taxId||params['統編']||'',bankInfo:params.bankInfo||params['匯款資訊']||'',priceNote:params.priceNote||params['報價備註']||'',status:'active',note:params['備註']||params.note||params.masterNote||'',createdAt:erpNow_(),updatedAt:erpNow_()});erpAudit_(params,'儲存基本資料','resources',obj.resourceId,'success','');return erpOk_('基本資料已儲存',{資源ID:obj.resourceId,resourceId:obj.resourceId});}
+function erpQueryMasters(params){const tenantId=erpTenantId_(params);const keyword=String(params.keyword||params.q||params['關鍵字']||'').trim();const kind=String(params['資料類型']||params.resourceType||'').trim();let rows=erpReadRows_('resources').filter(r=>r.tenantId===tenantId&&String(r.status)!=='disabled');if(kind)rows=rows.filter(r=>String(r.resourceType).indexOf(kind)>=0||String(r.specialty).indexOf(kind)>=0);if(keyword)rows=rows.filter(r=>JSON.stringify(r).indexOf(keyword)>=0);erpAudit_(params,'查詢基本資料','resources','','success','');return erpOk_('查詢完成',{資料:rows,rows:rows});}
+function erpQueryResourceOptions(params){const tenantId=erpTenantId_(params);const resources=erpReadRows_('resources').filter(r=>r.tenantId===tenantId&&String(r.status)!=='disabled');const projects=erpReadRows_('projects').filter(r=>r.tenantId===tenantId&&String(r.status)!=='cancelled');return erpOk_('資源選單已載入',{resources:resources,projects:projects,teachers:resources.filter(r=>String(r.resourceType).indexOf('講師')>=0),venues:resources.filter(r=>String(r.resourceType).indexOf('場地')>=0),vendors:resources.filter(r=>String(r.resourceType).match(/廠商|餐飲|印刷|交通|設備/))});}
 
-function erpTenantId_(params){
-  return String((params && (params.tenantId || params['組織ID'])) || 'TENANT-COMMERCIAL');
-}
+function erpCreateProject(params){const tenantId=erpTenantId_(params);const projectName=params.projectName||params['專案計畫名稱']||params.projectTitle||params['計畫名稱'];if(!projectName)return erpFail_('請填寫專案計畫名稱');const exists=erpReadRows_('projects').find(r=>r.tenantId===tenantId&&r.projectName===projectName&&String(r.status)!=='cancelled');if(exists)return erpOk_('專案已存在，已回傳既有專案',{專案ID:exists.projectId,projectId:exists.projectId});const obj=erpAppend_('projects',{projectId:erpUuid_('PRJ'),tenantId:tenantId,projectName:projectName,projectType:params.projectType||params['專案類型']||'政府標案',clientName:params.clientName||params['主辦單位']||params.projectHost||'',contractNo:params.contractNo||params['契約編號']||'',startDate:params.startDate||params['開始日期']||'',endDate:params.endDate||params['結束日期']||'',budgetAmount:Number(params.budgetAmount||params['預算金額']||0),contractAmount:Number(params.contractAmount||params['契約金額']||0),status:'active',description:params.description||params['專案說明']||params.projectDesc||'',createdAt:erpNow_(),updatedAt:erpNow_()});erpAudit_(params,'新增專案','projects',obj.projectId,'success','');return erpOk_('專案已建立',{專案ID:obj.projectId,projectId:obj.projectId});}
+function erpQueryProjects(params){const tenantId=erpTenantId_(params);const keyword=String(params.keyword||params.q||'').trim();let rows=erpReadRows_('projects').filter(r=>r.tenantId===tenantId);if(keyword)rows=rows.filter(r=>JSON.stringify(r).indexOf(keyword)>=0);erpAudit_(params,'查詢專案','projects','','success','');return erpOk_('查詢完成',{資料:rows,rows:rows});}
+function erpFindProject_(tenantId,params){const projectId=params.projectId||params['專案ID'];const projectName=params.projectName||params['專案計畫名稱']||params['計畫名稱'];const rows=erpReadRows_('projects').filter(r=>r.tenantId===tenantId&&String(r.status)!=='cancelled');if(projectId)return rows.find(r=>r.projectId===projectId);if(projectName)return rows.find(r=>r.projectName===projectName);return null;}
 
-function erpUserId_(params){
-  return String((params && (params.userId || params['使用者ID'])) || 'USR-OWNER');
-}
+function erpCreateActivity(params){const tenantId=erpTenantId_(params);const activityName=params.activityName||params['活動名稱']||params['活動／課程名稱'];if(!activityName)return erpFail_('請填寫活動／課程名稱');const project=erpFindProject_(tenantId,params);if(!project)return erpFail_('請先建立或選擇所屬專案計畫');const obj=erpAppend_('activities',{activityId:erpUuid_('ACT'),tenantId:tenantId,projectId:project.projectId,projectName:project.projectName,activityName:activityName,activityType:params.activityType||params['活動類型']||'',activityDate:params.activityDate||params['活動日期']||'',startTime:params.startTime||params['開始時間']||'',endTime:params.endTime||params['結束時間']||'',venueResourceId:params.venueResourceId||'',venueName:params.venueName||params['活動地點']||params.place||'',teacherResourceId:params.teacherResourceId||'',teacherName:params.teacherName||params['講師']||params.teacher||'',contactName:params.contactName||params['聯絡人']||params.contact||'',contactPhone:params.contactPhone||params['聯絡電話']||params.contactPhone||'',host:params.host||params['主辦單位']||project.clientName||'',cohost:params.cohost||params['協辦單位']||'',status:'planning',createdAt:erpNow_(),updatedAt:erpNow_()});erpAudit_(params,'新增活動','activities',obj.activityId,'success','');return erpOk_('活動場次已建立',{活動ID:obj.activityId,activityId:obj.activityId});}
+function erpQueryActivities(params){const tenantId=erpTenantId_(params);const keyword=String(params.keyword||params.q||'').trim();let rows=erpReadRows_('activities').filter(r=>r.tenantId===tenantId);if(keyword)rows=rows.filter(r=>JSON.stringify(r).indexOf(keyword)>=0);return erpOk_('查詢完成',{資料:rows,rows:rows});}
+function erpUpdateActivityStatus(params){const tenantId=erpTenantId_(params);const activityId=params.activityId||params['活動ID'];const status=params.status||params['狀態'];if(!activityId||!status)return erpFail_('缺少活動ID或狀態');const row=erpReadRows_('activities').find(r=>r.tenantId===tenantId&&r.activityId===activityId);if(!row)return erpFail_('找不到活動');erpUpdateRow_('activities',row._row,{status:status,updatedAt:erpNow_()});erpAudit_(params,'更新活動狀態','activities',activityId,'success','');return erpOk_('活動狀態已更新',{活動ID:activityId});}
 
-function erpAppend_(tableName, obj){
-  const headers = ERP_TABLES[tableName];
-  const sh = erpEnsureSheet_(tableName, headers);
-  const row = headers.map(h => obj[h] !== undefined ? obj[h] : '');
-  sh.appendRow(row);
-  return obj;
-}
+function erpCreateActivityTaskPack(params){const tenantId=erpTenantId_(params);const activityId=params.activityId||params['活動ID'];const act=erpReadRows_('activities').find(r=>r.tenantId===tenantId&&r.activityId===activityId);if(!act)return erpFail_('找不到活動，無法建立作業包');const existing=erpReadRows_('activity_tasks').filter(t=>t.tenantId===tenantId&&t.activityId===activityId);let count=0;ERP_DEFAULT_TASKS.forEach(t=>{if(existing.some(e=>e.taskName===t[0]))return;erpAppend_('activity_tasks',{taskId:erpUuid_('TASK'),tenantId:tenantId,projectId:act.projectId,activityId:activityId,taskName:t[0],taskType:t[1],ownerUserId:erpUserId_(params),dueDate:erpDateAdd_(act.activityDate,t[2]),status:'pending',completedAt:'',note:'系統自動建立',createdAt:erpNow_(),updatedAt:erpNow_()});count++;});erpAudit_(params,'生成活動作業包','activity_tasks',activityId,'success','');return erpOk_('活動作業包已建立',{新增筆數:count});}
+function erpQueryTodayTasks(params){const tenantId=erpTenantId_(params);const today=Utilities.formatDate(new Date(),Session.getScriptTimeZone()||'Asia/Taipei','yyyy/MM/dd');let rows=erpReadRows_('activity_tasks').filter(t=>t.tenantId===tenantId&&String(t.status)!=='done'&&String(t.status)!=='cancelled');rows=rows.filter(t=>!t.dueDate||String(t.dueDate)<=today);return erpOk_('今日任務查詢完成',{任務:rows,rows:rows});}
+function erpUpdateTaskStatus(params){const tenantId=erpTenantId_(params);const taskId=params.taskId||params['任務ID'];const status=params.status||params['任務狀態']||'done';if(!taskId)return erpFail_('請提供任務ID');const row=erpReadRows_('activity_tasks').find(t=>t.tenantId===tenantId&&t.taskId===taskId);if(!row)return erpFail_('找不到任務');erpUpdateRow_('activity_tasks',row._row,{status:status,completedAt:status==='done'?erpNow_():'',updatedAt:erpNow_()});return erpOk_('任務狀態已更新',{任務ID:taskId});}
 
-function erpReadRows_(tableName){
-  const headers = ERP_TABLES[tableName];
-  const sh = erpEnsureSheet_(tableName, headers);
-  const last = sh.getLastRow();
-  if (last < 2) return [];
-  const values = sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues();
-  const actualHeaders = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
-  return values.map((row, i) => {
-    const o = { _row: i + 2 };
-    actualHeaders.forEach((h, idx) => o[h] = row[idx]);
-    return o;
-  });
-}
+function erpUpsertCrmPerson_(params,act){const tenantId=erpTenantId_(params);const phone=String(params.phone||params['電話']||'').trim();const email=String(params.email||params.Email||'').trim();let rows=erpReadRows_('crm_people');let person=rows.find(p=>p.tenantId===tenantId&&((phone&&String(p.phone)===phone)||(email&&String(p.email)===email)));if(person){erpUpdateRow_('crm_people',person._row,{name:params.name||params['姓名']||person.name,orgName:params.orgName||params['服務單位']||person.orgName,lastActivityId:act.activityId,totalAttendCount:Number(person.totalAttendCount||0)+1,updatedAt:erpNow_()});return person.crmPersonId;}const obj=erpAppend_('crm_people',{crmPersonId:erpUuid_('CRM'),tenantId:tenantId,name:params.name||params['姓名']||'',phone:phone,email:email,orgName:params.orgName||params['服務單位']||'',tags:params.tags||'',source:params.source||params['來源渠道']||'',lastActivityId:act.activityId,totalAttendCount:1,marketingConsent:params.marketingConsent||'yes',note:params.note||params['備註']||'',createdAt:erpNow_(),updatedAt:erpNow_()});return obj.crmPersonId;}
+function erpCreateRegistration(params){const tenantId=erpTenantId_(params);const activityId=params.activityId||params['活動ID'];const name=params.name||params['姓名'];const phone=params.phone||params['電話'];if(!activityId||!name||!phone)return erpFail_('請填寫活動ID、姓名、電話');const act=erpReadRows_('activities').find(a=>a.tenantId===tenantId&&a.activityId===activityId);if(!act)return erpFail_('找不到活動');const exists=erpReadRows_('registrations').find(r=>r.tenantId===tenantId&&r.activityId===activityId&&String(r.phone)===String(phone));if(exists)return erpOk_('此活動已存在相同電話報名資料',{報名ID:exists.registrationId});const crmId=erpUpsertCrmPerson_(params,act);const obj=erpAppend_('registrations',{registrationId:erpUuid_('REG'),tenantId:tenantId,projectId:act.projectId,activityId:activityId,name:name,phone:phone,email:params.email||params.Email||'',identity:params.identity||params['身分別']||'',orgName:params.orgName||params['服務單位']||'',source:params.source||params['來源渠道']||'',reviewStatus:params.reviewStatus||'未回覆',attendanceStatus:'未簽到',crmPersonId:crmId,createdAt:erpNow_(),updatedAt:erpNow_()});return erpOk_('報名資料已建立並同步 CRM',{報名ID:obj.registrationId,crmPersonId:crmId});}
+function erpQueryCrm(params){const tenantId=erpTenantId_(params);const keyword=String(params.keyword||params.q||'').trim();let rows=erpReadRows_('crm_people').filter(r=>r.tenantId===tenantId);if(keyword)rows=rows.filter(r=>JSON.stringify(r).indexOf(keyword)>=0);return erpOk_('CRM 查詢完成',{學員:rows,rows:rows});}
 
-function erpUpdateRow_(tableName, rowNumber, patch){
-  const sh = erpEnsureSheet_(tableName, ERP_TABLES[tableName]);
-  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
-  headers.forEach((h, idx) => {
-    if (patch[h] !== undefined) sh.getRange(rowNumber, idx + 1).setValue(patch[h]);
-  });
-}
+function erpCreateReceivable(params){const tenantId=erpTenantId_(params);const activityId=params.activityId||params['活動ID'];const amount=Number(params.amount||params['應收金額']||0);if(!activityId)return erpFail_('請提供活動ID');if(!amount||amount<=0)return erpFail_('請提供正確應收金額');const act=erpReadRows_('activities').find(r=>r.tenantId===tenantId&&r.activityId===activityId);if(!act)return erpFail_('找不到活動');if(String(act.status)!=='completed')return erpFail_('活動尚未完成，不可建立應收帳款');const obj=erpAppend_('receivables',{receivableId:erpUuid_('AR'),tenantId:tenantId,projectId:act.projectId,activityId:activityId,targetName:params.targetName||params['對象名稱']||act.host||'',itemName:params.itemName||params['應收項目']||'活動費用',amount:amount,dueDate:params.dueDate||params['預計收款日']||'',receivedAmount:0,balance:amount,status:'unpaid',note:params.note||params['備註']||'',createdAt:erpNow_(),updatedAt:erpNow_()});return erpOk_('應收帳款已建立',{應收ID:obj.receivableId,receivableId:obj.receivableId});}
+function erpRegisterPayment(params){const tenantId=erpTenantId_(params);const receivableId=params.receivableId||params['應收ID'];const amount=Number(params.amount||params['收款金額']||0);if(!receivableId)return erpFail_('請提供應收ID');if(!amount||amount<=0)return erpFail_('請提供正確收款金額');const ar=erpReadRows_('receivables').find(r=>r.tenantId===tenantId&&r.receivableId===receivableId);if(!ar)return erpFail_('找不到應收帳款');const balance=Number(ar.balance||ar.amount||0);if(amount>balance)return erpFail_('收款金額不可大於未收餘額');const paid=Number(ar.receivedAmount||0)+amount;const newBalance=balance-amount;const status=newBalance===0?'paid':'partial';const obj=erpAppend_('payments',{paymentId:erpUuid_('PAY'),tenantId:tenantId,receivableId:receivableId,projectId:ar.projectId,activityId:ar.activityId,amount:amount,paymentDate:params.paymentDate||params['收款日期']||erpNow_().slice(0,10),paymentMethod:params.paymentMethod||params['收款方式']||'',payerName:params.payerName||params['付款人']||'',note:params.note||params['備註']||'',createdAt:erpNow_()});erpUpdateRow_('receivables',ar._row,{receivedAmount:paid,balance:newBalance,status:status,updatedAt:erpNow_()});return erpOk_('收款已登錄並完成沖帳',{收款ID:obj.paymentId,paymentId:obj.paymentId});}
+function erpRegisterExpense(params){const tenantId=erpTenantId_(params);const projectId=params.projectId||params['專案ID']||'';const activityId=params.activityId||params['活動ID']||'';const amount=Number(params.amount||params['支出金額']||0);if(!projectId&&!activityId)return erpFail_('支出需提供專案ID或活動ID');if(!amount||amount<=0)return erpFail_('請提供正確支出金額');let act=null;if(activityId)act=erpReadRows_('activities').find(a=>a.tenantId===tenantId&&a.activityId===activityId);const obj=erpAppend_('expenses',{expenseId:erpUuid_('EXP'),tenantId:tenantId,projectId:projectId||(act?act.projectId:''),activityId:activityId,expenseDate:params.expenseDate||params['支出日期']||erpNow_().slice(0,10),expenseType:params.expenseType||params['支出類型']||'其他',itemName:params.itemName||params['支出項目']||'',amount:amount,vendorResourceId:params.vendorResourceId||'',paymentMethod:params.paymentMethod||params['付款方式']||'',receiptStatus:params.receiptStatus||params['收據狀態']||'未取得',note:params.note||params['備註']||'',createdAt:erpNow_()});return erpOk_('支出已登錄',{支出ID:obj.expenseId});}
+function erpQueryProjectPL(params){const tenantId=erpTenantId_(params);const projectId=params.projectId||params['專案ID'];const activityId=params.activityId||params['活動ID'];const ars=erpReadRows_('receivables').filter(r=>r.tenantId===tenantId&&(!projectId||r.projectId===projectId)&&(!activityId||r.activityId===activityId));const pays=erpReadRows_('payments').filter(r=>r.tenantId===tenantId&&(!projectId||r.projectId===projectId)&&(!activityId||r.activityId===activityId));const exps=erpReadRows_('expenses').filter(r=>r.tenantId===tenantId&&(!projectId||r.projectId===projectId)&&(!activityId||r.activityId===activityId));const receivable=ars.reduce((s,r)=>s+Number(r.amount||0),0);const income=pays.reduce((s,r)=>s+Number(r.amount||0),0);const expense=exps.reduce((s,r)=>s+Number(r.amount||0),0);return erpOk_('專案損益查詢完成',{應收總額:receivable,已收收入:income,支出總額:expense,損益:income-expense,應收明細:ars,收款明細:pays,支出明細:exps});}
+function erpQueryUnpaid(params){const tenantId=erpTenantId_(params);const keyword=String(params.keyword||params.q||'').trim();let rows=erpReadRows_('receivables').filter(r=>r.tenantId===tenantId&&String(r.status)!=='paid'&&String(r.status)!=='cancelled');if(keyword)rows=rows.filter(r=>JSON.stringify(r).indexOf(keyword)>=0);return erpOk_('未收款查詢完成',{資料:rows,rows:rows});}
 
-function erpOk_(message, data){
-  return { success: true, message: message || '操作完成', data: data || {} };
-}
+function erpRoute(params){const action=String((params&&params.action)||'');try{if(action==='初始化ERP商用資料表'||action==='erp.schema.init')return erpInitCommercialSchema(params);if(action==='儲存基本資料')return erpSaveMaster(params);if(action==='查詢基本資料')return erpQueryMasters(params);if(action==='查詢資源選單')return erpQueryResourceOptions(params);if(action==='新增專案')return erpCreateProject(params);if(action==='查詢專案')return erpQueryProjects(params);if(action==='新增活動')return erpCreateActivity(params);if(action==='查詢活動')return erpQueryActivities(params);if(action==='更新活動狀態')return erpUpdateActivityStatus(params);if(action==='生成活動作業包')return erpCreateActivityTaskPack(params);if(action==='查詢今日任務')return erpQueryTodayTasks(params);if(action==='更新任務狀態')return erpUpdateTaskStatus(params);if(action==='新增報名')return erpCreateRegistration(params);if(action==='查詢學員CRM'||action==='查詢可行銷名單')return erpQueryCrm(params);if(action==='建立應收帳款')return erpCreateReceivable(params);if(action==='登錄收款')return erpRegisterPayment(params);if(action==='登錄支出')return erpRegisterExpense(params);if(action==='查詢專案損益')return erpQueryProjectPL(params);if(action==='查詢未收款')return erpQueryUnpaid(params);return null;}catch(err){erpAudit_(params,action,'','','fail',err.message);return erpFail_('ERP 後端處理失敗：'+err.message);}}
 
-function erpFail_(message, data){
-  return { success: false, message: message || '操作失敗', data: data || {} };
-}
-
-function erpAudit_(params, action, targetTable, targetId, result, errorMessage){
-  try {
-    erpAppend_('audit_logs', {
-      logId: erpUuid_('LOG'),
-      tenantId: erpTenantId_(params),
-      userId: erpUserId_(params),
-      action: action,
-      targetTable: targetTable || '',
-      targetId: targetId || '',
-      payloadSummary: JSON.stringify(params || {}).slice(0, 800),
-      result: result || 'success',
-      errorMessage: errorMessage || '',
-      createdAt: erpNow_()
-    });
-  } catch (err) {}
-}
-
-function erpSaveMaster(params){
-  const tenantId = erpTenantId_(params);
-  const resourceType = params['資料類型'] || params.resourceType || params.masterKind || '資源主檔';
-  const resourceName = params['名稱'] || params.resourceName || params.masterName || params['資源名稱'];
-  if (!resourceName) return erpFail_('請填寫名稱');
-  const obj = erpAppend_('resources', {
-    resourceId: erpUuid_('RES'),
-    tenantId: tenantId,
-    resourceType: resourceType,
-    resourceName: resourceName,
-    specialty: params['自訂類型'] || params.specialty || params.masterType || params['講師專業類型'] || '',
-    contactName: params['聯絡人'] || params.contactName || params.masterContact || '',
-    contactPhone: params['聯絡電話'] || params.contactPhone || params.masterPhone || '',
-    email: params.email || params.Email || '',
-    address: params['地址'] || params.address || params.masterExtra || '',
-    taxId: params.taxId || params['統編'] || '',
-    bankInfo: params.bankInfo || params['匯款資訊'] || '',
-    priceNote: params.priceNote || params['報價備註'] || '',
-    status: 'active',
-    note: params['備註'] || params.note || params.masterNote || '',
-    createdAt: erpNow_(),
-    updatedAt: erpNow_()
-  });
-  erpAudit_(params, '儲存基本資料', 'resources', obj.resourceId, 'success', '');
-  return erpOk_('基本資料已儲存', { 資源ID: obj.resourceId, resourceId: obj.resourceId });
-}
-
-function erpQueryMasters(params){
-  const tenantId = erpTenantId_(params);
-  const keyword = String(params.keyword || params.q || params['關鍵字'] || '').trim();
-  const kind = String(params['資料類型'] || params.resourceType || '').trim();
-  let rows = erpReadRows_('resources').filter(r => r.tenantId === tenantId && String(r.status) !== 'disabled');
-  if (kind) rows = rows.filter(r => String(r.resourceType).indexOf(kind) >= 0 || String(r.specialty).indexOf(kind) >= 0);
-  if (keyword) rows = rows.filter(r => JSON.stringify(r).indexOf(keyword) >= 0);
-  erpAudit_(params, '查詢基本資料', 'resources', '', 'success', '');
-  return erpOk_('查詢完成', { 資料: rows, rows: rows });
-}
-
-function erpQueryResourceOptions(params){
-  const tenantId = erpTenantId_(params);
-  const resources = erpReadRows_('resources').filter(r => r.tenantId === tenantId && String(r.status) !== 'disabled');
-  const projects = erpReadRows_('projects').filter(r => r.tenantId === tenantId && String(r.status) !== 'cancelled');
-  return erpOk_('資源選單已載入', {
-    resources: resources,
-    projects: projects,
-    teachers: resources.filter(r => String(r.resourceType).indexOf('講師') >= 0),
-    venues: resources.filter(r => String(r.resourceType).indexOf('場地') >= 0),
-    vendors: resources.filter(r => String(r.resourceType).indexOf('廠商') >= 0 || String(r.resourceType).indexOf('餐飲') >= 0 || String(r.resourceType).indexOf('印刷') >= 0 || String(r.resourceType).indexOf('交通') >= 0 || String(r.resourceType).indexOf('設備') >= 0)
-  });
-}
-
-function erpCreateProject(params){
-  const tenantId = erpTenantId_(params);
-  const projectName = params.projectName || params['專案計畫名稱'] || params.projectTitle || params['計畫名稱'];
-  if (!projectName) return erpFail_('請填寫專案計畫名稱');
-  const exists = erpReadRows_('projects').find(r => r.tenantId === tenantId && r.projectName === projectName && String(r.status) !== 'cancelled');
-  if (exists) return erpOk_('專案已存在，已回傳既有專案', { 專案ID: exists.projectId, projectId: exists.projectId });
-  const obj = erpAppend_('projects', {
-    projectId: erpUuid_('PRJ'),
-    tenantId: tenantId,
-    projectName: projectName,
-    projectType: params.projectType || params['專案類型'] || '政府標案',
-    clientName: params.clientName || params['主辦單位'] || params.projectHost || '',
-    contractNo: params.contractNo || params['契約編號'] || '',
-    startDate: params.startDate || params['開始日期'] || '',
-    endDate: params.endDate || params['結束日期'] || '',
-    budgetAmount: Number(params.budgetAmount || params['預算金額'] || 0),
-    contractAmount: Number(params.contractAmount || params['契約金額'] || 0),
-    status: 'active',
-    description: params.description || params['專案說明'] || params.projectDesc || '',
-    createdAt: erpNow_(),
-    updatedAt: erpNow_()
-  });
-  erpAudit_(params, '新增專案', 'projects', obj.projectId, 'success', '');
-  return erpOk_('專案已建立', { 專案ID: obj.projectId, projectId: obj.projectId });
-}
-
-function erpQueryProjects(params){
-  const tenantId = erpTenantId_(params);
-  const keyword = String(params.keyword || params.q || '').trim();
-  let rows = erpReadRows_('projects').filter(r => r.tenantId === tenantId);
-  if (keyword) rows = rows.filter(r => JSON.stringify(r).indexOf(keyword) >= 0);
-  erpAudit_(params, '查詢專案', 'projects', '', 'success', '');
-  return erpOk_('查詢完成', { 資料: rows, rows: rows });
-}
-
-function erpFindProject_(tenantId, params){
-  const projectId = params.projectId || params['專案ID'];
-  const projectName = params.projectName || params['專案計畫名稱'] || params['計畫名稱'];
-  const rows = erpReadRows_('projects').filter(r => r.tenantId === tenantId && String(r.status) !== 'cancelled');
-  if (projectId) return rows.find(r => r.projectId === projectId);
-  if (projectName) return rows.find(r => r.projectName === projectName);
-  return null;
-}
-
-function erpCreateActivity(params){
-  const tenantId = erpTenantId_(params);
-  const activityName = params.activityName || params['活動名稱'] || params['活動／課程名稱'];
-  if (!activityName) return erpFail_('請填寫活動／課程名稱');
-  const project = erpFindProject_(tenantId, params);
-  if (!project) return erpFail_('請先建立或選擇所屬專案計畫');
-  const obj = erpAppend_('activities', {
-    activityId: erpUuid_('ACT'),
-    tenantId: tenantId,
-    projectId: project.projectId,
-    projectName: project.projectName,
-    activityName: activityName,
-    activityType: params.activityType || params['活動類型'] || '',
-    activityDate: params.activityDate || params['活動日期'] || '',
-    startTime: params.startTime || params['開始時間'] || '',
-    endTime: params.endTime || params['結束時間'] || '',
-    venueResourceId: params.venueResourceId || '',
-    venueName: params.venueName || params['活動地點'] || params.place || '',
-    teacherResourceId: params.teacherResourceId || '',
-    teacherName: params.teacherName || params['講師'] || params.teacher || '',
-    contactName: params.contactName || params['聯絡人'] || params.contact || '',
-    contactPhone: params.contactPhone || params['聯絡電話'] || params.contactPhone || '',
-    host: params.host || params['主辦單位'] || project.clientName || '',
-    cohost: params.cohost || params['協辦單位'] || '',
-    status: 'planning',
-    createdAt: erpNow_(),
-    updatedAt: erpNow_()
-  });
-  erpAudit_(params, '新增活動', 'activities', obj.activityId, 'success', '');
-  return erpOk_('活動場次已建立', { 活動ID: obj.activityId, activityId: obj.activityId });
-}
-
-function erpQueryActivities(params){
-  const tenantId = erpTenantId_(params);
-  const keyword = String(params.keyword || params.q || '').trim();
-  let rows = erpReadRows_('activities').filter(r => r.tenantId === tenantId);
-  if (keyword) rows = rows.filter(r => JSON.stringify(r).indexOf(keyword) >= 0);
-  return erpOk_('查詢完成', { 資料: rows, rows: rows });
-}
-
-function erpUpdateActivityStatus(params){
-  const tenantId = erpTenantId_(params);
-  const activityId = params.activityId || params['活動ID'];
-  const status = params.status || params['狀態'];
-  if (!activityId || !status) return erpFail_('缺少活動ID或狀態');
-  const row = erpReadRows_('activities').find(r => r.tenantId === tenantId && r.activityId === activityId);
-  if (!row) return erpFail_('找不到活動');
-  erpUpdateRow_('activities', row._row, { status: status, updatedAt: erpNow_() });
-  erpAudit_(params, '更新活動狀態', 'activities', activityId, 'success', '');
-  return erpOk_('活動狀態已更新', { 活動ID: activityId });
-}
-
-function erpCreateReceivable(params){
-  const tenantId = erpTenantId_(params);
-  const activityId = params.activityId || params['活動ID'];
-  const amount = Number(params.amount || params['應收金額'] || 0);
-  if (!activityId) return erpFail_('請提供活動ID');
-  if (!amount || amount <= 0) return erpFail_('請提供正確應收金額');
-  const act = erpReadRows_('activities').find(r => r.tenantId === tenantId && r.activityId === activityId);
-  if (!act) return erpFail_('找不到活動');
-  if (String(act.status) !== 'completed') return erpFail_('活動尚未完成，不可建立應收帳款');
-  const obj = erpAppend_('receivables', {
-    receivableId: erpUuid_('AR'),
-    tenantId: tenantId,
-    projectId: act.projectId,
-    activityId: activityId,
-    targetName: params.targetName || params['對象名稱'] || act.host || '',
-    itemName: params.itemName || params['應收項目'] || '活動費用',
-    amount: amount,
-    dueDate: params.dueDate || params['預計收款日'] || '',
-    receivedAmount: 0,
-    balance: amount,
-    status: 'unpaid',
-    note: params.note || params['備註'] || '',
-    createdAt: erpNow_(),
-    updatedAt: erpNow_()
-  });
-  erpAudit_(params, '建立應收帳款', 'receivables', obj.receivableId, 'success', '');
-  return erpOk_('應收帳款已建立', { 應收ID: obj.receivableId, receivableId: obj.receivableId });
-}
-
-function erpRegisterPayment(params){
-  const tenantId = erpTenantId_(params);
-  const receivableId = params.receivableId || params['應收ID'];
-  const amount = Number(params.amount || params['收款金額'] || 0);
-  if (!receivableId) return erpFail_('請提供應收ID');
-  if (!amount || amount <= 0) return erpFail_('請提供正確收款金額');
-  const ar = erpReadRows_('receivables').find(r => r.tenantId === tenantId && r.receivableId === receivableId);
-  if (!ar) return erpFail_('找不到應收帳款');
-  const balance = Number(ar.balance || ar.amount || 0);
-  if (amount > balance) return erpFail_('收款金額不可大於未收餘額');
-  const paid = Number(ar.receivedAmount || 0) + amount;
-  const newBalance = balance - amount;
-  const status = newBalance === 0 ? 'paid' : 'partial';
-  const obj = erpAppend_('payments', {
-    paymentId: erpUuid_('PAY'),
-    tenantId: tenantId,
-    receivableId: receivableId,
-    projectId: ar.projectId,
-    activityId: ar.activityId,
-    amount: amount,
-    paymentDate: params.paymentDate || params['收款日期'] || erpNow_().slice(0,10),
-    paymentMethod: params.paymentMethod || params['收款方式'] || '',
-    payerName: params.payerName || params['付款人'] || '',
-    note: params.note || params['備註'] || '',
-    createdAt: erpNow_()
-  });
-  erpUpdateRow_('receivables', ar._row, { receivedAmount: paid, balance: newBalance, status: status, updatedAt: erpNow_() });
-  erpAudit_(params, '登錄收款', 'payments', obj.paymentId, 'success', '');
-  return erpOk_('收款已登錄並完成沖帳', { 收款ID: obj.paymentId, paymentId: obj.paymentId });
-}
-
-function erpRoute(params){
-  const action = String((params && params.action) || '');
-  try {
-    if (action === '初始化ERP商用資料表' || action === 'erp.schema.init') return erpInitCommercialSchema(params);
-    if (action === '儲存基本資料') return erpSaveMaster(params);
-    if (action === '查詢基本資料') return erpQueryMasters(params);
-    if (action === '查詢資源選單') return erpQueryResourceOptions(params);
-    if (action === '新增專案') return erpCreateProject(params);
-    if (action === '查詢專案') return erpQueryProjects(params);
-    if (action === '新增活動') return erpCreateActivity(params);
-    if (action === '查詢活動') return erpQueryActivities(params);
-    if (action === '更新活動狀態') return erpUpdateActivityStatus(params);
-    if (action === '建立應收帳款') return erpCreateReceivable(params);
-    if (action === '登錄收款') return erpRegisterPayment(params);
-    return null;
-  } catch (err) {
-    erpAudit_(params, action, '', '', 'fail', err.message);
-    return erpFail_('ERP 後端處理失敗：' + err.message);
-  }
-}
-
-/**
- * 主 router 接法：
- * const erpResult = erpRoute(params);
- * if (erpResult) return jsonOutput(erpResult);
- */
+/** 主 router 接法：const erpResult = erpRoute(params); if (erpResult) return jsonOutput(erpResult); */
