@@ -160,28 +160,39 @@
   }
   function _escNav(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-  window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,userChip,$,params,format,esc};
+  window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,userChip,appendUserChip,$,params,format,esc};
 
-  // ── 自動初始化：Guard + UserChip ──────────────────────
+  // ── 自動初始化：Guard + UserChip（dashboard 跳過，由 dashboard 自管） ──
   document.addEventListener('DOMContentLoaded',function(){
     const isDashboard=/dashboard\.html/i.test(location.pathname)||location.pathname.endsWith('/')||location.pathname.endsWith('/govbid-os/app/');
-    if(!isDashboard){
-      // Guard：未登入跳回 dashboard
-      try{
-        const p=JSON.parse(localStorage.getItem('govops_profile')||'null');
-        if(!p||!p.userId){
-          location.href='./dashboard.html?redirect='+encodeURIComponent(location.pathname);
-          return;
-        }
-      }catch(e){location.href='./dashboard.html';return;}
-    }
+    if(isDashboard) return; // dashboard 自行管理登入狀態與 userChip
+
+    // Guard：未登入跳回 dashboard
+    try{
+      const p=JSON.parse(localStorage.getItem('govops_profile')||'null');
+      if(!p||!p.userId){
+        location.href='./dashboard.html?redirect='+encodeURIComponent(location.pathname);
+        return;
+      }
+    }catch(e){location.href='./dashboard.html';return;}
+
     // UserChip：在 header 右側插入使用者資訊+登出
     const wrap=document.querySelector('header .wrap');
-    if(wrap){
+    if(wrap&&!wrap.querySelector('#_erpChip')){
       const chip=document.createElement('div');
+      chip.id='_erpChip';
       chip.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:4px';
       chip.innerHTML=userChip();
       wrap.appendChild(chip);
     }
   });
+
+  // dashboard 呼叫：登入成功後手動插入 userChip
+  function appendUserChip(wrapSelector){
+    const wrap=document.querySelector(wrapSelector||'header .wrap');
+    if(!wrap)return;
+    let chip=document.getElementById('_erpChip');
+    if(!chip){chip=document.createElement('div');chip.id='_erpChip';chip.style.cssText='display:flex;align-items:center;gap:4px;flex-shrink:0;margin-left:4px';wrap.appendChild(chip);}
+    chip.innerHTML=userChip();
+  }
 })();
