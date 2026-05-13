@@ -3,94 +3,253 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GovOps OS｜營運儀表板</title>
+<title>GovOps OS｜登入 / 儀表板</title>
 <link rel="stylesheet" href="./erp-page-style.css">
 <script src="./config.js"></script>
+<style>
+/* ── 登入畫面 ── */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#1a3a6c 100%);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px}
+.login-card{background:var(--white);border-radius:16px;padding:36px 32px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.login-card .logo{font-size:1.3rem;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.login-card .logo::before{content:'';display:block;width:5px;height:1.3em;background:var(--gold);border-radius:3px}
+.login-card .tagline{font-size:.84rem;color:var(--gray-500);margin-bottom:24px}
+.login-card label{font-size:.82rem;font-weight:600;color:var(--navy-mid);display:block;margin:12px 0 4px}
+.login-card input,.login-card select{width:100%;padding:10px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.9rem;font-family:var(--font);background:var(--white);transition:border-color var(--transition)}
+.login-card input:focus,.login-card select:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(26,58,92,.1)}
+.login-card .login-btn{width:100%;margin-top:20px;padding:12px;background:var(--navy);color:var(--white);border:none;border-radius:var(--radius);font-size:.95rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:var(--transition)}
+.login-card .login-btn:hover{background:var(--navy-mid)}
+.login-divider{text-align:center;font-size:.78rem;color:var(--gray-300);margin:14px 0;position:relative}
+.login-divider::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--gray-200)}
+.login-divider span{background:var(--white);padding:0 10px;position:relative}
+.login-error{background:rgba(192,57,43,.1);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:var(--radius);padding:10px 14px;font-size:.84rem;margin-top:12px;display:none}
+
+/* ── User chip in header ── */
+.user-chip{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.user-name{font-size:.78rem;color:rgba(255,255,255,.8);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.logout-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:5px 12px;border-radius:var(--radius);font-size:.76rem;cursor:pointer;font-family:var(--font);transition:var(--transition)}
+.logout-btn:hover{background:rgba(192,57,43,.25);color:#fff;border-color:rgba(192,57,43,.4)}
+</style>
 </head>
 <body>
-<header><div class="wrap">
-  <div class="brand">GovOps OS</div>
-  <div class="sub">政府標案全流程營運系統</div>
-  <nav id="nav"></nav>
-</div></header>
-<main class="wrap">
-  <div class="page-title">
-    <h1>營運儀表板</h1>
-    <p>即時掌握專案、活動、財務、核銷全貌</p>
-  </div>
 
-  <div id="kpis" class="kpis" style="margin-bottom:16px">
-    <div class="kpi"><div class="num">—</div><div class="name">載入中</div></div>
-  </div>
+<!-- ══ 登入畫面（未登入時顯示） ══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="logo">GovOps OS</div>
+    <div class="tagline">政府標案全流程營運系統　— 內部使用版</div>
 
-  <div class="grid">
-    <section class="card span8">
-      <h2>資料總覽</h2>
-      <div class="btns">
-        <button onclick="loadDashboard()">刷新儀表板</button>
-        <button class="secondary" onclick="loadOverview()">專案總覽</button>
-        <button class="secondary" onclick="loadRisk()">風險報告</button>
-        <button class="secondary" onclick="loadMarketing()">行銷名單</button>
-        <button class="secondary" onclick="loadReturn()">回流學員</button>
+    <!-- 新使用者注冊 -->
+    <div id="regSection">
+      <label>工作室／公司名稱＊</label>
+      <input id="lOrgName" placeholder="例如：璞策顧問工作室">
+      <label>使用者姓名＊</label>
+      <input id="lUserName" placeholder="您的姓名">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label>Email</label>
+          <input id="lEmail" type="email" placeholder="example@mail.com">
+        </div>
+        <div>
+          <label>使用者角色</label>
+          <select id="lRole">
+            <option value="owner">負責人</option>
+            <option value="admin">管理者</option>
+            <option value="finance">財務人員</option>
+            <option value="staff">行政人員</option>
+            <option value="viewer">檢視者</option>
+          </select>
+        </div>
       </div>
-      <div id="dashMsg" class="msg" style="margin-top:12px">載入中…</div>
-      <div id="table" style="margin-top:12px"></div>
-    </section>
+      <label>預設主辦單位</label>
+      <input id="lHost" placeholder="例如：彰化縣米穀商業同業公會">
+      <button class="login-btn" onclick="doRegister()">建立帳號並進入系統</button>
+    </div>
 
-    <section class="card span4">
-      <h2>快速操作</h2>
-      <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
-        <button class="gold" onclick="location.href='./projects.html'">＋ 新增專案</button>
-        <button class="secondary" onclick="location.href='./activities.html'">＋ 新增活動</button>
-        <button class="secondary" onclick="location.href='./enrollment.html'">＋ 招生報名</button>
-        <button class="secondary" onclick="location.href='./vendors.html'">＋ 新增廠商</button>
-        <button class="secondary" onclick="location.href='./resource-master.html'">＋ 新增講師</button>
-        <button class="secondary" onclick="location.href='./resource-master.html?tab=stf'">＋ 新增工作人員</button>
-        <button class="secondary" onclick="location.href='./crm.html'">學員 CRM</button>
-        <button class="secondary" onclick="location.href='./archive.html'">核銷歸檔</button>
-        <button class="ghost" onclick="location.href='./finance-secretary.html'">財務秘書</button>
-      </div>
-      <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
-      <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
-      <div class="btns" style="margin-top:8px">
-        <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
-        <button class="secondary" onclick="location.href='./pre-launch-qa.html'" style="font-size:.78rem;padding:6px 12px">驗收頁面</button>
-      </div>
-    </section>
+    <div class="login-divider"><span>已有帳號？</span></div>
+
+    <!-- 回頭使用者快速登入 -->
+    <div id="quickSection">
+      <div style="font-size:.82rem;color:var(--gray-500);margin-bottom:6px">偵測到已儲存的帳號設定，可直接進入：</div>
+      <div id="savedUserInfo" style="background:var(--gold-pale);border:1px solid var(--gold);border-radius:var(--radius);padding:10px 14px;font-size:.85rem;color:var(--navy);margin-bottom:10px"></div>
+      <button class="login-btn" onclick="doQuickLogin()" style="background:var(--gold);color:var(--navy)">直接進入系統</button>
+      <button onclick="clearAndReset()" style="width:100%;margin-top:8px;background:transparent;border:1px solid var(--gray-200);color:var(--gray-500);border-radius:var(--radius);padding:8px;font-size:.8rem;cursor:pointer;font-family:var(--font)">切換帳號 / 重新建立</button>
+    </div>
+
+    <div id="loginError" class="login-error"></div>
   </div>
-</main>
+</div>
+
+<!-- ══ 儀表板（已登入時顯示） ══ -->
+<div id="appScreen" style="display:none">
+  <header><div class="wrap">
+    <div class="brand">GovOps OS</div>
+    <div class="sub">政府標案全流程營運系統</div>
+    <nav id="nav"></nav>
+    <div class="user-chip">
+      <span class="user-name" id="headerUserName">—</span>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+    </div>
+  </div></header>
+
+  <main class="wrap">
+    <div class="page-title">
+      <h1>營運儀表板</h1>
+      <p id="dashSubtitle">載入中…</p>
+    </div>
+
+    <div id="kpis" class="kpis" style="margin-bottom:16px">
+      <div class="kpi"><div class="num">—</div><div class="name">載入中</div></div>
+    </div>
+
+    <div class="grid">
+      <section class="card span8">
+        <h2>資料總覽</h2>
+        <div class="btns">
+          <button onclick="loadDashboard()">刷新儀表板</button>
+          <button class="secondary" onclick="loadOverview()">專案總覽</button>
+          <button class="secondary" onclick="loadRisk()">風險報告</button>
+          <button class="secondary" onclick="loadMarketing()">行銷名單</button>
+          <button class="secondary" onclick="loadReturn()">回流學員</button>
+        </div>
+        <div id="dashMsg" class="msg" style="margin-top:12px">載入中…</div>
+        <div id="table" style="margin-top:12px"></div>
+      </section>
+
+      <section class="card span4">
+        <h2>快速操作</h2>
+        <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
+          <button class="gold" onclick="location.href='./projects.html'">＋ 新增專案</button>
+          <button class="secondary" onclick="location.href='./activities.html'">＋ 新增活動</button>
+          <button class="secondary" onclick="location.href='./enrollment.html'">＋ 招生報名</button>
+          <button class="secondary" onclick="location.href='./vendors.html'">＋ 新增廠商</button>
+          <button class="secondary" onclick="location.href='./resource-master.html'">＋ 新增講師</button>
+          <button class="secondary" onclick="location.href='./resource-master.html?tab=stf'">＋ 新增工作人員</button>
+          <button class="secondary" onclick="location.href='./crm.html'">學員 CRM</button>
+          <button class="secondary" onclick="location.href='./archive.html'">核銷歸檔</button>
+          <button class="ghost" onclick="location.href='./finance-secretary.html'">財務秘書</button>
+        </div>
+        <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
+        <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
+        <div class="btns" style="margin-top:8px">
+          <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
+          <button class="secondary" onclick="location.href='./pre-launch-qa.html'" style="font-size:.78rem;padding:6px 12px">驗收頁面</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./session-guard.js"></script>
 <script>
-document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+// ── 工具 ─────────────────────────────────────────────
+function makeId(prefix){ return prefix+'-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*1000); }
+function safeJSON(k){ try{var r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;} }
+const ROLE_LABELS = {owner:'負責人',admin:'管理者',finance:'財務人員',staff:'行政人員',viewer:'檢視者'};
 
-// 若從 dashboard 快速操作點「新增講師」進入 resource-master，自動切到對應 tab
-// 這邊傳 ?tab=stf 給 resource-master 頁面
-
-async function loadDashboard() {
-  const r = await ERPALIGNED.api({action:'取得ERP儀表板'}, 'dashMsg');
-  const d = r.data || {};
-  const kpiDefs = [
-    ['專案總數','',''],['活動總數','',''],['今日待辦','','warn'],
-    ['未收款金額','元','danger'],['已收收入','元','ok'],['支出總額','元',''],
-    ['損益','元',''],['核銷缺件','件','warn']
-  ];
-  document.getElementById('kpis').innerHTML = kpiDefs.map(([k,u,cls])=>
-    '<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+(d[k]??'—')+'</div><div class="name">'+k+(u?'('+u+')':'')+'</div></div>'
-  ).join('');
-  const rows = d.未收款||d.今日任務||d.核銷缺件明細||[];
-  if (rows.length) ERPALIGNED.renderTable({data:{rows}}, 'table');
-  else document.getElementById('table').innerHTML = '<div class="empty">目前無待處理項目</div>';
+// ── 登入狀態判斷 ──────────────────────────────────────
+function checkAuth(){
+  const profile = safeJSON('govops_profile');
+  if(profile && profile.userId){
+    // 已登入：顯示儀表板
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = '';
+    const name = profile.userName || profile.orgName || profile.email || '使用者';
+    const role = ROLE_LABELS[profile.role||profile.userRole] || profile.roleLabel || '';
+    document.getElementById('headerUserName').textContent = name + (role?' ('+role+')':'');
+    document.getElementById('dashSubtitle').textContent =
+      (profile.orgName||'') + '　角色：' + (role||'—');
+    document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+    loadDashboard();
+    healthCheck();
+  } else {
+    // 未登入：顯示登入畫面
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('appScreen').style.display = 'none';
+    initLoginUI();
+  }
 }
-async function loadOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
+
+function initLoginUI(){
+  const saved = safeJSON('govops_profile');
+  if(saved && saved.userId){
+    // 有舊帳號
+    document.getElementById('quickSection').style.display = '';
+    document.getElementById('savedUserInfo').textContent =
+      (saved.orgName||saved.userName||'') + '　' + (ROLE_LABELS[saved.role||saved.userRole]||'') +
+      (saved.email ? '　' + saved.email : '');
+    document.getElementById('regSection').style.display = 'none';
+  } else {
+    document.getElementById('quickSection').style.display = 'none';
+    document.getElementById('regSection').style.display = '';
+  }
+}
+
+function clearAndReset(){
+  ['govops_profile','govops_auth'].forEach(k=>localStorage.removeItem(k));
+  document.getElementById('quickSection').style.display = 'none';
+  document.getElementById('regSection').style.display = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function doRegister(){
+  const orgName = document.getElementById('lOrgName').value.trim();
+  const userName = document.getElementById('lUserName').value.trim();
+  if(!orgName||!userName){
+    showError('請填寫工作室名稱和使用者姓名。'); return;
+  }
+  const role = document.getElementById('lRole').value;
+  const old = safeJSON('govops_profile') || {};
+  const profile = {
+    tenantId: old.tenantId || makeId('TENANT'),
+    userId: old.userId || makeId('USR'),
+    orgName, userName,
+    email: document.getElementById('lEmail').value.trim(),
+    role, userRole: role,
+    roleLabel: ROLE_LABELS[role]||role,
+    plan: 'enterprise',
+    defaultHost: document.getElementById('lHost').value.trim(),
+    status: 'active',
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem('govops_profile', JSON.stringify(profile));
+  localStorage.setItem('govops_auth', JSON.stringify({tenantId:profile.tenantId,userId:profile.userId,userRole:role,plan:'enterprise',status:'active'}));
+  checkAuth();
+}
+
+function doQuickLogin(){
+  checkAuth();
+}
+
+function doLogout(){
+  ['govops_profile','govops_auth'].forEach(k=>localStorage.removeItem(k));
+  checkAuth();
+}
+
+function showError(msg){
+  const el = document.getElementById('loginError');
+  el.textContent = msg; el.style.display = '';
+}
+
+// ── 儀表板功能 ────────────────────────────────────────
+async function loadDashboard(){
+  const r=await ERPALIGNED.api({action:'取得ERP儀表板'},'dashMsg');
+  const d=r.data||{};
+  const kpiDefs=[['專案總數','',''],['活動總數','',''],['今日待辦','','warn'],['未收款金額','元','danger'],['已收收入','元','ok'],['支出總額','元',''],['損益','元',''],['核銷缺件','件','warn']];
+  document.getElementById('kpis').innerHTML=kpiDefs.map(([k,u,cls])=>'<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+(d[k]??'—')+'</div><div class="name">'+k+(u?'('+u+')':'')+'</div></div>').join('');
+  const rows=d.未收款||d.今日任務||d.核銷缺件明細||[];
+  if(rows.length)ERPALIGNED.renderTable({data:{rows}},'table');
+  else document.getElementById('table').innerHTML='<div class="empty">目前無待處理項目</div>';
+}
+async function loadOverview(){await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg'),'table')}
 async function loadRisk(){const r=await ERPALIGNED.api({action:'ERP風險報告'},'dashMsg');const d=r.data||{};const rows=[...(d.逾期任務||[]),...(d.未收款||[]),...(d.核銷缺件||[])];ERPALIGNED.renderTable({data:{rows}},'table')}
 async function loadMarketing(){const r=await ERPALIGNED.api({action:'行銷名單'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function loadReturn(){const r=await ERPALIGNED.api({action:'回流學員分析'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
 
-loadDashboard();
-healthCheck();
+// ── 啟動 ──────────────────────────────────────────────
+checkAuth();
 </script>
 </body>
 </html>
