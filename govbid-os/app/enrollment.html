@@ -1,1 +1,239 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GovOps OS｜招生／報名／簽到</title><link rel="stylesheet" href="./erp-page-style.css"></head><body><header><div class="wrap"><div class="brand">GovOps OS｜招生／報名／簽到</div><div class="sub">對齊：招生活動管理、報名資料庫、學員CRM、簽到表、簽到表紀錄</div><nav id="nav"></nav></div></header><main class="wrap"><div class="grid"><section class="card span6"><h2>新增招生活動</h2><form id="campaignForm"><label>課程名稱＊</label><input name="課程名稱" required><div class="row"><div><label>專案ID</label><input name="專案ID"></div><div><label>活動ID</label><input name="活動ID"></div></div><div class="row"><div><label>開課日期</label><input name="開課日期" type="date"></div><div><label>招生名額</label><input name="招生名額" type="number"></div></div><div class="row"><div><label>報名開始日</label><input name="報名開始日" type="date"></div><div><label>報名截止日</label><input name="報名截止日" type="date"></div></div><label>招生渠道</label><input name="招生渠道" placeholder="FB、LINE、表單、官網"><button>新增招生活動</button></form><div id="campaignMsg" class="msg">尚未新增。</div></section><section class="card span6"><h2>新增報名資料</h2><form id="registrationForm"><label>招生活動ID＊</label><input name="招生活動ID" required><label>姓名＊</label><input name="姓名" required><div class="row"><div><label>電話＊</label><input name="電話" required></div><div><label>Email</label><input name="Email"></div></div><div class="row"><div><label>身分別</label><input name="身分別"></div><div><label>服務單位</label><input name="服務單位"></div></div><label>報名來源</label><input name="報名來源"><button>新增報名／同步CRM</button></form><div id="registrationMsg" class="msg">尚未新增。</div></section><section class="card span12"><h2>招生與報名查詢</h2><div class="row"><input id="keyword" placeholder="課程、姓名、電話、Email"><button onclick="queryCampaigns()">查詢招生活動</button><button onclick="queryRegistrations()">查詢報名資料庫</button><button onclick="queryCRM()">查詢學員CRM</button></div><div class="btns"><button class="secondary" onclick="generateAttendance()">產出簽到表</button><button class="secondary" onclick="queryAttendance()">查詢簽到表</button></div><div id="queryMsg" class="msg">尚未查詢。</div><div id="table"></div></section></div></main><script src="./config.js"></script><script src="./govops-api-client.js"></script><script src="./erp-aligned-core.js"></script><script>document.getElementById('nav').innerHTML=ERPALIGNED.nav();function obj(id,action){const fd=new FormData(document.getElementById(id));const o={action};fd.forEach((v,k)=>{if(v)o[k]=v});return o}document.getElementById('campaignForm').addEventListener('submit',async e=>{e.preventDefault();await ERPALIGNED.api(obj('campaignForm','新增招生活動'),'campaignMsg');});document.getElementById('registrationForm').addEventListener('submit',async e=>{e.preventDefault();await ERPALIGNED.api(obj('registrationForm','新增報名'),'registrationMsg');});async function queryCampaigns(){const r=await ERPALIGNED.api({action:'查詢招生活動',keyword:document.getElementById('keyword').value},'queryMsg');ERPALIGNED.renderTable(r,'table')}async function queryRegistrations(){const r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:document.getElementById('keyword').value},'queryMsg');ERPALIGNED.renderTable(r,'table')}async function queryCRM(){const r=await ERPALIGNED.api({action:'查詢學員CRM',keyword:document.getElementById('keyword').value},'queryMsg');ERPALIGNED.renderTable(r,'table')}async function generateAttendance(){const id=prompt('請輸入招生活動ID');if(!id)return;await ERPALIGNED.api({action:'產出簽到表','招生活動ID':id},'queryMsg')}async function queryAttendance(){const id=prompt('請輸入招生活動ID');const r=await ERPALIGNED.api({action:'查詢簽到表','招生活動ID':id},'queryMsg');ERPALIGNED.renderTable(r,'table')}</script></body></html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜招生報名</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">政府標案全流程營運系統</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title">
+    <h1>招生報名管理</h1>
+    <p>建立招生活動、管理報名資料與學員 CRM</p>
+  </div>
+
+  <!-- Tab -->
+  <div class="btns" style="margin-bottom:14px">
+    <button id="tabCam" class="gold" onclick="switchTab('cam')">招生活動</button>
+    <button id="tabReg" class="secondary" onclick="switchTab('reg')">報名資料</button>
+    <button id="tabAtt" class="secondary" onclick="switchTab('att')">簽到管理</button>
+  </div>
+
+  <!-- ══ 招生活動 ══ -->
+  <div id="secCam">
+    <div class="grid">
+      <section class="card span4">
+        <h2>新增招生活動</h2>
+
+        <!-- 從活動資料帶入 -->
+        <div class="hint" style="margin-bottom:12px">
+          選取已有的活動，自動帶入課程名稱、專案、日期等資料。
+        </div>
+        <button class="secondary" style="width:100%;margin-bottom:14px" onclick="pickActivityForCampaign()">
+          📋 從活動選取並自動填入
+        </button>
+
+        <form id="campaignForm">
+          <div class="form-row">
+            <div class="field"><label>課程名稱＊</label><input name="課程名稱" id="campName" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>專案ID</label><input name="專案ID" id="campProjId" readonly style="background:var(--gray-100)"></div>
+            <div class="field"><label>活動ID</label><input name="活動ID" id="campActId" readonly style="background:var(--gray-100)"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>開課日期</label><input name="開課日期" id="campStartDate" type="date"></div>
+            <div class="field"><label>招生名額</label><input name="招生名額" type="number" min="0"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>報名開始日</label><input name="報名開始日" type="date"></div>
+            <div class="field"><label>報名截止日</label><input name="報名截止日" type="date"></div>
+          </div>
+          <label>招生渠道</label>
+          <input name="招生渠道" placeholder="FB、LINE、表單、官網">
+          <div class="btns"><button type="submit">建立招生活動</button></div>
+        </form>
+        <div id="campaignMsg" class="msg" style="margin-top:8px">尚未新增。</div>
+      </section>
+
+      <section class="card span8">
+        <h2>招生活動總覽</h2>
+        <div class="form-row">
+          <div class="field"><input id="camKw" placeholder="課程名稱、活動ID…" onkeydown="if(event.key==='Enter')queryCampaigns()"></div>
+          <div class="field" style="max-width:110px"><button onclick="queryCampaigns()">查詢</button></div>
+        </div>
+        <div id="camMsg" class="msg">載入中…</div>
+        <div id="camTable" style="margin-top:8px"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ══ 報名資料 ══ -->
+  <div id="secReg" style="display:none">
+    <div class="grid">
+      <section class="card span4">
+        <h2>新增報名</h2>
+        <div class="hint" style="margin-bottom:10px">同一電話或 Email 已存在時，自動更新 CRM 不重複建立。</div>
+        <form id="registrationForm">
+          <div class="form-row">
+            <div class="field"><label>招生活動ID＊</label>
+              <div style="display:flex;gap:6px">
+                <input name="招生活動ID" id="regCamId" required style="flex:1">
+                <button type="button" class="secondary" onclick="pickCampaignForReg()" style="flex:0 0 58px;font-size:.78rem">選取</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>姓名＊</label><input name="姓名" required></div>
+            <div class="field"><label>電話＊</label><input name="電話" required type="tel"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Email</label><input name="Email" type="email"></div>
+            <div class="field"><label>身分別</label><input name="身分別" placeholder="就業者、在職者…"></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>服務單位</label><input name="服務單位"></div>
+            <div class="field"><label>報名來源</label><input name="報名來源" placeholder="LINE、表單…"></div>
+          </div>
+          <div class="btns"><button type="submit">新增報名／同步 CRM</button></div>
+        </form>
+        <div id="registrationMsg" class="msg" style="margin-top:8px">尚未新增。</div>
+      </section>
+
+      <section class="card span8">
+        <h2>報名資料查詢</h2>
+        <div class="form-row">
+          <div class="field"><input id="regKw" placeholder="姓名、電話、Email、服務單位…" onkeydown="if(event.key==='Enter')queryRegistrations()"></div>
+          <div class="field" style="max-width:110px"><button onclick="queryRegistrations()">查詢</button></div>
+        </div>
+        <div id="regMsg" class="msg">尚未查詢。</div>
+        <div id="regTable" style="margin-top:8px"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ══ 簽到管理 ══ -->
+  <div id="secAtt" style="display:none">
+    <div class="card">
+      <h2>簽到表管理</h2>
+      <div class="hint" style="margin-bottom:10px">先查詢或建立招生活動，再產出或查詢簽到表。</div>
+      <div class="form-row">
+        <div class="field"><label>招生活動ID</label>
+          <div style="display:flex;gap:6px">
+            <input id="attCamId" placeholder="CAM-…" style="flex:1">
+            <button type="button" class="secondary" onclick="pickCampaignForAtt()" style="flex:0 0 58px;font-size:.78rem">選取</button>
+          </div>
+        </div>
+      </div>
+      <div class="btns">
+        <button onclick="generateAttendance()">產出簽到表</button>
+        <button class="secondary" onclick="queryAttendance()">查詢簽到表</button>
+        <button class="secondary" onclick="querySignins()">查詢簽到紀錄</button>
+      </div>
+      <div id="attMsg" class="msg" style="margin-top:10px">尚未操作。</div>
+      <div id="attTable" style="margin-top:8px"></div>
+    </div>
+  </div>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+
+// ── Tab ───────────────────────────────────────────
+function switchTab(tab){
+  ['cam','reg','att'].forEach(t=>{
+    document.getElementById('sec'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=t===tab?'':'none';
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).className=t===tab?'gold':'secondary';
+  });
+  if(tab==='cam') queryCampaigns();
+  if(tab==='reg') queryRegistrations();
+}
+
+// ── 從活動自動填入招生表單 ────────────────────────
+function pickActivityForCampaign(){
+  ERPALIGNED.showPickerModal('查詢活動',
+    ['活動ID','活動名稱','活動日期','活動地點','講師','狀態'],
+    function(row){
+      document.getElementById('campName').value    = row['活動名稱'] || '';
+      document.getElementById('campProjId').value  = row['專案ID'] || '';
+      document.getElementById('campActId').value   = row['活動ID'] || '';
+      const d = row['活動日期'];
+      if(d){
+        // Convert 2026/05/19 → 2026-05-19 for date input
+        document.getElementById('campStartDate').value = String(d).replace(/\//g,'-');
+      }
+    }, '選取活動（自動填入）');
+}
+
+// ── 選取招生活動 ID 用於報名 ─────────────────────
+function pickCampaignForReg(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期','報名截止日'],
+    function(row){ document.getElementById('regCamId').value = row['招生活動ID']||''; },
+    '選取招生活動');
+}
+function pickCampaignForAtt(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期'],
+    function(row){ document.getElementById('attCamId').value = row['招生活動ID']||''; },
+    '選取招生活動');
+}
+
+// ── 招生活動 ──────────────────────────────────────
+document.getElementById('campaignForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target); const o={action:'新增招生活動'};
+  fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r=await ERPALIGNED.api(o,'campaignMsg');
+  if(r&&r.success){e.target.reset();queryCampaigns();}
+});
+async function queryCampaigns(){
+  const r=await ERPALIGNED.api({action:'查詢招生活動',keyword:document.getElementById('camKw').value},'camMsg');
+  ERPALIGNED.renderTable(r,'camTable');
+}
+
+// ── 報名 ──────────────────────────────────────────
+document.getElementById('registrationForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target); const o={action:'新增報名'};
+  fd.forEach((v,k)=>{if(v)o[k]=v;});
+  const r=await ERPALIGNED.api(o,'registrationMsg');
+  if(r&&r.success){e.target.reset();queryRegistrations();}
+});
+async function queryRegistrations(){
+  const r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:document.getElementById('regKw').value},'regMsg');
+  ERPALIGNED.renderTable(r,'regTable');
+}
+
+// ── 簽到 ──────────────────────────────────────────
+async function generateAttendance(){
+  const id=document.getElementById('attCamId').value;
+  if(!id){document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID';return;}
+  await ERPALIGNED.api({action:'產出簽到表','招生活動ID':id},'attMsg');
+}
+async function queryAttendance(){
+  const id=document.getElementById('attCamId').value;
+  if(!id){document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID';return;}
+  const r=await ERPALIGNED.api({action:'查詢簽到表','招生活動ID':id},'attMsg');
+  ERPALIGNED.renderTable(r,'attTable');
+}
+async function querySignins(){
+  const r=await ERPALIGNED.api({action:'查詢簽到表',keyword:document.getElementById('attCamId').value},'attMsg');
+  ERPALIGNED.renderTable(r,'attTable');
+}
+
+// 初始載入
+queryCampaigns();
+</script>
+</body>
+</html>
