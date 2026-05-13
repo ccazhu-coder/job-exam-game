@@ -39,16 +39,18 @@
 
     <section class="card span4">
       <h2>快速操作</h2>
-      <div class="btns" style="flex-direction:column;align-items:stretch">
+      <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
         <button class="gold" onclick="location.href='./projects.html'">＋ 新增專案</button>
         <button class="secondary" onclick="location.href='./activities.html'">＋ 新增活動</button>
         <button class="secondary" onclick="location.href='./enrollment.html'">＋ 招生報名</button>
         <button class="secondary" onclick="location.href='./vendors.html'">＋ 新增廠商</button>
+        <button class="secondary" onclick="location.href='./resource-master.html'">＋ 新增講師</button>
+        <button class="secondary" onclick="location.href='./resource-master.html?tab=stf'">＋ 新增工作人員</button>
         <button class="secondary" onclick="location.href='./crm.html'">學員 CRM</button>
         <button class="secondary" onclick="location.href='./archive.html'">核銷歸檔</button>
         <button class="ghost" onclick="location.href='./finance-secretary.html'">財務秘書</button>
       </div>
-      <div class="section-sep" style="margin-top:18px"><span>系統狀態</span></div>
+      <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
       <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
       <div class="btns" style="margin-top:8px">
         <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
@@ -63,11 +65,14 @@
 <script>
 document.getElementById('nav').innerHTML = ERPALIGNED.nav();
 
+// 若從 dashboard 快速操作點「新增講師」進入 resource-master，自動切到對應 tab
+// 這邊傳 ?tab=stf 給 resource-master 頁面
+
 async function loadDashboard() {
   const r = await ERPALIGNED.api({action:'取得ERP儀表板'}, 'dashMsg');
   const d = r.data || {};
   const kpiDefs = [
-    ['專案總數','','navy'],['活動總數','','navy'],['今日待辦','','warn'],
+    ['專案總數','',''],['活動總數','',''],['今日待辦','','warn'],
     ['未收款金額','元','danger'],['已收收入','元','ok'],['支出總額','元',''],
     ['損益','元',''],['核銷缺件','件','warn']
   ];
@@ -75,7 +80,7 @@ async function loadDashboard() {
     '<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+(d[k]??'—')+'</div><div class="name">'+k+(u?'('+u+')':'')+'</div></div>'
   ).join('');
   const rows = d.未收款||d.今日任務||d.核銷缺件明細||[];
-  if(rows.length) ERPALIGNED.renderTable({data:{rows}}, 'table');
+  if (rows.length) ERPALIGNED.renderTable({data:{rows}}, 'table');
   else document.getElementById('table').innerHTML = '<div class="empty">目前無待處理項目</div>';
 }
 async function loadOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
