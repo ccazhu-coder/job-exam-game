@@ -17,13 +17,15 @@
 <main class="wrap">
   <div class="page-title">
     <h1>招生報名管理</h1>
-    <p>建立招生活動、管理報名資料與學員 CRM</p>
+    <p>建立招生活動、管理報名資料、資格審查與通知發送</p>
   </div>
 
   <!-- Tab -->
-  <div class="btns" style="margin-bottom:14px">
+  <div class="btns" style="margin-bottom:14px;flex-wrap:wrap;gap:6px">
     <button id="tabCam" class="gold" onclick="switchTab('cam')">招生活動</button>
     <button id="tabReg" class="secondary" onclick="switchTab('reg')">報名資料</button>
+    <button id="tabRev" class="secondary" onclick="switchTab('rev')">資格審查</button>
+    <button id="tabNotif" class="secondary" onclick="switchTab('notif')">通知管理</button>
     <button id="tabAtt" class="secondary" onclick="switchTab('att')">簽到管理</button>
   </div>
 
@@ -32,15 +34,10 @@
     <div class="grid">
       <section class="card span4">
         <h2>新增招生活動</h2>
-
-        <!-- 從活動資料帶入 -->
-        <div class="hint" style="margin-bottom:12px">
-          選取已有的活動，自動帶入課程名稱、專案、日期等資料。
-        </div>
+        <div class="hint" style="margin-bottom:12px">選取已有的活動，自動帶入課程名稱、專案、日期等資料。</div>
         <button class="secondary" style="width:100%;margin-bottom:14px" onclick="pickActivityForCampaign()">
           📋 從活動選取並自動填入
         </button>
-
         <form id="campaignForm">
           <div class="form-row">
             <div class="field"><label>課程名稱＊</label><input name="課程名稱" id="campName" required></div>
@@ -80,8 +77,8 @@
   <div id="secReg" style="display:none">
     <div class="grid">
       <section class="card span4">
-        <h2>新增報名</h2>
-        <div class="hint" style="margin-bottom:10px">同一電話或 Email 已存在時，自動更新 CRM 不重複建立。</div>
+        <h2>手動新增報名</h2>
+        <div class="hint" style="margin-bottom:10px">同一電話或 Email 已存在時，自動更新 CRM；新增後進入待審查。</div>
         <form id="registrationForm">
           <div class="form-row">
             <div class="field"><label>招生活動ID＊</label>
@@ -103,7 +100,7 @@
             <div class="field"><label>服務單位</label><input name="服務單位"></div>
             <div class="field"><label>報名來源</label><input name="報名來源" placeholder="LINE、表單…"></div>
           </div>
-          <div class="btns"><button type="submit">新增報名／同步 CRM</button></div>
+          <div class="btns"><button type="submit">新增報名（進入待審查）</button></div>
         </form>
         <div id="registrationMsg" class="msg" style="margin-top:8px">尚未新增。</div>
       </section>
@@ -120,11 +117,113 @@
     </div>
   </div>
 
+  <!-- ══ 資格審查 ══ -->
+  <div id="secRev" style="display:none">
+    <div class="grid">
+      <section class="card span4">
+        <h2>線上報名匯入</h2>
+        <div class="hint" style="margin-bottom:10px">將 Google 表單回覆試算表的報名資料匯入，自動建立 CRM 並進入待審查。</div>
+        <div class="form-row">
+          <div class="field"><label>招生活動ID＊</label>
+            <div style="display:flex;gap:6px">
+              <input id="impCamId" placeholder="CAM-…" style="flex:1">
+              <button type="button" class="secondary" onclick="pickCampaignForImp()" style="flex:0 0 58px;font-size:.78rem">選取</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>來源試算表 ID＊</label><input id="impSheetId" placeholder="Google Sheet ID（網址中的一段）"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>工作表名稱</label><input id="impSheetName" placeholder="預設 Sheet1" value="Sheet1"></div>
+        </div>
+        <div class="hint" style="margin:6px 0 10px;font-size:.8rem">⚠️ 來源試算表需與 Apps Script 同一 Google 帳號，且欄位需含「姓名」和「電話」。</div>
+        <div class="btns"><button onclick="importOnlineReg()">匯入線上報名</button></div>
+        <div id="impMsg" class="msg" style="margin-top:8px">尚未匯入。</div>
+
+        <hr style="margin:18px 0;border-color:var(--gray-200)">
+        <h2 style="margin-top:0">批次核准</h2>
+        <div class="hint" style="margin-bottom:10px">將指定招生活動的所有「待審查」報名一次核准。</div>
+        <div class="form-row">
+          <div class="field"><label>招生活動ID＊</label>
+            <div style="display:flex;gap:6px">
+              <input id="batchCamId" placeholder="CAM-…" style="flex:1">
+              <button type="button" class="secondary" onclick="pickCampaignForBatch()" style="flex:0 0 58px;font-size:.78rem">選取</button>
+            </div>
+          </div>
+        </div>
+        <div class="btns"><button onclick="batchApprove()">批次核准全部待審查</button></div>
+        <div id="batchMsg" class="msg" style="margin-top:8px">尚未操作。</div>
+      </section>
+
+      <section class="card span8">
+        <h2>待審查名單</h2>
+        <div class="form-row">
+          <div class="field"><input id="revKw" placeholder="姓名、電話、招生活動ID…" onkeydown="if(event.key==='Enter')queryPending()"></div>
+          <div class="field" style="max-width:110px"><button onclick="queryPending()">查詢</button></div>
+        </div>
+        <div id="revMsg" class="msg">載入中…</div>
+        <div id="revTable" style="margin-top:8px"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ══ 通知管理 ══ -->
+  <div id="secNotif" style="display:none">
+    <div class="grid">
+      <section class="card span4">
+        <h2>發送通知</h2>
+        <div class="hint" style="margin-bottom:10px">依招生活動或報名 ID 發送指定類型的通知。有 LINE_ID 者直接推播，無則記為待發送。</div>
+        <div class="form-row">
+          <div class="field"><label>招生活動ID</label>
+            <div style="display:flex;gap:6px">
+              <input id="ntfCamId" placeholder="CAM-… (留空=全部)" style="flex:1">
+              <button type="button" class="secondary" onclick="pickCampaignForNotif()" style="flex:0 0 58px;font-size:.78rem">選取</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>通知類型</label>
+            <select id="ntfType">
+              <option>資格審查通知</option>
+              <option>核准通知</option>
+              <option>拒絕通知</option>
+              <option>開課通知</option>
+              <option>簽到提醒</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>自訂內容（留空=自動產生）</label><textarea id="ntfContent" rows="3" placeholder="留空將依通知類型自動產生訊息…" style="width:100%;box-sizing:border-box"></textarea></div>
+        </div>
+        <div class="btns"><button onclick="sendNotif()">發送通知</button></div>
+        <div id="ntfMsg" class="msg" style="margin-top:8px">尚未發送。</div>
+
+        <hr style="margin:18px 0;border-color:var(--gray-200)">
+        <h2 style="margin-top:0">LINE 廣播</h2>
+        <div class="hint" style="margin-bottom:10px">向所有 LINE 好友廣播訊息（需已設定 LINE Token）。</div>
+        <textarea id="bcContent" rows="3" placeholder="輸入廣播訊息內容…" style="width:100%;box-sizing:border-box;margin-bottom:10px"></textarea>
+        <div class="btns"><button onclick="broadcast()">LINE 廣播</button></div>
+        <div id="bcMsg" class="msg" style="margin-top:8px">尚未廣播。</div>
+      </section>
+
+      <section class="card span8">
+        <h2>通知紀錄查詢</h2>
+        <div class="form-row">
+          <div class="field"><input id="ntfLogKw" placeholder="姓名、電話、通知類型…" onkeydown="if(event.key==='Enter')queryNotifLog()"></div>
+          <div class="field" style="max-width:110px"><button onclick="queryNotifLog()">查詢</button></div>
+        </div>
+        <div id="ntfLogMsg" class="msg">尚未查詢。</div>
+        <div id="ntfLogTable" style="margin-top:8px"></div>
+      </section>
+    </div>
+  </div>
+
   <!-- ══ 簽到管理 ══ -->
   <div id="secAtt" style="display:none">
     <div class="card">
       <h2>簽到表管理</h2>
-      <div class="hint" style="margin-bottom:10px">先查詢或建立招生活動，再產出或查詢簽到表。</div>
+      <div class="hint" style="margin-bottom:10px">先完成資格審查核准，再產出簽到表（僅含核准學員）。</div>
       <div class="form-row">
         <div class="field"><label>招生活動ID</label>
           <div style="display:flex;gap:6px">
@@ -149,33 +248,32 @@
 <script>
 document.getElementById('nav').innerHTML = ERPALIGNED.nav();
 
-// ── Tab ───────────────────────────────────────────
+const TABS = ['cam','reg','rev','notif','att'];
+
 function switchTab(tab){
-  ['cam','reg','att'].forEach(t=>{
-    document.getElementById('sec'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=t===tab?'':'none';
-    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).className=t===tab?'gold':'secondary';
+  TABS.forEach(function(t){
+    var key = t.charAt(0).toUpperCase() + t.slice(1);
+    document.getElementById('sec'+key).style.display = (t === tab) ? '' : 'none';
+    document.getElementById('tab'+key).className = (t === tab) ? 'gold' : 'secondary';
   });
   if(tab==='cam') queryCampaigns();
   if(tab==='reg') queryRegistrations();
+  if(tab==='rev') queryPending();
+  if(tab==='notif') queryNotifLog();
 }
 
-// ── 從活動自動填入招生表單 ────────────────────────
+// ── 從活動自動填入 ───────────────────────────────────
 function pickActivityForCampaign(){
   ERPALIGNED.showPickerModal('查詢活動',
     ['活動ID','活動名稱','活動日期','活動地點','講師','狀態'],
     function(row){
-      document.getElementById('campName').value    = row['活動名稱'] || '';
-      document.getElementById('campProjId').value  = row['專案ID'] || '';
-      document.getElementById('campActId').value   = row['活動ID'] || '';
-      const d = row['活動日期'];
-      if(d){
-        // Convert 2026/05/19 → 2026-05-19 for date input
-        document.getElementById('campStartDate').value = String(d).replace(/\//g,'-');
-      }
+      document.getElementById('campName').value   = row['活動名稱'] || '';
+      document.getElementById('campProjId').value = row['專案ID'] || '';
+      document.getElementById('campActId').value  = row['活動ID'] || '';
+      var d = row['活動日期'];
+      if(d) document.getElementById('campStartDate').value = String(d).replace(/\//g,'-');
     }, '選取活動（自動填入）');
 }
-
-// ── 選取招生活動 ID 用於報名 ─────────────────────
 function pickCampaignForReg(){
   ERPALIGNED.showPickerModal('查詢招生活動',
     ['招生活動ID','課程名稱','開課日期','報名截止日'],
@@ -188,47 +286,127 @@ function pickCampaignForAtt(){
     function(row){ document.getElementById('attCamId').value = row['招生活動ID']||''; },
     '選取招生活動');
 }
+function pickCampaignForImp(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期'],
+    function(row){ document.getElementById('impCamId').value = row['招生活動ID']||''; },
+    '選取招生活動');
+}
+function pickCampaignForBatch(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期'],
+    function(row){ document.getElementById('batchCamId').value = row['招生活動ID']||''; },
+    '選取招生活動');
+}
+function pickCampaignForNotif(){
+  ERPALIGNED.showPickerModal('查詢招生活動',
+    ['招生活動ID','課程名稱','開課日期'],
+    function(row){ document.getElementById('ntfCamId').value = row['招生活動ID']||''; },
+    '選取招生活動');
+}
 
-// ── 招生活動 ──────────────────────────────────────
-document.getElementById('campaignForm').addEventListener('submit', async e=>{
+// ── 招生活動 ─────────────────────────────────────────
+document.getElementById('campaignForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  const fd=new FormData(e.target); const o={action:'新增招生活動'};
-  fd.forEach((v,k)=>{if(v)o[k]=v;});
-  const r=await ERPALIGNED.api(o,'campaignMsg');
-  if(r&&r.success){e.target.reset();queryCampaigns();}
+  var fd = new FormData(e.target); var o = {action:'新增招生活動'};
+  fd.forEach(function(v,k){ if(v) o[k]=v; });
+  var r = await ERPALIGNED.api(o,'campaignMsg');
+  if(r && r.success){ e.target.reset(); queryCampaigns(); }
 });
 async function queryCampaigns(){
-  const r=await ERPALIGNED.api({action:'查詢招生活動',keyword:document.getElementById('camKw').value},'camMsg');
+  var r = await ERPALIGNED.api({action:'查詢招生活動',keyword:document.getElementById('camKw').value},'camMsg');
   ERPALIGNED.renderTable(r,'camTable');
 }
 
-// ── 報名 ──────────────────────────────────────────
-document.getElementById('registrationForm').addEventListener('submit', async e=>{
+// ── 報名資料 ─────────────────────────────────────────
+document.getElementById('registrationForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  const fd=new FormData(e.target); const o={action:'新增報名'};
-  fd.forEach((v,k)=>{if(v)o[k]=v;});
-  const r=await ERPALIGNED.api(o,'registrationMsg');
-  if(r&&r.success){e.target.reset();queryRegistrations();}
+  var fd = new FormData(e.target); var o = {action:'新增報名'};
+  fd.forEach(function(v,k){ if(v) o[k]=v; });
+  var r = await ERPALIGNED.api(o,'registrationMsg');
+  if(r && r.success){ e.target.reset(); queryRegistrations(); }
 });
 async function queryRegistrations(){
-  const r=await ERPALIGNED.api({action:'查詢報名資料庫',keyword:document.getElementById('regKw').value},'regMsg');
+  var r = await ERPALIGNED.api({action:'查詢報名資料庫',keyword:document.getElementById('regKw').value},'regMsg');
   ERPALIGNED.renderTable(r,'regTable');
 }
 
-// ── 簽到 ──────────────────────────────────────────
+// ── 資格審查 ─────────────────────────────────────────
+async function queryPending(){
+  var r = await ERPALIGNED.api({action:'查詢待審查',keyword:document.getElementById('revKw').value},'revMsg');
+  if(!r || !r.success){ document.getElementById('revMsg').textContent = r ? r.message : '查詢失敗'; return; }
+  var rows = (r.data && r.data.rows) || [];
+  if(!rows.length){ document.getElementById('revMsg').textContent = '目前無待審查報名。'; document.getElementById('revTable').innerHTML=''; return; }
+  document.getElementById('revMsg').textContent = '共 ' + rows.length + ' 筆待審查';
+  var keys = ['報名ID','招生活動ID','姓名','電話','服務單位','報名來源','報名時間'];
+  var html = '<div class="table-wrap"><table><thead><tr>' + keys.map(function(k){ return '<th>'+k+'</th>'; }).join('') + '<th>操作</th></tr></thead><tbody>';
+  rows.forEach(function(row, idx){
+    html += '<tr>' + keys.map(function(k){ return '<td>'+ERPALIGNED.esc(String(row[k]||''))+'</td>'; }).join('');
+    html += '<td style="display:flex;gap:4px;flex-wrap:wrap">'
+      + '<button class="gold" style="font-size:.75rem;padding:3px 8px" onclick="reviewOne('+idx+',\'核准\')">核准</button>'
+      + '<button style="background:var(--danger);color:#fff;border:none;border-radius:4px;font-size:.75rem;padding:3px 8px;cursor:pointer" onclick="reviewOne('+idx+',\'拒絕\')">拒絕</button>'
+      + '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('revTable').innerHTML = html;
+  window._pendingRows = rows;
+}
+async function reviewOne(idx, result){
+  var row = window._pendingRows[idx];
+  if(!row) return;
+  var r = await ERPALIGNED.api({action:'審查報名','報名ID':row['報名ID'],'審查結果':result},'revMsg');
+  if(r && r.success) queryPending();
+}
+async function importOnlineReg(){
+  var camId = document.getElementById('impCamId').value.trim();
+  var sheetId = document.getElementById('impSheetId').value.trim();
+  var sheetName = document.getElementById('impSheetName').value.trim() || 'Sheet1';
+  if(!camId || !sheetId){ document.getElementById('impMsg').textContent='❌ 招生活動ID 和試算表ID 必填'; return; }
+  await ERPALIGNED.api({action:'匯入線上報名','招生活動ID':camId,'sheetId':sheetId,'sheetName':sheetName},'impMsg');
+  queryPending();
+}
+async function batchApprove(){
+  var camId = document.getElementById('batchCamId').value.trim();
+  if(!camId){ document.getElementById('batchMsg').textContent='❌ 請填入招生活動ID'; return; }
+  await ERPALIGNED.api({action:'批次核准報名','招生活動ID':camId},'batchMsg');
+  queryPending();
+}
+
+// ── 通知管理 ─────────────────────────────────────────
+async function sendNotif(){
+  var camId = document.getElementById('ntfCamId').value.trim();
+  var type = document.getElementById('ntfType').value;
+  var content = document.getElementById('ntfContent').value.trim();
+  var o = {action:'發送通知','通知類型':type};
+  if(camId) o['招生活動ID'] = camId;
+  if(content) o['通知內容'] = content;
+  await ERPALIGNED.api(o,'ntfMsg');
+  queryNotifLog();
+}
+async function broadcast(){
+  var msg = document.getElementById('bcContent').value.trim();
+  if(!msg){ document.getElementById('bcMsg').textContent='❌ 請輸入廣播訊息'; return; }
+  await ERPALIGNED.api({action:'LINE廣播','訊息':msg},'bcMsg');
+}
+async function queryNotifLog(){
+  var r = await ERPALIGNED.api({action:'查詢通知紀錄',keyword:document.getElementById('ntfLogKw').value},'ntfLogMsg');
+  ERPALIGNED.renderTable(r,'ntfLogTable');
+}
+
+// ── 簽到 ─────────────────────────────────────────────
 async function generateAttendance(){
-  const id=document.getElementById('attCamId').value;
-  if(!id){document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID';return;}
+  var id = document.getElementById('attCamId').value.trim();
+  if(!id){ document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID'; return; }
   await ERPALIGNED.api({action:'產出簽到表','招生活動ID':id},'attMsg');
 }
 async function queryAttendance(){
-  const id=document.getElementById('attCamId').value;
-  if(!id){document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID';return;}
-  const r=await ERPALIGNED.api({action:'查詢簽到表','招生活動ID':id},'attMsg');
+  var id = document.getElementById('attCamId').value.trim();
+  if(!id){ document.getElementById('attMsg').textContent='❌ 請先填入或選取招生活動ID'; return; }
+  var r = await ERPALIGNED.api({action:'查詢簽到表','招生活動ID':id},'attMsg');
   ERPALIGNED.renderTable(r,'attTable');
 }
 async function querySignins(){
-  const r=await ERPALIGNED.api({action:'查詢簽到表',keyword:document.getElementById('attCamId').value},'attMsg');
+  var r = await ERPALIGNED.api({action:'查詢簽到表',keyword:document.getElementById('attCamId').value},'attMsg');
   ERPALIGNED.renderTable(r,'attTable');
 }
 
