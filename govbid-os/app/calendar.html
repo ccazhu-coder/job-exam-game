@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜日曆管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.event-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.event-item{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;padding:13px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);flex-wrap:wrap}
+.event-date{min-width:80px;text-align:center;background:var(--navy);color:var(--white);border-radius:8px;padding:7px 10px}
+.event-date .day{font-size:1.3rem;font-weight:800;line-height:1}
+.event-date .month{font-size:.7rem;opacity:.8;margin-top:2px}
+.event-info{flex:1;min-width:160px}
+.event-info .title{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:2px}
+.event-info .sub{font-size:.77rem;color:var(--gray-500)}
+.event-type{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.et-場次{background:#dcfce7;color:#16a34a}
+.et-案件開始{background:#e8f0fe;color:#1a56db}
+.et-結案期限{background:#fef2f2;color:#b91c1c}
+.sync-badge{font-size:.71rem;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.sb-已同步{background:#dcfce7;color:#16a34a}
+.sb-未同步{background:#fef9c3;color:#ca8a04}
+.event-actions{display:flex;gap:6px;margin-left:auto}
+.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.74rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn a{color:inherit;text-decoration:none}
+
+/* 近期行程 */
+.upcoming-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}
+.up-item{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:12px 14px;border-left:4px solid var(--navy)}
+.up-item.today{border-left-color:var(--gold)}
+.up-item .date{font-size:.74rem;font-weight:700;color:var(--gold);margin-bottom:4px}
+.up-item .name{font-size:.86rem;font-weight:700;color:var(--navy)}
+.up-item .loc{font-size:.75rem;color:var(--gray-500);margin-top:2px}
+
+.cal-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.ckpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:12px 14px}
+.ckpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.ckpi .label{font-size:.71rem;color:var(--gray-500);margin-top:1px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">日曆管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>日曆管理</h1><p style="color:var(--gray-500);font-size:.84rem;margin:0">追蹤案件與場次的 Google Calendar 同步狀態</p></div>
+    <div class="btns">
+      <button class="secondary" onclick="loadAll()">重新整理</button>
+    </div>
+  </div>
+
+  <div class="cal-kpis" id="calKpis">
+    <div class="ckpi"><div class="num">—</div><div class="label">近30天事件</div></div>
+    <div class="ckpi"><div class="num">—</div><div class="label">已同步</div></div>
+    <div class="ckpi"><div class="num">—</div><div class="label">未同步</div></div>
+  </div>
+
+  <section class="card" style="margin-bottom:16px">
+    <h2>近期行程（30天內）</h2>
+    <div id="upcomingMsg" class="msg" style="display:none"></div>
+    <div class="upcoming-list" id="upcomingList"></div>
+  </section>
+
+  <section class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0">所有日曆事件</h2>
+      <div class="btns">
+        <select id="caseFilter" onchange="loadEvents()" style="padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;background:var(--white)">
+          <option value="">所有案件</option>
+        </select>
+      </div>
+    </div>
+    <div id="eventMsg" class="msg" style="display:none"></div>
+    <div class="event-list" id="eventList"></div>
+  </section>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  loadCases();
+  loadAll();
+}
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases' });
+  var sel = document.getElementById('caseFilter');
+  sel.innerHTML = '<option value="">所有案件</option>' + (r.data||[]).map(function(c){ return '<option value="'+ERPALIGNED.esc(c['專案ID'])+'">'+ERPALIGNED.esc(c['專案計畫名稱'])+'</option>'; }).join('');
+}
+
+async function loadAll() { await Promise.all([loadUpcoming(), loadEvents()]); }
+
+async function loadUpcoming() {
+  var msg = document.getElementById('upcomingMsg');
+  msg.style.display=''; msg.textContent='查詢中…';
+  var r = await ERPALIGNED.api({ action: 'getUpcomingSchedule', days: '30' });
+  msg.style.display='none';
+  var items = r.data || [];
+  var today = new Date().toISOString().substring(0,10);
+  document.getElementById('calKpis').querySelector('.num').textContent = items.length;
+  if (!items.length) { document.getElementById('upcomingList').innerHTML = '<div style="color:var(--gray-400);padding:20px;text-align:center">近30天無排定場次</div>'; return; }
+  document.getElementById('upcomingList').innerHTML = items.map(function(e){
+    var isToday = String(e['日期']).substring(0,10) === today;
+    return '<div class="up-item'+(isToday?' today':'')+'">'+
+      '<div class="date">'+(isToday?'今天　':'')+ERPALIGNED.esc(e['日期'])+'</div>'+
+      '<div class="name">'+ERPALIGNED.esc(e['名稱'])+'</div>'+
+      '<div class="loc">'+(e['時間']?ERPALIGNED.esc(e['時間']):'')+(e['地點']?' · '+ERPALIGNED.esc(e['地點']):'')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+async function loadEvents() {
+  var msg = document.getElementById('eventMsg');
+  var list = document.getElementById('eventList');
+  msg.style.display=''; msg.textContent='查詢中…';
+  list.innerHTML='';
+  var params = { action: 'getCalendarItems' };
+  var caseId = document.getElementById('caseFilter').value;
+  if (caseId) params.caseId = caseId;
+  var r = await ERPALIGNED.api(params);
+  msg.style.display='none';
+  var items = r.data || [];
+  var synced = items.filter(function(e){ return e.synced==='已同步'; }).length;
+  var unsynced = items.length - synced;
+  var kpis = document.getElementById('calKpis').querySelectorAll('.num');
+  if (kpis[1]) kpis[1].textContent = synced;
+  if (kpis[2]) kpis[2].textContent = unsynced;
+  if (!items.length) { list.innerHTML = '<div style="color:var(--gray-400);padding:20px;text-align:center">查無事件</div>'; return; }
+  list.innerHTML = items.map(function(e){
+    var dateStr = e.date || '';
+    var parts = dateStr.match(/(\d+)[\/\-](\d+)[\/\-](\d+)/);
+    var dayStr = parts ? parts[3] : '—';
+    var monStr = parts ? parts[2]+'/'+parts[1] : '';
+    return '<div class="event-item">'+
+      '<div class="event-date"><div class="day">'+dayStr+'</div><div class="month">'+monStr+'</div></div>'+
+      '<div class="event-info">'+
+        '<div class="title">'+ERPALIGNED.esc(e.title||'—')+'</div>'+
+        '<div class="sub">'+(e.time?ERPALIGNED.esc(e.time):'')+(e.location?' · '+ERPALIGNED.esc(e.location):'')+'</div>'+
+      '</div>'+
+      '<span class="event-type et-'+ERPALIGNED.esc(e.type||'')+'">'+ERPALIGNED.esc(e.type||'')+'</span>'+
+      '<span class="sync-badge sb-'+ERPALIGNED.esc(e.synced)+'">'+ERPALIGNED.esc(e.synced)+'</span>'+
+      '<div class="event-actions">'+
+        (e.link?'<button class="row-btn"><a href="'+ERPALIGNED.esc(e.link)+'" target="_blank">開啟日曆</a></button>':'<button class="row-btn" style="opacity:.5" disabled>未同步</button>')+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+init();
+</script>
+</body>
+</html>
