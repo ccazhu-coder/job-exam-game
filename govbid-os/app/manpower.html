@@ -3,479 +3,821 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>人力招募管理 | GovOps OS</title>
+<title>GovOps OS｜人力招募與支援管理</title>
 <link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
 <style>
-.tab-bar{display:flex;gap:8px;margin-bottom:20px}
-.tab-bar .tab{padding:7px 20px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);cursor:pointer;font-size:.85rem;color:var(--navy-mid);font-weight:600;transition:.15s}
-.tab-bar .tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
-.kpi-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;padding:18px 20px}
-.kpi-card .num{font-size:2rem;font-weight:800;color:var(--navy);line-height:1}
-.kpi-card .lbl{font-size:.78rem;color:var(--gray-400);margin-top:4px}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.section-header h3{font-size:1.05rem;font-weight:700;color:var(--navy)}
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
-.filter-bar select,.filter-bar input{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:.83rem;font-family:var(--font);color:var(--navy)}
-.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--navy-mid)}
-.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.75rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
-.row-btn:hover{background:var(--gold-pale);border-color:var(--gold);color:var(--navy)}
-.row-btn.danger{color:#b91c1c;border-color:#fca5a5}
-.row-btn.danger:hover{background:#fef2f2}
-.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
-.s-recruiting{background:#dcfce7;color:#166534}
-.s-paused{background:#fef9c3;color:#854d0e}
-.s-closed{background:#f1f5f9;color:#64748b}
-.s-pending{background:#dbeafe;color:#1e40af}
-.s-interview{background:#fef3c7;color:#92400e}
-.s-hired{background:#dcfce7;color:#166534}
-.s-rejected{background:#fee2e2;color:#991b1b}
-.empty-state{text-align:center;padding:48px;color:var(--gray-400)}
-.vacancy-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;padding:16px 20px;margin-bottom:12px;transition:.15s}
-.vacancy-card:hover{border-color:var(--navy-mid);box-shadow:0 2px 8px rgba(13,35,64,.07)}
-.vacancy-card .vc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.vacancy-card .vc-title{font-size:1rem;font-weight:700;color:var(--navy)}
-.vacancy-card .vc-meta{font-size:.78rem;color:var(--gray-400);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
-.vacancy-card .vc-actions{display:flex;gap:6px}
+/* KPI */
+.mp-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:960px){.mp-kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:500px){.mp-kpis{grid-template-columns:repeat(2,1fr)}}
+.mpk{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:13px 15px}
+.mpk .num{font-size:1.5rem;font-weight:800;color:var(--navy)}
+.mpk .lbl{font-size:.73rem;color:var(--gray-500);margin-top:2px}
+.mpk.warn .num{color:var(--gold)}
+.mpk.ok .num{color:#16a34a}
+.mpk.alert .num{color:var(--danger)}
+
+/* Tab 切換 */
+.tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab-bar .tab{padding:6px 18px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.tab-bar .tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.tab-bar .tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+
+/* 工具列 */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar input,.toolbar select{padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.85rem;font-family:var(--font);background:var(--white)}
+.toolbar input{flex:1;min-width:200px}
+.toolbar input:focus,.toolbar select:focus{outline:none;border-color:var(--navy-mid)}
+
+/* 需求卡片 */
+.need-card{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;padding:14px 18px;margin-bottom:10px;transition:.15s}
+.need-card:hover{border-color:var(--navy-mid);box-shadow:0 2px 8px rgba(13,35,64,.07)}
+.nc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.nc-title{font-size:.96rem;font-weight:700;color:var(--navy)}
+.nc-meta{font-size:.77rem;color:var(--gray-500);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.nc-bar-wrap{background:var(--gray-100);border-radius:4px;height:4px;margin-bottom:10px;overflow:hidden}
+.nc-bar{background:var(--navy-mid);height:100%;border-radius:4px;transition:.3s}
+.nc-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* 表格 */
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:var(--white);padding:9px 12px;text-align:left;font-size:.78rem;font-weight:600;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+
+/* 狀態徽章 */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-招募中{background:#dbeafe;color:#1e40af}
+.s-已滿額{background:#dcfce7;color:#166534}
+.s-已取消{background:#f1f5f9;color:#64748b}
+.s-待審{background:#fef3c7;color:#92400e}
+.s-已錄取{background:#dcfce7;color:#166534}
+.s-備取{background:#e0f2fe;color:#0369a1}
+.s-未錄取{background:#fee2e2;color:#991b1b}
+.s-待確認{background:#fef3c7;color:#92400e}
+.s-已確認{background:#dcfce7;color:#166534}
+.s-缺席{background:#fee2e2;color:#991b1b}
+.s-待付{background:#fef3c7;color:#92400e}
+.s-已付{background:#dcfce7;color:#166534}
+.s-免付{background:#f1f5f9;color:#64748b}
+
+/* 列操作按鈕 */
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s;white-space:nowrap}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.warn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger);color:var(--white)}
+
+/* 批次操作列 */
+.batch-bar{background:var(--navy);border-radius:8px;padding:9px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.batch-bar.show{display:flex}
+.batch-bar .cnt{color:rgba(255,255,255,.9);font-size:.83rem;font-weight:600}
+
+/* 空狀態 */
+.empty-state{text-align:center;padding:48px 20px;color:var(--gray-400);font-size:.88rem}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-box.wide{max-width:660px}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+
+/* Form */
+.fr{display:grid;gap:9px;margin-bottom:9px}
+.fr.c2{grid-template-columns:1fr 1fr}
+.fr.c3{grid-template-columns:1fr 1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi label .req{color:var(--danger)}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:56px;resize:vertical}
+.fi-group{border:1.5px solid var(--gray-200);border-radius:8px;padding:10px 12px;margin-bottom:9px}
+.fi-group legend{font-size:.74rem;font-weight:700;color:var(--navy-mid);padding:0 5px}
 </style>
 </head>
 <body>
-<div id="erpNav"></div>
-<div class="page-container">
-  <div class="page-header">
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">人力招募與支援管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
-      <h1 class="page-title">人力招募管理</h1>
-      <p class="page-subtitle" id="pageSubtitle">載入中…</p>
+      <h1>人力招募與支援管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
     </div>
   </div>
 
-  <!-- KPI -->
-  <div class="kpi-grid" id="kpiGrid">
-    <div class="kpi-card"><div class="num" id="k_vTotal">—</div><div class="lbl">職缺總數</div></div>
-    <div class="kpi-card"><div class="num" id="k_vRecruiting">—</div><div class="lbl">招募中</div></div>
-    <div class="kpi-card"><div class="num" id="k_aTotal">—</div><div class="lbl">應徵者總數</div></div>
-    <div class="kpi-card"><div class="num" id="k_aPending">—</div><div class="lbl">待審應徵</div></div>
+  <!-- KPI 統計列 -->
+  <div class="mp-kpis">
+    <div class="mpk">      <div class="num" id="k_needs">—</div><div class="lbl">人力需求總數</div></div>
+    <div class="mpk warn"> <div class="num" id="k_recruiting">—</div><div class="lbl">招募中需求</div></div>
+    <div class="mpk">      <div class="num" id="k_applied">—</div><div class="lbl">報名／應徵人數</div></div>
+    <div class="mpk warn"> <div class="num" id="k_pending">—</div><div class="lbl">待審核人員</div></div>
+    <div class="mpk ok">   <div class="num" id="k_hired">—</div><div class="lbl">已錄取／已派工</div></div>
+    <div class="mpk alert"><div class="num" id="k_unpaid">—</div><div class="lbl">待付款人員</div></div>
   </div>
 
-  <!-- Tab -->
+  <!-- Tab 切換 -->
   <div class="tab-bar">
-    <button class="tab active" onclick="switchTab('vacancies',this)">職缺管理</button>
-    <button class="tab" onclick="switchTab('applicants',this)">應徵者管理</button>
+    <button class="tab active" onclick="switchTab('needs',this)">人力需求管理</button>
+    <button class="tab" onclick="switchTab('staff',this)">人員名單管理</button>
+    <button class="tab" onclick="switchTab('hours',this)">排班與工時</button>
+    <button class="tab" onclick="switchTab('pay',this)">簽收與付款</button>
   </div>
 
-  <!-- 職缺 Tab -->
-  <div id="tab-vacancies">
-    <div class="section-header">
-      <h3>職缺列表</h3>
-      <button class="btn-primary" onclick="openVacancyModal()">+ 新增職缺</button>
-    </div>
-    <div class="filter-bar">
-      <select id="vStatusFilter" onchange="loadVacancies()">
+  <!-- ① 人力需求管理 -->
+  <div id="tab-needs">
+    <div class="toolbar">
+      <input id="needSearch" type="text" placeholder="搜尋案件、場次或人力需求…" oninput="renderNeeds()">
+      <select id="needStatusFilter" onchange="renderNeeds()">
         <option value="">全部狀態</option>
         <option value="招募中">招募中</option>
-        <option value="暫停">暫停</option>
-        <option value="已關閉">已關閉</option>
+        <option value="已滿額">已滿額</option>
+        <option value="已取消">已取消</option>
       </select>
-      <input id="vKeyword" type="text" placeholder="搜尋職缺名稱…" oninput="loadVacancies()" style="width:200px">
+      <button class="gold" onclick="openNeedModal()">＋ 新增人力需求</button>
     </div>
-    <div id="vacancyList"></div>
+    <div id="needList"><div class="empty-state">載入中…</div></div>
   </div>
 
-  <!-- 應徵者 Tab -->
-  <div id="tab-applicants" style="display:none">
-    <div class="section-header">
-      <h3>應徵者列表</h3>
-      <button class="btn-primary" onclick="openApplicantModal()">+ 新增應徵者</button>
-    </div>
-    <div class="filter-bar">
-      <select id="aVacancyFilter" onchange="loadApplicants()">
-        <option value="">全部職缺</option>
-      </select>
-      <select id="aStatusFilter" onchange="loadApplicants()">
+  <!-- ② 人員名單管理 -->
+  <div id="tab-staff" style="display:none">
+    <div class="toolbar">
+      <input id="staffSearch" type="text" placeholder="搜尋姓名、電話…" oninput="renderStaff()">
+      <select id="staffNeedFilter" onchange="loadStaff()"><option value="">全部需求</option></select>
+      <select id="staffStatusFilter" onchange="renderStaff()">
         <option value="">全部狀態</option>
         <option value="待審">待審</option>
-        <option value="通知面試">通知面試</option>
-        <option value="面試完成">面試完成</option>
-        <option value="錄取">錄取</option>
+        <option value="已錄取">已錄取</option>
+        <option value="備取">備取</option>
         <option value="未錄取">未錄取</option>
       </select>
-      <input id="aKeyword" type="text" placeholder="搜尋姓名、Email…" oninput="renderApplicants()" style="width:200px">
+      <button class="gold" onclick="openStaffModal()">＋ 新增人員</button>
     </div>
-    <div style="overflow-x:auto">
-      <table class="erp-table" style="min-width:800px">
-        <thead>
-          <tr><th>姓名</th><th>電話</th><th>Email</th><th>應徵職缺</th><th>應徵日期</th><th>薪資期望</th><th>狀態</th><th>面試日期</th><th>操作</th></tr>
-        </thead>
-        <tbody id="applicantBody"></tbody>
+    <div class="batch-bar" id="batchBar">
+      <span class="cnt" id="staffSelected">已選 0 人</span>
+      <button class="secondary" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="batchApprove('已錄取')">批次錄取</button>
+      <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchApprove('備取')">批次備取</button>
+      <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchApprove('未錄取')">批次未錄取</button>
+    </div>
+    <div class="table-wrap">
+      <table class="erp-table">
+        <thead><tr>
+          <th><input type="checkbox" id="staffChkAll" onchange="toggleAllStaff(this)" style="accent-color:var(--gold)"></th>
+          <th>姓名</th><th>身分別</th><th>電話</th><th>對應需求</th><th>應徵日期</th><th>狀態</th><th>帳號</th><th>操作</th>
+        </tr></thead>
+        <tbody id="staffBody"><tr><td colspan="9" class="empty-state">載入中…</td></tr></tbody>
       </table>
     </div>
   </div>
-</div>
 
-<!-- 職缺 Modal -->
-<div class="modal-overlay" id="vacancyModal" style="display:none" onclick="if(event.target===this)closeVacancyModal()">
-  <div class="modal-box" style="max-width:600px">
-    <div class="modal-header"><span id="vacancyModalTitle">新增職缺</span><button class="modal-close" onclick="closeVacancyModal()">✕</button></div>
+  <!-- ③ 排班與工時 -->
+  <div id="tab-hours" style="display:none">
+    <div class="toolbar">
+      <select id="hoursNeedFilter" onchange="loadWorkHours()"><option value="">全部需求</option></select>
+      <select id="hoursStatusFilter" onchange="renderHours()">
+        <option value="">全部狀態</option>
+        <option value="待確認">待確認</option>
+        <option value="已確認">已確認</option>
+        <option value="缺席">缺席</option>
+      </select>
+      <button class="gold" onclick="openHourModal()">＋ 新增工時</button>
+    </div>
+    <div class="table-wrap">
+      <table class="erp-table">
+        <thead><tr><th>姓名</th><th>對應需求</th><th>工作日期</th><th>開始</th><th>結束</th><th>工時(h)</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody id="hoursBody"><tr><td colspan="9" class="empty-state">載入中…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ④ 簽收與付款 -->
+  <div id="tab-pay" style="display:none">
+    <div class="toolbar">
+      <select id="payNeedFilter" onchange="loadPayments()"><option value="">全部需求</option></select>
+      <select id="payStatusFilter" onchange="renderPayments()">
+        <option value="">全部狀態</option>
+        <option value="待付">待付</option>
+        <option value="已付">已付</option>
+        <option value="免付">免付</option>
+      </select>
+      <button class="gold" onclick="openPayModal()">＋ 新增付款單</button>
+      <button class="secondary" onclick="doBatchGenerate()" title="從已確認工時批次產生付款單">⚡ 批次產生</button>
+    </div>
+    <div class="table-wrap">
+      <table class="erp-table">
+        <thead><tr><th>姓名</th><th>對應需求</th><th>類型</th><th>應付金額</th><th>付款方式</th><th>戶名/帳號</th><th>狀態</th><th>付款日期</th><th>操作</th></tr></thead>
+        <tbody id="payBody"><tr><td colspan="9" class="empty-state">載入中…</td></tr></tbody>
+      </table>
+    </div>
+    <div style="text-align:right;margin-top:10px;font-size:.85rem;color:var(--gray-500)">
+      待付總額：<strong id="payTotal" style="color:var(--gold);font-size:1rem">—</strong>
+    </div>
+  </div>
+</main>
+
+<!-- ─── 人力需求 Modal ─────────────────────────────────── -->
+<div class="modal-overlay" id="needModal" style="display:none" onclick="if(event.target===this)closeNeedModal()">
+  <div class="modal-box wide">
+    <div class="modal-header"><h2 id="needModalTitle">新增人力需求</h2><button class="modal-close" onclick="closeNeedModal()">✕</button></div>
     <div class="modal-body">
-      <input type="hidden" id="v_id">
-      <div class="form-row cols2">
-        <div class="field"><label>職缺名稱 <span class="req">*</span></label><input id="v_name" placeholder="例：課務協助人員"></div>
-        <div class="field"><label>職務類型</label>
-          <select id="v_type"><option>正職</option><option>兼職</option><option>志工</option><option>外包</option><option>臨時人員</option></select>
+      <input type="hidden" id="n_id">
+      <div class="fr c2">
+        <div class="fi"><label>需求名稱 <span class="req">*</span></label><input id="n_name" placeholder="例：場次A 工讀生（報到組）"></div>
+        <div class="fi"><label>人力類型</label>
+          <select id="n_type"><option>工作人員</option><option>工讀生</option><option>志工</option><option>臨時支援</option></select>
         </div>
       </div>
-      <div class="form-row cols3">
-        <div class="field"><label>需求人數</label><input id="v_count" type="number" min="1" value="1"></div>
-        <div class="field"><label>薪資範圍</label><input id="v_salary" placeholder="例：月薪 30,000~35,000"></div>
-        <div class="field"><label>工作地點</label><input id="v_loc" placeholder="例：彰化縣政府"></div>
+      <div class="fr c3">
+        <div class="fi"><label>需求人數</label><input id="n_count" type="number" min="1" value="1"></div>
+        <div class="fi"><label>時薪（元）</label><input id="n_rate" type="number" min="0" placeholder="0 = 義務"></div>
+        <div class="fi"><label>招募截止日</label><input id="n_deadline" type="date"></div>
       </div>
-      <div class="form-row cols2">
-        <div class="field"><label>開始日期</label><input id="v_start" type="date"></div>
-        <div class="field"><label>結束日期</label><input id="v_end" type="date"></div>
+      <div class="fr c3">
+        <div class="fi"><label>工作日期</label><input id="n_date" type="date"></div>
+        <div class="fi"><label>開始時間</label><input id="n_start" type="time"></div>
+        <div class="fi"><label>結束時間</label><input id="n_end" type="time"></div>
       </div>
-      <div class="field"><label>職缺說明</label><textarea id="v_desc" rows="3" placeholder="工作內容說明…"></textarea></div>
-      <div class="field"><label>任職資格</label><textarea id="v_req" rows="2" placeholder="例：大專以上學歷、熟悉 Office…"></textarea></div>
-      <div class="field"><label>連結案件ID</label><input id="v_caseId" placeholder="留空表示不連結案件"></div>
+      <div class="fr">
+        <div class="fi"><label>工作地點</label><input id="n_loc" placeholder="例：彰化縣政府1樓大廳"></div>
+      </div>
+      <div class="fr">
+        <div class="fi"><label>工作說明</label><textarea id="n_desc" placeholder="工作內容、注意事項…"></textarea></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>連結案件ID</label><input id="n_caseId" placeholder="選填"></div>
+        <div class="fi"><label>連結場次ID</label><input id="n_sesId" placeholder="選填"></div>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeVacancyModal()">取消</button>
-      <button class="btn-primary" onclick="saveVacancy()">儲存</button>
+      <button class="secondary" onclick="closeNeedModal()">取消</button>
+      <button class="gold" onclick="saveNeed()">儲存</button>
     </div>
   </div>
 </div>
 
-<!-- 應徵者 Modal -->
-<div class="modal-overlay" id="applicantModal" style="display:none" onclick="if(event.target===this)closeApplicantModal()">
-  <div class="modal-box" style="max-width:580px">
-    <div class="modal-header"><span id="applicantModalTitle">新增應徵者</span><button class="modal-close" onclick="closeApplicantModal()">✕</button></div>
+<!-- ─── 人員 Modal ──────────────────────────────────────── -->
+<div class="modal-overlay" id="staffModal" style="display:none" onclick="if(event.target===this)closeStaffModal()">
+  <div class="modal-box wide">
+    <div class="modal-header"><h2 id="staffModalTitle">新增支援人員</h2><button class="modal-close" onclick="closeStaffModal()">✕</button></div>
     <div class="modal-body">
-      <input type="hidden" id="a_id">
-      <div class="form-row cols2">
-        <div class="field"><label>姓名 <span class="req">*</span></label><input id="a_name" placeholder="應徵者姓名"></div>
-        <div class="field"><label>電話</label><input id="a_phone" placeholder="0912-345-678"></div>
-      </div>
-      <div class="form-row cols2">
-        <div class="field"><label>Email</label><input id="a_email" type="email" placeholder="example@email.com"></div>
-        <div class="field"><label>薪資期望</label><input id="a_salary" placeholder="例：月薪 32,000"></div>
-      </div>
-      <div class="form-row cols2">
-        <div class="field"><label>應徵職缺</label>
-          <select id="a_vacancyId"><option value="">— 請選擇 —</option></select>
+      <input type="hidden" id="s_id">
+      <div class="fr c2">
+        <div class="fi"><label>姓名 <span class="req">*</span></label><input id="s_name"></div>
+        <div class="fi"><label>身分別</label>
+          <select id="s_type"><option>工作人員</option><option>工讀生</option><option>志工</option><option>臨時支援</option></select>
         </div>
-        <div class="field"><label>應徵日期</label><input id="a_date" type="date"></div>
       </div>
-      <div class="field"><label>履歷連結</label><input id="a_resume" placeholder="Google Drive 或其他連結"></div>
-      <div class="form-row cols2" id="a_interviewFields">
-        <div class="field"><label>面試日期</label><input id="a_idate" type="date"></div>
-        <div class="field"><label>面試地點</label><input id="a_iloc" placeholder="面試地點"></div>
+      <div class="fr c2">
+        <div class="fi"><label>電話</label><input id="s_phone" placeholder="0912-345-678"></div>
+        <div class="fi"><label>Email</label><input id="s_email" type="email"></div>
       </div>
-      <div class="field"><label>審查狀態</label>
-        <select id="a_status">
-          <option value="待審">待審</option>
-          <option value="通知面試">通知面試</option>
-          <option value="面試完成">面試完成</option>
-          <option value="錄取">錄取</option>
-          <option value="未錄取">未錄取</option>
-        </select>
+      <div class="fr c2">
+        <div class="fi"><label>對應人力需求</label>
+          <select id="s_needId"><option value="">— 請選擇 —</option></select>
+        </div>
+        <div class="fi"><label>應徵日期</label><input id="s_date" type="date"></div>
       </div>
-      <div class="field"><label>備註</label><textarea id="a_remark" rows="2"></textarea></div>
+      <div class="fr c2">
+        <div class="fi"><label>身分證字號</label><input id="s_id2" placeholder="A123456789"></div>
+        <div class="fi"><label>審核狀態</label>
+          <select id="s_status"><option>待審</option><option>已錄取</option><option>備取</option><option>未錄取</option></select>
+        </div>
+      </div>
+      <fieldset class="fi-group">
+        <legend>付款帳戶（選填）</legend>
+        <div class="fr c3">
+          <div class="fi"><label>銀行</label><input id="s_bank" placeholder="台灣銀行"></div>
+          <div class="fi"><label>帳號</label><input id="s_account"></div>
+          <div class="fi"><label>戶名</label><input id="s_aname"></div>
+        </div>
+      </fieldset>
+      <div class="fr">
+        <div class="fi"><label>備註</label><textarea id="s_remark" rows="2"></textarea></div>
+      </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeApplicantModal()">取消</button>
-      <button class="btn-primary" onclick="saveApplicant()">儲存</button>
+      <button class="secondary" onclick="closeStaffModal()">取消</button>
+      <button class="gold" onclick="saveStaff()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 工時 Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" id="hourModal" style="display:none" onclick="if(event.target===this)closeHourModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="hourModalTitle">新增工時紀錄</h2><button class="modal-close" onclick="closeHourModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="h_id">
+      <div class="fr c2">
+        <div class="fi"><label>人員 <span class="req">*</span></label><select id="h_staffId"><option value="">— 請選擇 —</option></select></div>
+        <div class="fi"><label>對應需求</label><select id="h_needId"><option value="">— 請選擇 —</option></select></div>
+      </div>
+      <div class="fr c3">
+        <div class="fi"><label>工作日期</label><input id="h_date" type="date"></div>
+        <div class="fi"><label>開始時間</label><input id="h_start" type="time"></div>
+        <div class="fi"><label>結束時間</label><input id="h_end" type="time" onchange="calcHours()"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>工時（小時）</label><input id="h_hours" type="number" min="0" step="0.5" placeholder="自動計算"></div>
+        <div class="fi"><label>工作狀態</label><select id="h_status"><option>待確認</option><option>已確認</option><option>缺席</option></select></div>
+      </div>
+      <div class="fr"><div class="fi"><label>備註</label><input id="h_remark"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeHourModal()">取消</button>
+      <button class="gold" onclick="saveHour()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 付款 Modal ─────────────────────────────────────── -->
+<div class="modal-overlay" id="payModal" style="display:none" onclick="if(event.target===this)closePayModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="payModalTitle">新增付款單</h2><button class="modal-close" onclick="closePayModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="p_id">
+      <div class="fr c2">
+        <div class="fi"><label>人員 <span class="req">*</span></label><select id="p_staffId"><option value="">— 請選擇 —</option></select></div>
+        <div class="fi"><label>對應需求</label><select id="p_needId"><option value="">— 請選擇 —</option></select></div>
+      </div>
+      <div class="fr c3">
+        <div class="fi"><label>付款類型</label><select id="p_type"><option>工讀酬勞</option><option>交通補助</option><option>講師費</option><option>其他</option></select></div>
+        <div class="fi"><label>應付金額</label><input id="p_amount" type="number" min="0"></div>
+        <div class="fi"><label>付款方式</label><select id="p_method"><option>轉帳</option><option>現金</option><option>支票</option></select></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>付款狀態</label><select id="p_status"><option>待付</option><option>已付</option><option>免付</option></select></div>
+        <div class="fi"><label>付款日期</label><input id="p_date" type="date"></div>
+      </div>
+      <div class="fr"><div class="fi"><label>憑證連結</label><input id="p_voucher" placeholder="Google Drive 連結"></div></div>
+      <div class="fr"><div class="fi"><label>備註</label><input id="p_remark"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closePayModal()">取消</button>
+      <button class="gold" onclick="savePayment()">儲存</button>
     </div>
   </div>
 </div>
 
 <script src="./erp-aligned-core.js"></script>
 <script>
-var _vacancies = [];
-var _applicants = [];
-var _currentTab = 'vacancies';
-var _editingVacancyId = null;
-var _editingApplicantId = null;
+var _needs=[], _staff=[], _hours=[], _payments=[];
+var _selectedStaff=new Set();
 
-async function init() {
-  await loadVacancies();
-  await Promise.all([loadStats(), loadApplicants()]);
-  populateVacancyDropdown();
-  const urlP = new URLSearchParams(location.search);
-  if (urlP.get('caseId')) {
-    document.getElementById('vKeyword').value = '';
-    // Could pre-filter if we add caseId filter to API
-  }
-  document.getElementById('pageSubtitle').textContent = '管理職缺發布與應徵者追蹤';
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+function fmtTime(v){if(!v)return'';var m=String(v).match(/T(\d{2}):(\d{2})/);if(m)return m[1]+':'+m[2];if(/^\d{1,2}:\d{2}/.test(String(v)))return String(v).substring(0,5);return'';}
+
+// ── 初始化 ──────────────────────────────────────────────
+async function init(){
+  var profile=safeJSON('govops_profile');
+  if(!profile||!profile.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+
+  var sp=new URLSearchParams(location.search);
+  var caseId=sp.get('caseId')||'', sesId=sp.get('sessionId')||'';
+  if(caseId) document.getElementById('n_caseId').value=caseId;
+  if(sesId)  document.getElementById('n_sesId').value=sesId;
+
+  await loadNeeds();
+  await Promise.all([loadStaff(), loadWorkHours(), loadPayments(), loadStats()]);
+  refreshDropdowns();
+  document.getElementById('pageSubtitle').textContent='管理各案件場次的工作人員、工讀生、志工與臨時支援人力';
 }
 
-async function loadStats() {
-  const [vr, ar] = await Promise.all([
-    ERPALIGNED.api({ action: 'getVacancyStats' }),
-    ERPALIGNED.api({ action: 'getApplicantStats' })
-  ]);
-  if (vr.success) {
-    const d = vr.data;
-    document.getElementById('k_vTotal').textContent = d.total || 0;
-    document.getElementById('k_vRecruiting').textContent = d.recruiting || 0;
-  }
-  if (ar.success) {
-    const d = ar.data;
-    document.getElementById('k_aTotal').textContent = d.total || 0;
-    document.getElementById('k_aPending').textContent = d.pending || 0;
-  }
+async function loadStats(){
+  var r=await ERPALIGNED.api({action:'getManpowerStats'});
+  if(!r.success)return;
+  var d=r.data;
+  document.getElementById('k_needs').textContent    =d.totalNeeds ||0;
+  document.getElementById('k_recruiting').textContent=d.recruiting ||0;
+  document.getElementById('k_applied').textContent  =d.applied    ||0;
+  document.getElementById('k_pending').textContent  =d.pending    ||0;
+  document.getElementById('k_hired').textContent    =d.hired      ||0;
+  document.getElementById('k_unpaid').textContent   =d.unpaid     ||0;
 }
 
-async function loadVacancies() {
-  const p = { action: 'getVacancies' };
-  const s = document.getElementById('vStatusFilter').value;
-  if (s) p.status = s;
-  const r = await ERPALIGNED.api(p);
-  if (!r.success) { document.getElementById('vacancyList').innerHTML = '<p style="color:#b91c1c">載入失敗</p>'; return; }
-  _vacancies = r.data.rows || [];
-  renderVacancies();
+async function loadNeeds(){
+  var r=await ERPALIGNED.api({action:'getManpowerNeeds'});
+  if(r.success){_needs=r.data.rows||[];renderNeeds();}
+}
+async function loadStaff(){
+  var p={action:'getStaffList'};
+  var nf=document.getElementById('staffNeedFilter').value;
+  if(nf)p.needId=nf;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){_staff=r.data.rows||[];renderStaff();}
+}
+async function loadWorkHours(){
+  var p={action:'getWorkHours'};
+  var nf=document.getElementById('hoursNeedFilter').value;
+  if(nf)p.needId=nf;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){_hours=r.data.rows||[];renderHours();}
+}
+async function loadPayments(){
+  var p={action:'getPayments'};
+  var nf=document.getElementById('payNeedFilter').value;
+  if(nf)p.needId=nf;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){_payments=r.data.rows||[];renderPayments();}
 }
 
-function renderVacancies() {
-  const kw = (document.getElementById('vKeyword').value || '').toLowerCase();
-  let rows = _vacancies;
-  if (kw) rows = rows.filter(function(r){ return (r['職缺名稱']||'').toLowerCase().includes(kw) || (r['工作地點']||'').toLowerCase().includes(kw); });
-  const el = document.getElementById('vacancyList');
-  if (!rows.length) { el.innerHTML = '<div class="empty-state">目前沒有職缺資料</div>'; return; }
-  var html = '';
-  rows.forEach(function(r) {
-    var statusClass = r['狀態'] === '招募中' ? 's-recruiting' : r['狀態'] === '暫停' ? 's-paused' : 's-closed';
-    html += '<div class="vacancy-card">';
-    html += '<div class="vc-head">';
-    html += '<span class="vc-title">' + ERPALIGNED.esc(r['職缺名稱']||'—') + '</span>';
-    html += '<span class="status-badge ' + statusClass + '">' + (r['狀態']||'') + '</span>';
-    html += '<span style="font-size:.75rem;background:var(--gray-100);padding:2px 8px;border-radius:10px;color:var(--navy-mid)">' + (r['職務類型']||'') + '</span>';
-    html += '</div>';
-    html += '<div class="vc-meta">';
-    if (r['工作地點']) html += '<span>📍 ' + ERPALIGNED.esc(r['工作地點']) + '</span>';
-    if (r['需求人數']) html += '<span>👥 需求 ' + r['需求人數'] + ' 人</span>';
-    if (r['薪資範圍']) html += '<span>💰 ' + ERPALIGNED.esc(r['薪資範圍']) + '</span>';
-    if (r['開始日期']) html += '<span>📅 ' + shortDate(r['開始日期']) + (r['結束日期'] ? ' ~ ' + shortDate(r['結束日期']) : '') + '</span>';
-    html += '</div>';
-    if (r['職缺說明']) html += '<div style="font-size:.82rem;color:var(--navy-mid);margin-bottom:10px;white-space:pre-wrap">' + ERPALIGNED.esc(r['職缺說明']) + '</div>';
-    var vid = ERPALIGNED.esc(r['職缺ID']||'');
-    html += '<div class="vc-actions">';
-    html += '<button class="row-btn" onclick="openVacancyModal(\'' + vid + '\')">編輯</button>';
-    if (r['狀態'] === '招募中') html += '<button class="row-btn" onclick="setVacancyStatus(\'' + vid + '\',\'暫停\')">暫停</button>';
-    if (r['狀態'] === '暫停') html += '<button class="row-btn" onclick="setVacancyStatus(\'' + vid + '\',\'招募中\')">重啟招募</button>';
-    if (r['狀態'] !== '已關閉') html += '<button class="row-btn danger" onclick="setVacancyStatus(\'' + vid + '\',\'已關閉\')">關閉</button>';
-    html += '<button class="row-btn" onclick="switchTab(\'applicants\',null,\'' + vid + '\')">查看應徵(' + countApplicants(vid) + ')</button>';
-    html += '</div>';
-    html += '</div>';
+// ── 渲染：人力需求 ────────────────────────────────────────
+function renderNeeds(){
+  var kw=(document.getElementById('needSearch').value||'').toLowerCase();
+  var sf=document.getElementById('needStatusFilter').value;
+  var rows=_needs.filter(function(r){
+    if(sf&&r['狀態']!==sf)return false;
+    if(kw&&JSON.stringify(r).toLowerCase().indexOf(kw)<0)return false;
+    return true;
   });
-  el.innerHTML = html;
-}
-
-function countApplicants(vacancyId) {
-  return _applicants.filter(function(r){ return r['職缺ID'] === vacancyId; }).length;
-}
-
-async function setVacancyStatus(vacancyId, status) {
-  const r = await ERPALIGNED.api({ action: 'updateVacancy', vacancyId: vacancyId, '狀態': status });
-  if (r.success) { loadVacancies(); loadStats(); }
-  else alert('更新失敗：' + (r.error || r.message));
-}
-
-async function loadApplicants() {
-  const p = { action: 'getApplicants' };
-  const v = document.getElementById('aVacancyFilter').value;
-  const s = document.getElementById('aStatusFilter').value;
-  if (v) p.vacancyId = v;
-  if (s) p.status = s;
-  const r = await ERPALIGNED.api(p);
-  if (!r.success) return;
-  _applicants = r.data.rows || [];
-  renderApplicants();
-}
-
-function renderApplicants() {
-  const kw = (document.getElementById('aKeyword').value || '').toLowerCase();
-  let rows = _applicants;
-  if (kw) rows = rows.filter(function(r){ return (r['姓名']||'').includes(kw) || (r['Email']||'').toLowerCase().includes(kw); });
-  const tbody = document.getElementById('applicantBody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray-400)">目前沒有應徵者資料</td></tr>'; return; }
-  var statusMap = { '待審':'s-pending','通知面試':'s-interview','面試完成':'s-interview','錄取':'s-hired','未錄取':'s-rejected' };
-  var html = '';
-  rows.forEach(function(r) {
-    var aid = ERPALIGNED.esc(r['應徵者ID']||'');
-    var vname = (_vacancies.filter(function(v){ return v['職缺ID']===r['職缺ID']; })[0] || {})['職缺名稱'] || r['職缺ID'] || '—';
-    var sc = statusMap[r['審查狀態']] || '';
-    html += '<tr>';
-    html += '<td><strong>' + ERPALIGNED.esc(r['姓名']||'—') + '</strong></td>';
-    html += '<td>' + ERPALIGNED.esc(r['電話']||'—') + '</td>';
-    html += '<td>' + ERPALIGNED.esc(r['Email']||'—') + '</td>';
-    html += '<td>' + ERPALIGNED.esc(vname) + '</td>';
-    html += '<td>' + shortDate(r['應徵日期']) + '</td>';
-    html += '<td>' + ERPALIGNED.esc(r['薪資期望']||'—') + '</td>';
-    html += '<td><span class="status-badge ' + sc + '">' + (r['審查狀態']||'—') + '</span></td>';
-    html += '<td>' + (r['面試日期'] ? shortDate(r['面試日期']) : '—') + '</td>';
-    html += '<td><button class="row-btn" onclick="openApplicantModal(\'' + aid + '\')">編輯</button></td>';
-    html += '</tr>';
+  var el=document.getElementById('needList');
+  if(!rows.length){el.innerHTML='<div class="empty-state">尚無人力需求，點擊「＋ 新增人力需求」開始建立</div>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var id=esc(r['需求ID']||'');
+    var sc='s-'+(r['狀態']||'');
+    var staffCount=_staff.filter(function(s){return s['需求ID']===r['需求ID'];}).length;
+    var hired=_staff.filter(function(s){return s['需求ID']===r['需求ID']&&s['審核狀態']==='已錄取';}).length;
+    var need=parseInt(r['需求人數'])||1;
+    var pct=Math.min(100,Math.round(hired/need*100));
+    html+='<div class="need-card">';
+    html+='<div class="nc-head">';
+    html+='<span class="nc-title">'+esc(r['需求名稱']||'—')+'</span>';
+    html+='<span class="badge '+sc+'">'+(r['狀態']||'')+'</span>';
+    html+='<span style="font-size:.73rem;background:var(--gray-100);padding:2px 8px;border-radius:10px;color:var(--navy-mid)">'+(r['人力類型']||'')+'</span>';
+    if(r['時薪'])html+='<span style="font-size:.73rem;color:var(--gold);font-weight:700">時薪 NT$'+r['時薪']+'</span>';
+    else html+='<span style="font-size:.73rem;color:var(--gray-400)">義務性質</span>';
+    html+='</div>';
+    html+='<div class="nc-meta">';
+    if(r['工作日期'])html+='<span>📅 '+shortDate(r['工作日期'])+'</span>';
+    if(r['開始時間']||r['結束時間'])html+='<span>⏰ '+(r['開始時間']||'')+' ~ '+(r['結束時間']||'')+'</span>';
+    if(r['工作地點'])html+='<span>📍 '+esc(r['工作地點'])+'</span>';
+    if(r['招募截止日'])html+='<span>🔚 截止 '+shortDate(r['招募截止日'])+'</span>';
+    html+='<span style="font-weight:700;color:var(--navy)">錄取 '+hired+'／需求 '+need+' 人</span>';
+    html+='<span>共 '+staffCount+' 人應徵</span>';
+    html+='</div>';
+    if(r['工作說明'])html+='<div style="font-size:.8rem;color:var(--navy-mid);margin-bottom:8px;white-space:pre-wrap">'+esc(r['工作說明'])+'</div>';
+    html+='<div class="nc-bar-wrap"><div class="nc-bar" style="width:'+pct+'%"></div></div>';
+    html+='<div class="nc-actions">';
+    html+='<button class="row-btn" onclick="openNeedModal(\''+id+'\')">編輯</button>';
+    html+='<button class="row-btn" onclick="goStaffByNeed(\''+id+'\')">查看人員('+staffCount+')</button>';
+    html+='<button class="row-btn" onclick="goHoursByNeed(\''+id+'\')">工時</button>';
+    html+='<button class="row-btn" onclick="goPayByNeed(\''+id+'\')">付款</button>';
+    if(r['狀態']==='招募中')html+='<button class="row-btn warn" onclick="setNeedStatus(\''+id+'\',\'已滿額\')">標記滿額</button>';
+    if(r['狀態']!=='已取消')html+='<button class="row-btn danger" onclick="setNeedStatus(\''+id+'\',\'已取消\')">取消</button>';
+    html+='</div></div>';
   });
-  tbody.innerHTML = html;
+  el.innerHTML=html;
 }
 
-function populateVacancyDropdown() {
-  refreshVacancyDropdowns();
-}
-
-function refreshVacancyDropdowns() {
-  var sel = document.getElementById('aVacancyFilter');
-  var sel2 = document.getElementById('a_vacancyId');
-  var prevFilter = sel.value;
-  var prevModal = sel2.value;
-  sel.innerHTML = '<option value="">全部職缺</option>';
-  sel2.innerHTML = '<option value="">— 請選擇 —</option>';
-  _vacancies.forEach(function(v) {
-    var o = '<option value="' + ERPALIGNED.esc(v['職缺ID']||'') + '">' + ERPALIGNED.esc(v['職缺名稱']||'') + '</option>';
-    sel.innerHTML += o;
-    sel2.innerHTML += o;
+// ── 渲染：人員名單 ────────────────────────────────────────
+function renderStaff(){
+  var kw=(document.getElementById('staffSearch').value||'').toLowerCase();
+  var sf=document.getElementById('staffStatusFilter').value;
+  var rows=_staff.filter(function(r){
+    if(sf&&r['審核狀態']!==sf)return false;
+    if(kw&&(r['姓名']||'').indexOf(kw)<0&&(r['電話']||'').indexOf(kw)<0)return false;
+    return true;
   });
-  if (prevFilter) sel.value = prevFilter;
-  if (prevModal) sel2.value = prevModal;
+  var tbody=document.getElementById('staffBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">無人員資料</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var sid=esc(r['人員ID']||'');
+    var sc='s-'+(r['審核狀態']||'');
+    var needName=(_needs.filter(function(n){return n['需求ID']===r['需求ID'];})[0]||{})['需求名稱']||r['需求ID']||'—';
+    var chk=_selectedStaff.has(r['人員ID'])?'checked':'';
+    var acct=r['帳號']?esc(r['戶名']||'')+' ●'+String(r['帳號']).slice(-4):'—';
+    html+='<tr>';
+    html+='<td><input type="checkbox" '+chk+' onchange="toggleChk(\''+sid+'\',this)" style="accent-color:var(--gold)"></td>';
+    html+='<td><strong>'+esc(r['姓名']||'—')+'</strong></td>';
+    html+='<td style="font-size:.75rem">'+(r['身分別']||'')+'</td>';
+    html+='<td>'+esc(r['電話']||'—')+'</td>';
+    html+='<td style="font-size:.77rem;color:var(--gray-500)">'+esc(needName)+'</td>';
+    html+='<td>'+shortDate(r['應徵日期'])+'</td>';
+    html+='<td><span class="badge '+sc+'">'+(r['審核狀態']||'—')+'</span></td>';
+    html+='<td style="font-size:.74rem">'+acct+'</td>';
+    html+='<td style="display:flex;gap:4px;flex-wrap:wrap">';
+    html+='<button class="row-btn" onclick="openStaffModal(\''+sid+'\')">編輯</button>';
+    if(r['審核狀態']==='待審')html+='<button class="row-btn ok" onclick="quickApprove(\''+sid+'\',\'已錄取\')">錄取</button>';
+    if(r['審核狀態']==='已錄取')html+='<button class="row-btn" onclick="openHourModal(\''+sid+'\')">記工時</button>';
+    html+='</td></tr>';
+  });
+  tbody.innerHTML=html;
+  updateSelectedCount();
 }
 
-function switchTab(tab, btn, vacancyId) {
-  _currentTab = tab;
-  document.getElementById('tab-vacancies').style.display = tab === 'vacancies' ? '' : 'none';
-  document.getElementById('tab-applicants').style.display = tab === 'applicants' ? '' : 'none';
-  document.querySelectorAll('.tab-bar .tab').forEach(function(t){ t.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  else { var tabs = document.querySelectorAll('.tab-bar .tab'); tabs[tab==='vacancies'?0:1].classList.add('active'); }
-  if (vacancyId) {
-    document.getElementById('aVacancyFilter').value = vacancyId;
-    loadApplicants();
-  }
+// ── 渲染：工時 ────────────────────────────────────────────
+function renderHours(){
+  var sf=document.getElementById('hoursStatusFilter').value;
+  var rows=sf?_hours.filter(function(r){return r['工作狀態']===sf;}):_hours;
+  var tbody=document.getElementById('hoursBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">無工時資料</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var hid=esc(r['工時ID']||'');
+    var sc='s-'+(r['工作狀態']||'');
+    var needName=(_needs.filter(function(n){return n['需求ID']===r['需求ID'];})[0]||{})['需求名稱']||r['需求ID']||'—';
+    html+='<tr>';
+    html+='<td><strong>'+esc(r['姓名']||'—')+'</strong></td>';
+    html+='<td style="font-size:.77rem;color:var(--gray-500)">'+esc(needName)+'</td>';
+    html+='<td>'+shortDate(r['工作日期'])+'</td>';
+    html+='<td>'+fmtTime(r['開始時間'])+'</td>';
+    html+='<td>'+fmtTime(r['結束時間'])+'</td>';
+    html+='<td style="font-weight:700">'+(r['工時']||'—')+'</td>';
+    html+='<td><span class="badge '+sc+'">'+(r['工作狀態']||'—')+'</span></td>';
+    html+='<td style="font-size:.77rem">'+esc(r['備註']||'')+'</td>';
+    html+='<td style="display:flex;gap:4px">';
+    html+='<button class="row-btn" onclick="openHourModal(null,\''+hid+'\')">編輯</button>';
+    if(r['工作狀態']==='待確認')html+='<button class="row-btn ok" onclick="confirmHour(\''+hid+'\')">確認</button>';
+    html+='</td></tr>';
+  });
+  tbody.innerHTML=html;
 }
 
-function shortDate(v) {
-  if (!v) return '—';
-  return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+// ── 渲染：付款 ────────────────────────────────────────────
+function renderPayments(){
+  var sf=document.getElementById('payStatusFilter').value;
+  var rows=sf?_payments.filter(function(r){return r['付款狀態']===sf;}):_payments;
+  var totalUnpaid=_payments.filter(function(r){return r['付款狀態']==='待付';}).reduce(function(s,r){return s+(parseFloat(r['應付金額'])||0);},0);
+  document.getElementById('payTotal').textContent='NT$'+totalUnpaid.toLocaleString();
+  var tbody=document.getElementById('payBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-state">無付款資料</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var pid=esc(r['付款ID']||'');
+    var sc='s-'+(r['付款狀態']||'');
+    var needName=(_needs.filter(function(n){return n['需求ID']===r['需求ID'];})[0]||{})['需求名稱']||r['需求ID']||'—';
+    var acct=r['帳號']?esc(r['戶名']||'')+' ●'+String(r['帳號']).slice(-4):'—';
+    html+='<tr>';
+    html+='<td><strong>'+esc(r['姓名']||'—')+'</strong></td>';
+    html+='<td style="font-size:.77rem;color:var(--gray-500)">'+esc(needName)+'</td>';
+    html+='<td>'+(r['付款類型']||'')+'</td>';
+    html+='<td style="font-weight:700">NT$'+((parseFloat(r['應付金額'])||0).toLocaleString())+'</td>';
+    html+='<td>'+(r['付款方式']||'')+'</td>';
+    html+='<td style="font-size:.74rem">'+acct+'</td>';
+    html+='<td><span class="badge '+sc+'">'+(r['付款狀態']||'—')+'</span></td>';
+    html+='<td>'+(r['付款日期']?shortDate(r['付款日期']):'—')+'</td>';
+    html+='<td style="display:flex;gap:4px">';
+    html+='<button class="row-btn" onclick="openPayModal(\''+pid+'\')">編輯</button>';
+    if(r['付款狀態']==='待付')html+='<button class="row-btn ok" onclick="markPaid(\''+pid+'\')">已付款</button>';
+    html+='</td></tr>';
+  });
+  tbody.innerHTML=html;
 }
 
-// ── 職缺 Modal ────────────────────────────────────────────
-function openVacancyModal(vacancyId) {
-  _editingVacancyId = vacancyId || null;
-  document.getElementById('vacancyModalTitle').textContent = vacancyId ? '編輯職缺' : '新增職缺';
-  document.getElementById('v_id').value = '';
-  ['v_name','v_salary','v_loc','v_desc','v_req','v_caseId'].forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('v_count').value = 1;
-  document.getElementById('v_type').value = '正職';
-  document.getElementById('v_start').value = '';
-  document.getElementById('v_end').value = '';
-  if (vacancyId) {
-    var r = _vacancies.filter(function(v){ return v['職缺ID']===vacancyId; })[0];
-    if (r) {
-      document.getElementById('v_id').value = r['職缺ID']||'';
-      document.getElementById('v_name').value = r['職缺名稱']||'';
-      document.getElementById('v_type').value = r['職務類型']||'正職';
-      document.getElementById('v_count').value = r['需求人數']||1;
-      document.getElementById('v_salary').value = r['薪資範圍']||'';
-      document.getElementById('v_loc').value = r['工作地點']||'';
-      document.getElementById('v_start').value = (r['開始日期']||'').substring(0,10);
-      document.getElementById('v_end').value = (r['結束日期']||'').substring(0,10);
-      document.getElementById('v_desc').value = r['職缺說明']||'';
-      document.getElementById('v_req').value = r['任職資格']||'';
-      document.getElementById('v_caseId').value = r['案件ID']||'';
+// ── Tab 切換 ─────────────────────────────────────────────
+function switchTab(tab,btn){
+  ['needs','staff','hours','pay'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
+  document.querySelectorAll('.tab-bar .tab').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+}
+function goStaffByNeed(nid){document.getElementById('staffNeedFilter').value=nid;loadStaff();switchTab('staff',document.querySelectorAll('.tab-bar .tab')[1]);}
+function goHoursByNeed(nid){document.getElementById('hoursNeedFilter').value=nid;loadWorkHours();switchTab('hours',document.querySelectorAll('.tab-bar .tab')[2]);}
+function goPayByNeed(nid){document.getElementById('payNeedFilter').value=nid;loadPayments();switchTab('pay',document.querySelectorAll('.tab-bar .tab')[3]);}
+
+// ── Dropdown 刷新 ─────────────────────────────────────────
+function refreshDropdowns(){
+  var needSels=['staffNeedFilter','hoursNeedFilter','payNeedFilter','s_needId','h_needId','p_needId'];
+  needSels.forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var prev=el.value;
+    var isFilter=['staffNeedFilter','hoursNeedFilter','payNeedFilter'].indexOf(id)>=0;
+    el.innerHTML=isFilter?'<option value="">全部需求</option>':'<option value="">— 請選擇 —</option>';
+    _needs.forEach(function(n){el.innerHTML+='<option value="'+esc(n['需求ID']||'')+'">'+esc(n['需求名稱']||'')+'</option>';});
+    if(prev)el.value=prev;
+  });
+  var staffSels=['h_staffId','p_staffId'];
+  staffSels.forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var prev=el.value;
+    el.innerHTML='<option value="">— 請選擇 —</option>';
+    _staff.forEach(function(s){el.innerHTML+='<option value="'+esc(s['人員ID']||'")>'+esc(s['姓名']||'')+'（'+esc(s['身分別']||'')+'）</option>';});
+    if(prev)el.value=prev;
+  });
+}
+
+// ── 人力需求 CRUD ─────────────────────────────────────────
+function openNeedModal(nid){
+  document.getElementById('needModalTitle').textContent=nid?'編輯人力需求':'新增人力需求';
+  ['n_id','n_name','n_loc','n_desc','n_caseId','n_sesId'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('n_count').value=1; document.getElementById('n_rate').value='';
+  document.getElementById('n_date').value=document.getElementById('n_start').value=document.getElementById('n_end').value=document.getElementById('n_deadline').value='';
+  document.getElementById('n_type').value='工作人員';
+  if(nid){
+    var r=_needs.find(function(n){return n['需求ID']===nid;});
+    if(r){
+      document.getElementById('n_id').value=r['需求ID']||'';
+      document.getElementById('n_name').value=r['需求名稱']||'';
+      document.getElementById('n_type').value=r['人力類型']||'工作人員';
+      document.getElementById('n_count').value=r['需求人數']||1;
+      document.getElementById('n_rate').value=r['時薪']||'';
+      document.getElementById('n_date').value=String(r['工作日期']||'').substring(0,10);
+      document.getElementById('n_start').value=fmtTime(r['開始時間']);
+      document.getElementById('n_end').value=fmtTime(r['結束時間']);
+      document.getElementById('n_loc').value=r['工作地點']||'';
+      document.getElementById('n_desc').value=r['工作說明']||'';
+      document.getElementById('n_deadline').value=String(r['招募截止日']||'').substring(0,10);
+      document.getElementById('n_caseId').value=r['案件ID']||'';
+      document.getElementById('n_sesId').value=r['場次ID']||'';
     }
   }
-  document.getElementById('vacancyModal').style.display = 'flex';
+  document.getElementById('needModal').style.display='flex';
 }
-function closeVacancyModal(){ document.getElementById('vacancyModal').style.display = 'none'; }
-
-async function saveVacancy() {
-  var name = document.getElementById('v_name').value.trim();
-  if (!name) { alert('請填寫職缺名稱'); return; }
-  var vacancyId = document.getElementById('v_id').value;
-  var p = {
-    action: vacancyId ? 'updateVacancy' : 'createVacancy',
-    vacancyName: name,
-    jobType: document.getElementById('v_type').value,
-    headcount: document.getElementById('v_count').value,
-    salaryRange: document.getElementById('v_salary').value,
-    location: document.getElementById('v_loc').value,
-    startDate: document.getElementById('v_start').value,
-    endDate: document.getElementById('v_end').value,
-    description: document.getElementById('v_desc').value,
-    requirements: document.getElementById('v_req').value,
-    caseId: document.getElementById('v_caseId').value
-  };
-  if (vacancyId) p.vacancyId = vacancyId;
-  const r = await ERPALIGNED.api(p);
-  if (r.success) {
-    closeVacancyModal();
-    await loadVacancies();
-    loadStats();
-    refreshVacancyDropdowns();
-  } else alert('儲存失敗：' + (r.error || r.message));
+function closeNeedModal(){document.getElementById('needModal').style.display='none';}
+async function saveNeed(){
+  var name=document.getElementById('n_name').value.trim();
+  if(!name){alert('請填寫需求名稱');return;}
+  var nid=document.getElementById('n_id').value;
+  var p={action:nid?'updateManpowerNeed':'createManpowerNeed',needName:name,
+    staffType:document.getElementById('n_type').value,headcount:document.getElementById('n_count').value,
+    hourlyRate:document.getElementById('n_rate').value,workDate:document.getElementById('n_date').value,
+    startTime:document.getElementById('n_start').value,endTime:document.getElementById('n_end').value,
+    location:document.getElementById('n_loc').value,description:document.getElementById('n_desc').value,
+    deadline:document.getElementById('n_deadline').value,caseId:document.getElementById('n_caseId').value,
+    sessionId:document.getElementById('n_sesId').value};
+  if(nid)p.needId=nid;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closeNeedModal();await loadNeeds();loadStats();refreshDropdowns();}
+  else alert('儲存失敗：'+(r.error||r.message));
+}
+async function setNeedStatus(nid,status){
+  var r=await ERPALIGNED.api({action:'updateManpowerNeed',needId:nid,'狀態':status});
+  if(r.success){loadNeeds();loadStats();}
 }
 
-// ── 應徵者 Modal ──────────────────────────────────────────
-function openApplicantModal(applicantId) {
-  _editingApplicantId = applicantId || null;
-  document.getElementById('applicantModalTitle').textContent = applicantId ? '編輯應徵者' : '新增應徵者';
-  document.getElementById('a_id').value = '';
-  ['a_name','a_phone','a_email','a_salary','a_resume','a_iloc','a_remark'].forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('a_date').value = new Date().toISOString().substring(0,10);
-  document.getElementById('a_idate').value = '';
-  document.getElementById('a_status').value = '待審';
-  document.getElementById('a_vacancyId').value = '';
-  if (applicantId) {
-    var r = _applicants.filter(function(a){ return a['應徵者ID']===applicantId; })[0];
-    if (r) {
-      document.getElementById('a_id').value = r['應徵者ID']||'';
-      document.getElementById('a_name').value = r['姓名']||'';
-      document.getElementById('a_phone').value = r['電話']||'';
-      document.getElementById('a_email').value = r['Email']||'';
-      document.getElementById('a_salary').value = r['薪資期望']||'';
-      document.getElementById('a_resume').value = r['履歷連結']||'';
-      document.getElementById('a_date').value = (r['應徵日期']||'').substring(0,10);
-      document.getElementById('a_idate').value = (r['面試日期']||'').substring(0,10);
-      document.getElementById('a_iloc').value = r['面試地點']||'';
-      document.getElementById('a_status').value = r['審查狀態']||'待審';
-      document.getElementById('a_remark').value = r['備註']||'';
-      document.getElementById('a_vacancyId').value = r['職缺ID']||'';
+// ── 人員 CRUD ─────────────────────────────────────────────
+function openStaffModal(sid){
+  document.getElementById('staffModalTitle').textContent=sid?'編輯人員資料':'新增支援人員';
+  ['s_id','s_name','s_phone','s_email','s_id2','s_bank','s_account','s_aname','s_remark'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('s_date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('s_type').value='工讀生'; document.getElementById('s_status').value='待審'; document.getElementById('s_needId').value='';
+  if(sid){
+    var r=_staff.find(function(s){return s['人員ID']===sid;});
+    if(r){
+      document.getElementById('s_id').value=r['人員ID']||'';
+      document.getElementById('s_name').value=r['姓名']||''; document.getElementById('s_phone').value=r['電話']||'';
+      document.getElementById('s_email').value=r['Email']||''; document.getElementById('s_type').value=r['身分別']||'工讀生';
+      document.getElementById('s_needId').value=r['需求ID']||''; document.getElementById('s_id2').value=r['身分證']||'';
+      document.getElementById('s_date').value=String(r['應徵日期']||'').substring(0,10);
+      document.getElementById('s_status').value=r['審核狀態']||'待審';
+      document.getElementById('s_bank').value=r['銀行']||''; document.getElementById('s_account').value=r['帳號']||'';
+      document.getElementById('s_aname').value=r['戶名']||''; document.getElementById('s_remark').value=r['備註']||'';
     }
   }
-  document.getElementById('applicantModal').style.display = 'flex';
+  document.getElementById('staffModal').style.display='flex';
 }
-function closeApplicantModal(){ document.getElementById('applicantModal').style.display = 'none'; }
+function closeStaffModal(){document.getElementById('staffModal').style.display='none';}
+async function saveStaff(){
+  var name=document.getElementById('s_name').value.trim();
+  if(!name){alert('請填寫姓名');return;}
+  var sid=document.getElementById('s_id').value;
+  var nid=document.getElementById('s_needId').value;
+  var need=_needs.find(function(n){return n['需求ID']===nid;})||{};
+  var p={action:sid?'updateStaffStatus':'createStaff',name:name,phone:document.getElementById('s_phone').value,
+    email:document.getElementById('s_email').value,staffType:document.getElementById('s_type').value,needId:nid,
+    caseId:need['案件ID']||'',sessionId:need['場次ID']||'',idNumber:document.getElementById('s_id2').value,
+    applyDate:document.getElementById('s_date').value,'審核狀態':document.getElementById('s_status').value,
+    bank:document.getElementById('s_bank').value,account:document.getElementById('s_account').value,
+    accountName:document.getElementById('s_aname').value,remark:document.getElementById('s_remark').value};
+  if(sid)p.staffId=sid;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closeStaffModal();await loadStaff();loadStats();refreshDropdowns();}
+  else alert('儲存失敗：'+(r.error||r.message));
+}
+async function quickApprove(sid,status){
+  var r=await ERPALIGNED.api({action:'updateStaffStatus',staffId:sid,'審核狀態':status});
+  if(r.success){loadStaff();loadStats();}
+}
+function toggleChk(sid,el){if(el.checked)_selectedStaff.add(sid);else _selectedStaff.delete(sid);updateSelectedCount();}
+function toggleAllStaff(el){_staff.forEach(function(s){if(el.checked)_selectedStaff.add(s['人員ID']);else _selectedStaff.delete(s['人員ID']);});renderStaff();}
+function updateSelectedCount(){
+  var n=_selectedStaff.size;
+  document.getElementById('staffSelected').textContent='已選 '+n+' 人';
+  document.getElementById('batchBar').className='batch-bar'+(n>0?' show':'');
+}
+async function batchApprove(status){
+  if(!_selectedStaff.size){alert('請先勾選人員');return;}
+  var r=await ERPALIGNED.api({action:'batchApproveStaff',staffIds:[..._selectedStaff].join(','),status:status});
+  if(r.success){_selectedStaff.clear();loadStaff();loadStats();alert(r.message);}
+  else alert('批次更新失敗：'+r.message);
+}
 
-async function saveApplicant() {
-  var name = document.getElementById('a_name').value.trim();
-  if (!name) { alert('請填寫應徵者姓名'); return; }
-  var applicantId = document.getElementById('a_id').value;
-  var vacSel = document.getElementById('a_vacancyId').value;
-  var caseId = '';
-  if (vacSel) {
-    var vac = _vacancies.filter(function(v){ return v['職缺ID']===vacSel; })[0];
-    if (vac) caseId = vac['案件ID']||'';
+// ── 工時 CRUD ─────────────────────────────────────────────
+function openHourModal(defaultStaffId,hid){
+  document.getElementById('hourModalTitle').textContent=hid?'編輯工時紀錄':'新增工時紀錄';
+  ['h_id','h_remark'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('h_hours').value='';
+  document.getElementById('h_date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('h_start').value=document.getElementById('h_end').value='';
+  document.getElementById('h_status').value='待確認';
+  if(defaultStaffId)document.getElementById('h_staffId').value=defaultStaffId;
+  if(hid){
+    var r=_hours.find(function(h){return h['工時ID']===hid;});
+    if(r){
+      document.getElementById('h_id').value=r['工時ID']||'';
+      document.getElementById('h_staffId').value=r['人員ID']||''; document.getElementById('h_needId').value=r['需求ID']||'';
+      document.getElementById('h_date').value=String(r['工作日期']||'').substring(0,10);
+      document.getElementById('h_start').value=fmtTime(r['開始時間']); document.getElementById('h_end').value=fmtTime(r['結束時間']);
+      document.getElementById('h_hours').value=r['工時']||''; document.getElementById('h_status').value=r['工作狀態']||'待確認';
+      document.getElementById('h_remark').value=r['備註']||'';
+    }
   }
-  var p = {
-    action: applicantId ? 'updateApplicant' : 'createApplicant',
-    name: name,
-    phone: document.getElementById('a_phone').value,
-    email: document.getElementById('a_email').value,
-    salaryExpect: document.getElementById('a_salary').value,
-    resumeLink: document.getElementById('a_resume').value,
-    applyDate: document.getElementById('a_date').value,
-    面試日期: document.getElementById('a_idate').value,
-    面試地點: document.getElementById('a_iloc').value,
-    審查狀態: document.getElementById('a_status').value,
-    remark: document.getElementById('a_remark').value,
-    vacancyId: vacSel,
-    caseId: caseId
-  };
-  if (applicantId) p.applicantId = applicantId;
-  const r = await ERPALIGNED.api(p);
-  if (r.success) { closeApplicantModal(); loadApplicants(); loadStats(); }
-  else alert('儲存失敗：' + (r.error || r.message));
+  document.getElementById('hourModal').style.display='flex';
+}
+function closeHourModal(){document.getElementById('hourModal').style.display='none';}
+function calcHours(){
+  var s=document.getElementById('h_start').value, e=document.getElementById('h_end').value;
+  if(!s||!e)return;
+  var sh=parseInt(s.split(':')[0]),sm=parseInt(s.split(':')[1]);
+  var eh=parseInt(e.split(':')[0]),em=parseInt(e.split(':')[1]);
+  var diff=Math.round(((eh*60+em)-(sh*60+sm))/60*10)/10;
+  if(diff>0)document.getElementById('h_hours').value=diff;
+}
+async function saveHour(){
+  var sid=document.getElementById('h_staffId').value;
+  if(!sid){alert('請選擇人員');return;}
+  var hid=document.getElementById('h_id').value;
+  var p={action:hid?'updateWorkHour':'createWorkHour',staffId:sid,needId:document.getElementById('h_needId').value,
+    workDate:document.getElementById('h_date').value,startTime:document.getElementById('h_start').value,
+    endTime:document.getElementById('h_end').value,hours:document.getElementById('h_hours').value,
+    workStatus:document.getElementById('h_status').value,remark:document.getElementById('h_remark').value};
+  if(hid)p.hourId=hid;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closeHourModal();loadWorkHours();}
+  else alert('儲存失敗：'+(r.error||r.message));
+}
+async function confirmHour(hid){
+  var r=await ERPALIGNED.api({action:'updateWorkHour',hourId:hid,workStatus:'已確認'});
+  if(r.success)loadWorkHours();
 }
 
-window.addEventListener('DOMContentLoaded', init);
+// ── 付款 CRUD ─────────────────────────────────────────────
+function openPayModal(pid){
+  document.getElementById('payModalTitle').textContent=pid?'編輯付款單':'新增付款單';
+  ['p_id','p_amount','p_voucher','p_remark'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('p_date').value='';
+  document.getElementById('p_type').value='工讀酬勞'; document.getElementById('p_method').value='轉帳';
+  document.getElementById('p_status').value='待付'; document.getElementById('p_staffId').value=''; document.getElementById('p_needId').value='';
+  if(pid){
+    var r=_payments.find(function(p){return p['付款ID']===pid;});
+    if(r){
+      document.getElementById('p_id').value=r['付款ID']||''; document.getElementById('p_staffId').value=r['人員ID']||'';
+      document.getElementById('p_needId').value=r['需求ID']||''; document.getElementById('p_type').value=r['付款類型']||'工讀酬勞';
+      document.getElementById('p_amount').value=r['應付金額']||''; document.getElementById('p_method').value=r['付款方式']||'轉帳';
+      document.getElementById('p_status').value=r['付款狀態']||'待付';
+      document.getElementById('p_date').value=String(r['付款日期']||'').substring(0,10);
+      document.getElementById('p_voucher').value=r['憑證連結']||''; document.getElementById('p_remark').value=r['備註']||'';
+    }
+  }
+  document.getElementById('payModal').style.display='flex';
+}
+function closePayModal(){document.getElementById('payModal').style.display='none';}
+async function savePayment(){
+  var sid=document.getElementById('p_staffId').value;
+  if(!sid){alert('請選擇人員');return;}
+  var pid=document.getElementById('p_id').value;
+  var p={action:pid?'updatePaymentStatus':'createPayment',staffId:sid,needId:document.getElementById('p_needId').value,
+    payType:document.getElementById('p_type').value,amount:document.getElementById('p_amount').value,
+    payMethod:document.getElementById('p_method').value,'付款狀態':document.getElementById('p_status').value,
+    '付款日期':document.getElementById('p_date').value,'憑證連結':document.getElementById('p_voucher').value,
+    remark:document.getElementById('p_remark').value};
+  if(pid)p.payId=pid;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closePayModal();loadPayments();loadStats();}
+  else alert('儲存失敗：'+(r.error||r.message));
+}
+async function markPaid(pid){
+  var r=await ERPALIGNED.api({action:'updatePaymentStatus',payId:pid,'付款狀態':'已付','付款日期':new Date().toISOString().substring(0,10)});
+  if(r.success){loadPayments();loadStats();}
+}
+async function doBatchGenerate(){
+  var nid=document.getElementById('payNeedFilter').value;
+  if(!nid){alert('請在篩選器選擇人力需求後再批次產生');return;}
+  var need=_needs.find(function(n){return n['需求ID']===nid;})||{};
+  if(!need['時薪']){alert('此需求未設定時薪，無法自動計算酬勞');return;}
+  if(!confirm('從「'+esc(need['需求名稱']||nid)+'」的已確認工時批次產生付款單？'))return;
+  var r=await ERPALIGNED.api({action:'batchGeneratePayments',needId:nid});
+  if(r.success){alert(r.message);loadPayments();loadStats();}
+  else alert('產生失敗：'+r.message);
+}
+
+window.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
