@@ -80,6 +80,18 @@ function govopsMainRouter_(params) {
   result = govopsBudgetRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsCaseReqRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsChangeLogRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsImportRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsFileManagerRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsCalendarRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -2161,6 +2173,281 @@ function govopsManpowerRoute_(params, action) {
       created++;
     });
     return { success: true, data: { created: created }, message: '已產生 '+created+' 筆付款單', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Case Requirements Route — 案件需求摘要 + 驗收條件
+// ════════════════════════════════════════════════════════
+var CASE_REQ_HEADERS = ['需求ID','案件ID','計畫緣起與背景','計畫目標','服務對象','預期場次數','預期參與人次','成果報告繳交份數','成果報告電子檔格式','特殊核銷要求','預期效益','對主辦單位效益','對參與者效益','後續延伸效益','建立時間','更新時間'];
+var ACCEPTANCE_HEADERS = ['驗收ID','案件ID','項目編號','驗收項目名稱','驗收要求說明','繳交數量','繳交格式','繳交期限','完成狀態','完成日期','備註','建立時間','更新時間'];
+
+function govopsCaseReqRoute_(params, action) {
+
+  if (action === 'getCaseRequirements') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var rows = govopsRows_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var found = rows.filter(function(r){ return String(r['案件ID'])===caseId; })[0] || null;
+    // Also get acceptance items
+    govopsEnsureSheet_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    var accepts = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    return { success: true, data: { requirements: found, acceptanceItems: accepts }, message: '案件需求查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'saveCaseRequirements') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var rows = govopsRows_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var found = rows.filter(function(r){ return String(r['案件ID'])===caseId; })[0];
+    var now = govopsNow_();
+    var fields = ['計畫緣起與背景','計畫目標','服務對象','預期場次數','預期參與人次','成果報告繳交份數','成果報告電子檔格式','特殊核銷要求','預期效益','對主辦單位效益','對參與者效益','後續延伸效益'];
+    if (found) {
+      var patch = { '更新時間': now };
+      fields.forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+      govopsUpdate_('03_案件需求摘要', CASE_REQ_HEADERS, found._row, patch);
+      return { success: true, data: patch, message: '案件需求已更新', timestamp: now };
+    } else {
+      var obj = { '需求ID': govopsId_('REQ'), '案件ID': caseId, '建立時間': now, '更新時間': now };
+      fields.forEach(function(k){ obj[k] = params[k]||''; });
+      govopsAppend_('03_案件需求摘要', CASE_REQ_HEADERS, obj);
+      return { success: true, data: obj, message: '案件需求已建立', timestamp: now };
+    }
+  }
+
+  if (action === 'saveAcceptanceItem') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    var aId = params.acceptanceId;
+    var now = govopsNow_();
+    if (aId) {
+      var rows = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS);
+      var found = rows.filter(function(r){ return r['驗收ID']===aId; })[0];
+      if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到驗收項目', timestamp: now };
+      var patch = { '更新時間': now };
+      ['驗收項目名稱','驗收要求說明','繳交數量','繳交格式','繳交期限','完成狀態','完成日期','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+      govopsUpdate_('03b_驗收條件', ACCEPTANCE_HEADERS, found._row, patch);
+      return { success: true, data: patch, message: '驗收條件已更新', timestamp: now };
+    } else {
+      var rows2 = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS);
+      var num = rows2.filter(function(r){ return String(r['案件ID'])===caseId; }).length + 1;
+      var obj = { '驗收ID': govopsId_('ACC'), '案件ID': caseId, '項目編號': num,
+        '驗收項目名稱': params['驗收項目名稱']||'', '驗收要求說明': params['驗收要求說明']||'',
+        '繳交數量': params['繳交數量']||'', '繳交格式': params['繳交格式']||'',
+        '繳交期限': params['繳交期限']||'', '完成狀態': '未完成', '完成日期': '',
+        '備註': params['備註']||'', '建立時間': now, '更新時間': now };
+      govopsAppend_('03b_驗收條件', ACCEPTANCE_HEADERS, obj);
+      return { success: true, data: obj, message: '驗收條件已新增', timestamp: now };
+    }
+  }
+
+  if (action === 'deleteAcceptanceItem') {
+    var aId = params.acceptanceId;
+    govopsEnsureSheet_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    var rows = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    var found = rows.filter(function(r){ return r['驗收ID']===aId; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到', timestamp: govopsNow_() };
+    govopsDeleteRow_('03b_驗收條件', found._row);
+    return { success: true, data: { acceptanceId: aId }, message: '驗收條件已刪除', timestamp: govopsNow_() };
+  }
+
+  if (action === 'getReportData') {
+    // Aggregate all data needed for 結案報告
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    var result = {};
+    // Case info
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    result.caseInfo = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    // Requirements
+    govopsEnsureSheet_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var reqRows = govopsRows_('03_案件需求摘要', CASE_REQ_HEADERS);
+    result.requirements = reqRows.filter(function(r){ return String(r['案件ID'])===caseId; })[0] || {};
+    // Acceptance items
+    govopsEnsureSheet_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    result.acceptanceItems = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    // Sessions
+    result.sessions = govopsRows_('02_場次活動', SESSION_HEADERS).filter(function(r){ return String(r['專案ID'])===caseId; });
+    // Registration stats
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    result.regStats = { total: regs.length,
+      admitted: regs.filter(function(r){ return ['已錄取','備取'].indexOf(String(r['資格審查狀態']))>=0||['已錄取','備取'].indexOf(String(r['錄取狀態']))>=0; }).length,
+      rejected: regs.filter(function(r){ return ['不符合資格','未錄取'].indexOf(String(r['資格審查狀態']))>=0; }).length
+    };
+    // Tasks
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    result.tasks = govopsRows_('案件任務清單', TASK_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    // Finance
+    govopsEnsureSheet_('財務收支', FINANCE_HEADERS);
+    var finRows = govopsRows_('財務收支', FINANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var finIncome = finRows.filter(function(r){ return r['類型']==='收入'; }).reduce(function(s,r){ return s+(parseFloat(r['金額'])||0); }, 0);
+    var finExpense = finRows.filter(function(r){ return r['類型']==='支出'; }).reduce(function(s,r){ return s+(parseFloat(r['金額'])||0); }, 0);
+    result.finance = { income: finIncome, expense: finExpense, profit: finIncome-finExpense };
+    // Budget
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    result.budget = govopsRows_('案件預算明細', BUDGET_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    // Closing checklist
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    result.closingChecks = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    return { success: true, data: result, message: '結案報告資料彙整完成', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Change Log Route — 場次變更管理
+// ════════════════════════════════════════════════════════
+var CHANGE_LOG_HEADERS = ['變更ID','案件ID','場次ID','變更類型','變更欄位','變更前內容','變更後內容','變更原因','是否影響通知','是否影響文件','是否影響財務','是否影響結案','是否已通知','是否已重產文件','變更人','變更時間','備註'];
+
+function govopsChangeLogRoute_(params, action) {
+
+  if (action === 'getChangeLogs') {
+    govopsEnsureSheet_('05_場次變更紀錄', CHANGE_LOG_HEADERS);
+    var rows = govopsRows_('05_場次變更紀錄', CHANGE_LOG_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '變更紀錄查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createChangeLog') {
+    govopsEnsureSheet_('05_場次變更紀錄', CHANGE_LOG_HEADERS);
+    var now = govopsNow_();
+    var profile = null; try { profile = Session.getActiveUser().getEmail(); } catch(e) {}
+    var obj = {
+      '變更ID': govopsId_('CHG'), '案件ID': params.caseId||'', '場次ID': params.sessionId||'',
+      '變更類型': params.changeType||'', '變更欄位': params.changedField||'',
+      '變更前內容': params.oldValue||'', '變更後內容': params.newValue||'',
+      '變更原因': params.reason||'', '是否影響通知': params.affectNotify||'是',
+      '是否影響文件': params.affectDoc||'是', '是否影響財務': params.affectFinance||'否',
+      '是否影響結案': params.affectClosing||'否', '是否已通知': '否', '是否已重產文件': '否',
+      '變更人': params.changedBy||profile||'', '變更時間': now, '備註': params.remark||''
+    };
+    govopsAppend_('05_場次變更紀錄', CHANGE_LOG_HEADERS, obj);
+    // Mark session as changed
+    if (params.sessionId) {
+      var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+      var ses = sesRows.filter(function(r){ return String(r['活動ID'])===params.sessionId; })[0];
+      if (ses) govopsUpdate_('02_場次活動', SESSION_HEADERS, ses._row, { '變更狀態': '有變更', '更新時間': now });
+    }
+    return { success: true, data: obj, message: '變更紀錄已建立', timestamp: now };
+  }
+
+  if (action === 'markNotified') {
+    var id = params.changeId;
+    govopsEnsureSheet_('05_場次變更紀錄', CHANGE_LOG_HEADERS);
+    var rows = govopsRows_('05_場次變更紀錄', CHANGE_LOG_HEADERS);
+    var found = rows.filter(function(r){ return r['變更ID']===id; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到變更紀錄', timestamp: govopsNow_() };
+    govopsUpdate_('05_場次變更紀錄', CHANGE_LOG_HEADERS, found._row, { '是否已通知': '是', '更新時間': govopsNow_() });
+    return { success: true, data: { changeId: id }, message: '已標記通知完成', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Import Route — 資料匯入與同步中心
+// ════════════════════════════════════════════════════════
+var IMPORT_BATCH_HEADERS = ['批次ID','案件ID','場次ID','匯入類型','匯入來源','資料筆數','成功筆數','失敗筆數','重複筆數','匯入狀態','錯誤訊息','匯入時間','操作人','備註'];
+
+function govopsImportRoute_(params, action) {
+
+  if (action === 'getImportBatches') {
+    govopsEnsureSheet_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS);
+    var rows = govopsRows_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '匯入批次查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createImportBatch') {
+    govopsEnsureSheet_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS);
+    var now = govopsNow_();
+    var obj = { '批次ID': govopsId_('IMP'), '案件ID': params.caseId||'', '場次ID': params.sessionId||'',
+      '匯入類型': params.importType||'', '匯入來源': params.source||'',
+      '資料筆數': parseInt(params.total)||0, '成功筆數': parseInt(params.success)||0,
+      '失敗筆數': parseInt(params.failed)||0, '重複筆數': parseInt(params.duplicate)||0,
+      '匯入狀態': params.status||'完成', '錯誤訊息': params.errorMsg||'',
+      '匯入時間': now, '操作人': params.operator||'', '備註': params.remark||'' };
+    govopsAppend_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS, obj);
+    return { success: true, data: obj, message: '匯入批次已記錄', timestamp: now };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// File Manager Route — 資料上傳與檔案管理
+// ════════════════════════════════════════════════════════
+var FILE_MGR_HEADERS = ['檔案ID','案件ID','場次ID','問卷ID','檔案名稱','檔案類型','檔案分類','Google Drive連結','檔案說明','是否用於結案','是否用於核銷','是否用於請款','是否用於成果報告','檔案狀態','上傳日期','上傳者','備註','建立時間','更新時間'];
+
+function govopsFileManagerRoute_(params, action) {
+
+  if (action === 'getFiles') {
+    govopsEnsureSheet_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var rows = govopsRows_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
+    if (params.fileType) rows = rows.filter(function(r){ return r['檔案類型']===params.fileType; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '檔案查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createFile') {
+    if (!params.fileName) return { success: false, error: 'MISSING_PARAM', message: '缺少 fileName', timestamp: govopsNow_() };
+    govopsEnsureSheet_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var now = govopsNow_();
+    var obj = { '檔案ID': govopsId_('FILE'), '案件ID': params.caseId||'', '場次ID': params.sessionId||'',
+      '問卷ID': params.surveyId||'', '檔案名稱': params.fileName,
+      '檔案類型': params.fileType||'', '檔案分類': params.fileCategory||'',
+      'Google Drive連結': params.driveLink||'', '檔案說明': params.description||'',
+      '是否用於結案': params.forClosing||'否', '是否用於核銷': params.forReimb||'否',
+      '是否用於請款': params.forPayment||'否', '是否用於成果報告': params.forReport||'否',
+      '檔案狀態': '正常', '上傳日期': now.substring(0,10), '上傳者': params.uploader||'',
+      '備註': params.remark||'', '建立時間': now, '更新時間': now };
+    govopsAppend_('25_上傳檔案管理', FILE_MGR_HEADERS, obj);
+    return { success: true, data: obj, message: '檔案記錄已建立', timestamp: now };
+  }
+
+  if (action === 'updateFile') {
+    var id = params.fileId;
+    if (!id) return { success: false, error: 'MISSING_PARAM', message: '缺少 fileId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var rows = govopsRows_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var found = rows.filter(function(r){ return r['檔案ID']===id; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到檔案', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['檔案名稱','檔案說明','Google Drive連結','檔案狀態','是否用於結案','是否用於核銷','是否用於請款','是否用於成果報告','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+    govopsUpdate_('25_上傳檔案管理', FILE_MGR_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '檔案已更新', timestamp: patch['更新時間'] };
+  }
+
+  if (action === 'deleteFile') {
+    var id = params.fileId;
+    govopsEnsureSheet_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var rows = govopsRows_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var found = rows.filter(function(r){ return r['檔案ID']===id; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到檔案', timestamp: govopsNow_() };
+    govopsDeleteRow_('25_上傳檔案管理', found._row);
+    return { success: true, data: { fileId: id }, message: '檔案記錄已刪除', timestamp: govopsNow_() };
+  }
+
+  if (action === 'getFileStats') {
+    govopsEnsureSheet_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    var rows = govopsRows_('25_上傳檔案管理', FILE_MGR_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    var stats = { total: rows.length, forClosing: 0, forReport: 0, byType: {} };
+    rows.forEach(function(r){
+      if (r['是否用於結案']==='是') stats.forClosing++;
+      if (r['是否用於成果報告']==='是') stats.forReport++;
+      var t = r['檔案類型']||'其他';
+      stats.byType[t] = (stats.byType[t]||0)+1;
+    });
+    return { success: true, data: stats, message: '檔案統計完成', timestamp: govopsNow_() };
   }
 
   return null;
