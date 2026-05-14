@@ -402,6 +402,7 @@ function renderCaseTable(rows, el) {
     html += '<td><div class="row-actions">';
     html += '<button class="row-btn" onclick="openEditModal(\'' + id + '\')">編輯</button>';
     html += '<button class="row-btn" onclick="goSessions(\'' + id + '\',\'' + ERPALIGNED.esc(r['專案計畫名稱']||'') + '\')">場次</button>';
+    html += '<button class="row-btn" onclick="goRegistrations(\'' + id + '\',\'' + ERPALIGNED.esc(r['專案計畫名稱']||'') + '\')">報名</button>';
     html += '<button class="row-btn danger" onclick="confirmArchive(\'' + id + '\',\'' + name + '\')">封存</button>';
     html += '</div></td>';
     html += '</tr>';
@@ -552,8 +553,12 @@ async function doArchive() {
 }
 
 // ── 場次跳轉 ─────────────────────────────────────────────
+function goRegistrations(caseId, caseName) {
+  location.href = './registrations.html?caseId=' + encodeURIComponent(caseId) + '&caseName=' + encodeURIComponent(caseName);
+}
+
 function goSessions(caseId, caseName) {
-  location.href = './activities.html?caseId=' + encodeURIComponent(caseId) + '&caseName=' + encodeURIComponent(caseName);
+  location.href = './sessions.html?caseId=' + encodeURIComponent(caseId) + '&caseName=' + encodeURIComponent(caseName);
 }
 
 // ── 輔助 ─────────────────────────────────────────────────
