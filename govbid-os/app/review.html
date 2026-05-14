@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜資格審查</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filter-row select,.filter-row input{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.filter-row input{flex:1;min-width:160px}
+.filter-row select:focus,.filter-row input:focus{outline:none;border-color:var(--navy-mid)}
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:.78rem;font-weight:600;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-待審查{background:#dbeafe;color:#1e40af}
+.s-審查中{background:#fef9c3;color:#854d0e}
+.s-需補件{background:#fee2e2;color:#991b1b}
+.s-符合資格{background:#dcfce7;color:#166534}
+.s-不符合資格{background:#fee2e2;color:#991b1b}
+.s-已錄取{background:#dcfce7;color:#166534}
+.s-備取{background:#e0f2fe;color:#0369a1}
+.s-未錄取{background:#fee2e2;color:#991b1b}
+.s-取消報名{background:#f1f5f9;color:#64748b}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s;white-space:nowrap}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.warn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+.batch-bar{background:var(--navy);border-radius:8px;padding:9px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.batch-bar.show{display:flex}
+.batch-cnt{color:rgba(255,255,255,.9);font-size:.83rem;font-weight:600}
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+@media(max-width:800px){.kpi-row{grid-template-columns:repeat(3,1fr)}}
+.kn{background:var(--white);border:1.5px solid var(--gray-100);border-radius:8px;padding:10px 12px;cursor:pointer;transition:.15s}
+.kn:hover{border-color:var(--navy-mid)}
+.kn .v{font-size:1.4rem;font-weight:800;color:var(--navy);line-height:1}
+.kn .l{font-size:.72rem;color:var(--gray-500);margin-top:2px}
+.kn.warn .v{color:var(--gold)}.kn.alert .v{color:var(--danger)}.kn.ok .v{color:#16a34a}
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fi{margin-bottom:10px}.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:60px;resize:vertical}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">資格審查</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>資格審查</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">審查報名資料，確認資格後產生錄取名單</p></div>
+    <div class="btns">
+      <button class="secondary" onclick="location.href='./registrations.html'">報名管理</button>
+      <button class="secondary" onclick="location.href='./admission.html'+(_caseId?'?caseId='+_caseId:'')">錄取名單 →</button>
+    </div>
+  </div>
+
+  <!-- 重要提醒 -->
+  <div style="background:#fff7ed;border:1.5px solid #fdba74;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:.82rem;color:#92400e;line-height:1.6">
+    ⚠️ <strong>審查流程說明：</strong>報名資料進入系統後必須先完成資格審查，才能產生錄取名單。錄取名單產出後才能產生簽到表、便當統計等行政文件。
+  </div>
+
+  <!-- 案件/場次選擇 -->
+  <div class="filter-row" style="margin-bottom:10px">
+    <select id="caseSelect" onchange="onCaseChange()" style="min-width:220px"><option value="">載入案件…</option></select>
+    <select id="sessionSelect" onchange="loadRegs()" style="min-width:180px"><option value="">全部場次</option></select>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kn warn" onclick="setFilter('待審查')"><div class="v" id="k_pending">0</div><div class="l">待審查</div></div>
+    <div class="kn" onclick="setFilter('審查中')"><div class="v" id="k_reviewing">0</div><div class="l">審查中</div></div>
+    <div class="kn alert" onclick="setFilter('需補件')"><div class="v" id="k_supp">0</div><div class="l">需補件</div></div>
+    <div class="kn ok" onclick="setFilter('符合資格')"><div class="v" id="k_pass">0</div><div class="l">符合資格</div></div>
+    <div class="kn" onclick="setFilter('')"><div class="v" id="k_total">0</div><div class="l">全部</div></div>
+  </div>
+
+  <!-- 批次操作列 -->
+  <div class="batch-bar" id="batchBar">
+    <span class="batch-cnt" id="batchCount">已選 0 人</span>
+    <button class="secondary" style="background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3)" onclick="batchUpdate('符合資格')">批次符合資格</button>
+    <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchUpdate('不符合資格')">批次不符合資格</button>
+    <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchUpdate('需補件')">批次需補件</button>
+    <button class="secondary" style="background:#16a34a;color:#fff;border-color:#16a34a" onclick="batchAdmit()">批次錄取</button>
+  </div>
+
+  <!-- 搜尋與篩選 -->
+  <div class="filter-row">
+    <input id="searchInput" type="text" placeholder="搜尋姓名、服務單位…" oninput="renderTable()">
+    <select id="statusFilter" onchange="renderTable()">
+      <option value="">全部狀態</option>
+      <option value="待審查">待審查</option>
+      <option value="審查中">審查中</option>
+      <option value="需補件">需補件</option>
+      <option value="符合資格">符合資格</option>
+      <option value="不符合資格">不符合資格</option>
+      <option value="已錄取">已錄取</option>
+      <option value="備取">備取</option>
+      <option value="未錄取">未錄取</option>
+    </select>
+    <button class="secondary" onclick="loadRegs()">重新整理</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="erp-table" style="min-width:900px">
+      <thead><tr>
+        <th><input type="checkbox" id="chkAll" onchange="toggleAll(this)" style="accent-color:var(--gold)"></th>
+        <th>姓名</th><th>性別</th><th>服務單位</th><th>身分別</th><th>電話</th><th>報名來源</th><th>報名時間</th>
+        <th>資格審查狀態</th><th>錄取狀態</th><th>快速操作</th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">請先選擇案件</td></tr></tbody>
+    </table>
+  </div>
+  <div style="margin-top:8px;font-size:.8rem;color:var(--gray-400)" id="tableCount"></div>
+</main>
+
+<!-- 審查 Modal -->
+<div class="modal-overlay" id="reviewModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="modalTitle">資格審查</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="m_regId">
+      <div style="background:var(--offwhite);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+        <div style="font-size:.95rem;font-weight:700;color:var(--navy)" id="m_name">—</div>
+        <div style="font-size:.8rem;color:var(--gray-500);margin-top:4px" id="m_info">—</div>
+      </div>
+      <div class="fi"><label>資格審查狀態</label>
+        <select id="m_status">
+          <option value="待審查">待審查</option>
+          <option value="審查中">審查中</option>
+          <option value="需補件">需補件</option>
+          <option value="符合資格">符合資格</option>
+          <option value="不符合資格">不符合資格</option>
+        </select>
+      </div>
+      <div class="fi"><label>審查結果說明</label><input id="m_result" placeholder="例：身份符合、建議錄取…"></div>
+      <div class="fi" id="suppFields">
+        <label>補件項目</label><input id="m_suppItem" placeholder="例：請補身份證正本影本">
+        <label style="margin-top:8px">補件期限</label><input id="m_suppDeadline" type="date">
+      </div>
+      <div class="fi"><label>通知日期</label><input id="m_notifyDate" type="date"></div>
+      <div class="fi"><label>備註</label><textarea id="m_remark" rows="2"></textarea></div>
+      <div style="border-top:1.5px solid var(--gray-100);margin-top:12px;padding-top:12px">
+        <div style="font-size:.78rem;font-weight:700;color:var(--navy-mid);margin-bottom:8px">審查完成後，直接設定錄取狀態：</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="gold" onclick="quickSetAdmit('已錄取')">✅ 錄取</button>
+          <button class="secondary" onclick="quickSetAdmit('備取')">備取</button>
+          <button class="secondary" onclick="quickSetAdmit('未錄取')">未錄取</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" onclick="saveReview()">儲存審查結果</button>
+    </div>
+  </div>
+</div>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+var _caseId='',_sessionId='',_regs=[],_selected=new Set(),_statusFilter='';
+
+function init(){
+  var p=safeJSON('govops_profile');
+  if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);
+  var cid=sp.get('caseId')||'',sid=sp.get('sessionId')||'';
+  loadCases(cid,sid);
+}
+
+async function loadCases(preCid,preSid){
+  var r=await ERPALIGNED.api({action:'getCases'});
+  var sel=document.getElementById('caseSelect');
+  if(!r.success)return;
+  var cases=r.data&&r.data.rows||[];
+  sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  cases.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'未命名';sel.appendChild(o);
+  });
+  if(preCid){sel.value=preCid;await onCaseChange();
+    if(preSid){document.getElementById('sessionSelect').value=preSid;}}
+  if(preCid) await loadRegs();
+}
+
+async function onCaseChange(){
+  _caseId=document.getElementById('caseSelect').value;
+  _sessionId='';
+  var sesSel=document.getElementById('sessionSelect');
+  sesSel.innerHTML='<option value="">全部場次</option>';
+  if(!_caseId)return;
+  var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
+  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){
+    var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sesSel.appendChild(o);
+  });
+  await loadRegs();
+}
+
+async function loadRegs(){
+  _sessionId=document.getElementById('sessionSelect').value;
+  if(!_caseId)return;
+  var p={action:'getRegistrations',caseId:_caseId};
+  if(_sessionId)p.sessionId=_sessionId;
+  var r=await ERPALIGNED.api(p);
+  if(!r.success)return;
+  _regs=r.data&&r.data.rows||[];
+  updateKpi();
+  renderTable();
+  document.getElementById('pageSubtitle').textContent='共 '+_regs.length+' 筆報名資料';
+}
+
+function updateKpi(){
+  var pending=0,reviewing=0,supp=0,pass=0;
+  _regs.forEach(function(r){
+    var s=r['資格審查狀態']||'待審查';
+    if(s==='待審查')pending++;
+    else if(s==='審查中')reviewing++;
+    else if(s==='需補件')supp++;
+    else if(s==='符合資格'||s==='已錄取'||s==='備取')pass++;
+  });
+  document.getElementById('k_pending').textContent=pending;
+  document.getElementById('k_reviewing').textContent=reviewing;
+  document.getElementById('k_supp').textContent=supp;
+  document.getElementById('k_pass').textContent=pass;
+  document.getElementById('k_total').textContent=_regs.length;
+}
+
+function setFilter(s){_statusFilter=s;document.getElementById('statusFilter').value=s;renderTable();}
+
+function renderTable(){
+  var kw=(document.getElementById('searchInput').value||'').toLowerCase();
+  var sf=document.getElementById('statusFilter').value||_statusFilter;
+  var rows=_regs.filter(function(r){
+    if(sf&&r['資格審查狀態']!==sf)return false;
+    if(kw&&(r['姓名']||'').indexOf(kw)<0&&(r['服務單位']||'').indexOf(kw)<0)return false;
+    return true;
+  });
+  document.getElementById('tableCount').textContent='顯示 '+rows.length+' / '+_regs.length+' 筆';
+  var tbody=document.getElementById('tableBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--gray-400)">無資料</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var rid=esc(r['報名ID']||'');
+    var sc='s-'+(r['資格審查狀態']||'待審查').replace(/\s/g,'');
+    var lsc='s-'+(r['錄取狀態']||r['審核狀態']||'').replace(/\s/g,'');
+    var chk=_selected.has(r['報名ID'])?'checked':'';
+    html+='<tr><td><input type="checkbox" '+chk+' onchange="toggleChk(\''+rid+'\',this)" style="accent-color:var(--gold)"></td>';
+    html+='<td><strong>'+esc(r['姓名']||'—')+'</strong></td>';
+    html+='<td>'+esc(r['性別']||'')+'</td>';
+    html+='<td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(r['服務單位']||'')+'">'+esc(r['服務單位']||'—')+'</td>';
+    html+='<td>'+esc(r['身分別']||'')+'</td>';
+    html+='<td>'+esc(r['電話']||'—')+'</td>';
+    html+='<td style="font-size:.75rem">'+esc(r['報名來源']||'')+'</td>';
+    html+='<td style="font-size:.75rem">'+shortDate(r['報名時間']||r['建立時間'])+'</td>';
+    html+='<td><span class="badge '+sc+'">'+(r['資格審查狀態']||'待審查')+'</span></td>';
+    html+='<td>'+(r['錄取狀態']?'<span class="badge '+lsc+'">'+esc(r['錄取狀態'])+'</span>':'—')+'</td>';
+    html+='<td style="display:flex;gap:3px;flex-wrap:wrap">';
+    html+='<button class="row-btn" onclick="openModal(\''+rid+'\')">審查</button>';
+    if(r['資格審查狀態']==='符合資格'&&r['錄取狀態']!=='已錄取')html+='<button class="row-btn ok" onclick="quickAdmit(\''+rid+'\')">錄取</button>';
+    html+='</td></tr>';
+  });
+  tbody.innerHTML=html;
+  updateBatchBar();
+}
+
+function toggleChk(id,el){if(el.checked)_selected.add(id);else _selected.delete(id);updateBatchBar();}
+function toggleAll(el){_regs.forEach(function(r){if(el.checked)_selected.add(r['報名ID']);else _selected.delete(r['報名ID']);});renderTable();}
+function updateBatchBar(){
+  var n=_selected.size;
+  document.getElementById('batchCount').textContent='已選 '+n+' 人';
+  document.getElementById('batchBar').className='batch-bar'+(n>0?' show':'');
+}
+
+async function batchUpdate(status){
+  if(!_selected.size){alert('請先勾選報名者');return;}
+  var ids=[..._selected];var ok=0;
+  for(var i=0;i<ids.length;i++){
+    var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:ids[i],'資格審查狀態':status});
+    if(r.success)ok++;
+  }
+  _selected.clear();alert('已更新 '+ok+' 筆');loadRegs();
+}
+
+async function batchAdmit(){
+  if(!_selected.size){alert('請先勾選報名者');return;}
+  var ids=[..._selected];var ok=0;
+  for(var i=0;i<ids.length;i++){
+    var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:ids[i],'資格審查狀態':'已錄取','錄取狀態':'已錄取'});
+    if(r.success)ok++;
+  }
+  _selected.clear();alert('已錄取 '+ok+' 人');loadRegs();
+}
+
+async function quickAdmit(rid){
+  var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:rid,'資格審查狀態':'已錄取','錄取狀態':'已錄取'});
+  if(r.success)loadRegs();else alert('失敗：'+r.message);
+}
+
+// ── 審查 Modal ────────────────────────────────────────
+var _currentReg=null;
+function openModal(rid){
+  _currentReg=_regs.find(function(r){return r['報名ID']===rid;})||{};
+  document.getElementById('modalTitle').textContent='資格審查：'+esc(_currentReg['姓名']||'');
+  document.getElementById('m_regId').value=rid;
+  document.getElementById('m_name').textContent=(_currentReg['姓名']||'—')+' '+(_currentReg['性別']||'');
+  document.getElementById('m_info').textContent=esc((_currentReg['服務單位']||'')+' ｜ '+(_currentReg['身分別']||'')+' ｜ '+(_currentReg['電話']||''));
+  document.getElementById('m_status').value=_currentReg['資格審查狀態']||'待審查';
+  document.getElementById('m_result').value=_currentReg['審查結果']||'';
+  document.getElementById('m_suppItem').value=_currentReg['補件項目']||'';
+  document.getElementById('m_suppDeadline').value=String(_currentReg['補件期限']||'').substring(0,10);
+  document.getElementById('m_notifyDate').value=String(_currentReg['通知日期']||'').substring(0,10);
+  document.getElementById('m_remark').value=_currentReg['備註']||'';
+  document.getElementById('reviewModal').style.display='flex';
+}
+function closeModal(){document.getElementById('reviewModal').style.display='none';}
+
+async function quickSetAdmit(status){
+  var rid=document.getElementById('m_regId').value;
+  var reviewStatus=status==='已錄取'||status==='備取'?status:'不符合資格';
+  var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:rid,
+    '資格審查狀態':reviewStatus,'錄取狀態':status,'審查結果':document.getElementById('m_result').value});
+  if(r.success){closeModal();loadRegs();}else alert('失敗：'+r.message);
+}
+
+async function saveReview(){
+  var rid=document.getElementById('m_regId').value;
+  var p={action:'updateRegistrationStatus',registrationId:rid,
+    '資格審查狀態':document.getElementById('m_status').value,
+    '審查結果':document.getElementById('m_result').value,
+    '補件項目':document.getElementById('m_suppItem').value,
+    '補件期限':document.getElementById('m_suppDeadline').value,
+    '通知日期':document.getElementById('m_notifyDate').value,
+    '備註':document.getElementById('m_remark').value};
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closeModal();loadRegs();}else alert('儲存失敗：'+r.message);
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
