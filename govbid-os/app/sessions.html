@@ -393,9 +393,9 @@ async function openEditModal(sesId) {
   document.getElementById('submitBtn').textContent = '儲存變更';
   document.getElementById('editSesId').value = sesId;
   document.getElementById('sesModal').style.display = 'flex';
-  var r = await ERPALIGNED.api({ action: 'getSessions', keyword: sesId });
-  var rows = (r.data || []).filter(function(x){ return x['活動ID'] === sesId; });
-  if (!rows.length) { showErr('找不到場次資料'); return; }
+  var r = await ERPALIGNED.api({ action: 'getSession', sessionId: sesId });
+  if (!r.success || !r.data) { showErr('找不到場次資料'); return; }
+  var rows = [r.data];
   fillForm(rows[0]);
 }
 
