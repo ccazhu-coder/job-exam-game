@@ -248,7 +248,7 @@ async function loadCases(preCaseId){
   var r=await ERPALIGNED.api({action:'getCases'});
   var sel=document.getElementById('caseSelect');
   if(!r.success){sel.innerHTML='<option>載入失敗</option>';return;}
-  var cases=r.data&&r.data.rows||[];
+  var cases=r.data||[];
   sel.innerHTML='<option value="">— 請選擇案件 —</option>';
   cases.forEach(function(c){
     var o=document.createElement('option');
