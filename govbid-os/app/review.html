@@ -99,6 +99,8 @@
     <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchUpdate('不符合資格')">批次不符合資格</button>
     <button class="secondary" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="batchUpdate('需補件')">批次需補件</button>
     <button class="secondary" style="background:#16a34a;color:#fff;border-color:#16a34a" onclick="batchAdmit()">批次錄取</button>
+    <button class="secondary" style="background:#b45309;color:#fff;border-color:#b45309" onclick="sendSupplementNotices()">發送補件通知 Email</button>
+    <button class="secondary" style="background:#1d4ed8;color:#fff;border-color:#1d4ed8" onclick="sendAdmissionBatch()">發送錄取通知 Email</button>
   </div>
 
   <!-- 搜尋與篩選 -->
@@ -355,6 +357,24 @@ async function saveReview(){
     '備註':document.getElementById('m_remark').value};
   var r=await ERPALIGNED.api(p);
   if(r.success){closeModal();loadRegs();}else alert('儲存失敗：'+r.message);
+}
+
+async function sendSupplementNotices(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  var ids=[..._selected];
+  var p={action:'sendSupplementNotices',caseId:_caseId,sessionId:_sessionId||''};
+  if(ids.length)p.registrationIds=ids.join(',');
+  var r=await ERPALIGNED.api(p);
+  if(r.success)alert('✅ 補件通知已發送：'+((r.data&&r.data.sent)||0)+' 封');
+  else alert('❌ 發送失敗：'+r.message);
+  loadRegs();
+}
+async function sendAdmissionBatch(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  if(!confirm('確定要發送錄取通知 Email？\n系統將自動發送給所有已錄取/備取且尚未通知的學員。'))return;
+  var r=await ERPALIGNED.api({action:'sendAdmissionNotices',caseId:_caseId,sessionId:_sessionId||''});
+  if(r.success){alert('✅ 錄取通知已發送：'+((r.data&&r.data.sent)||0)+' 封，跳過 '+((r.data&&r.data.skipped)||0)+' 封（已通知）');loadRegs();}
+  else alert('❌ 發送失敗：'+r.message);
 }
 
 window.addEventListener('DOMContentLoaded', init);
