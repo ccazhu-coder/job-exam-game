@@ -101,13 +101,13 @@ function init(){
 async function loadCases(pre){
   var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
   if(!r.success)return;sel.innerHTML='<option value="">— 請選擇案件 —</option>';
-  (r.data&&r.data.rows||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+  (r.data||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
   if(pre){sel.value=pre;await onCaseChange();}
 }
 async function onCaseChange(){
   _caseId=document.getElementById('caseSelect').value;if(!_caseId)return;
   var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
-  _sessions=r.success&&r.data&&r.data.rows||[];
+  _sessions=r.success&&r.data||[];
   var ss=document.getElementById('sessionSelect');ss.innerHTML='<option value="">全部場次</option>';
   var ms=document.getElementById('m_ses');ms.innerHTML='<option value="">— 請選擇 —</option>';
   _sessions.forEach(function(s){
