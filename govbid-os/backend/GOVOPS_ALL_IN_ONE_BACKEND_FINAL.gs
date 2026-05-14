@@ -723,12 +723,21 @@ function govopsCourseOpsRoute_(params, action) {
 
 function govopsProductionRoute_(params, action) {
   if (action === '正式平台初始化') {
-    govopsEnsureSheet_('01_專案主檔', CASE_HEADERS); // v0.1：自動補齊擴充欄位
-    govopsEnsureSheet_('02_場次活動', ACTIVITY_HEADERS);
+    // 核心 Sheets（v0.1 擴充版）
+    govopsEnsureSheet_('01_專案主檔', CASE_HEADERS);
+    govopsEnsureSheet_('02_場次活動', SESSION_HEADERS);
     govopsEnsureSheet_('23_合作廠商主檔', VENDOR_HEADERS);
+    // 報名系統
     govopsEnrollmentRoute_(params, '初始化招生報名系統');
+    // 課程執行
     govopsCourseOpsRoute_(params, '初始化課程執行系統');
-    return { success: true, message: '正式平台初始化完成' };
+    // v0.1 新增 Sheets
+    govopsEnsureSheet_('報名資料庫', REG_EXT_HEADERS);
+    govopsEnsureSheet_('財務收支', FINANCE_HEADERS);
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    govopsEnsureSheet_('28_報名審查紀錄', ['審查ID','報名ID','招生活動ID','審查結果','審查原因','審查人','審查時間','建立時間']);
+    govopsEnsureSheet_('29_通知紀錄', ['通知ID','招生活動ID','報名ID','姓名','電話','LINE_ID','通知類型','通知內容','發送狀態','發送時間','建立時間']);
+    return { success: true, message: '正式平台初始化完成（v0.1）', data: { sheets: ['01_專案主檔','02_場次活動','報名資料庫','財務收支','結案檢核'] } };
   }
   if (action === '正式平台健康檢查') {
     return { success: true, message: '正式平台健康檢查完成', data: { status: 'ready', checkedAt: govopsNow_() } };
