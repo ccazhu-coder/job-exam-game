@@ -77,6 +77,15 @@ function govopsMainRouter_(params) {
   result = govopsDocumentRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsCalendarRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsFinanceV1Route_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsClosingRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsSimpleFallbackRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -996,6 +1005,237 @@ function govopsDocumentRoute_(params, action) {
     return { success: true, data: { total: total, admitted: admitted, withAddress: withAddr, needMeal: needMeal }, message: '文件資料彙整完成', timestamp: govopsNow_() };
   }
 
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Calendar Route v0.1 — Google Calendar 串接（追蹤+查詢）
+// 真正寫 Calendar 事件需 OAuth，此路由負責：記錄同步狀態、
+// 產生事件摘要供前端顯示，實際建立事件由前端 gapi 處理。
+// ════════════════════════════════════════════════════════
+var CAL_SYNC_HEADERS = ['同步ID','案件ID','場次ID','任務ID','事件類型','CalendarEventID','CalendarLink','同步狀態','同步時間','錯誤訊息','備註'];
+function govopsCalendarRoute_(params, action) {
+
+  // getCalendarItems: 取得需要同步的案件/場次事件清單
+  if (action === 'getCalendarItems') {
+    var caseId = params.caseId || '';
+    var cases = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var sessions = govopsRows_('02_場次活動', SESSION_HEADERS);
+    if (caseId) {
+      cases = cases.filter(function(r){ return r['專案ID'] === caseId; });
+      sessions = sessions.filter(function(r){ return r['專案ID'] === caseId; });
+    }
+    var items = [];
+    cases.forEach(function(c){
+      if (c['開始日期']) items.push({ type:'案件開始', id:c['專案ID'], title:c['專案計畫名稱'], date:c['開始日期'], synced:c['Calendar連結']?'已同步':'未同步', link:c['Calendar連結']||'' });
+      if (c['結案期限']) items.push({ type:'結案期限', id:c['專案ID'], title:'【結案】'+c['專案計畫名稱'], date:c['結案期限'], synced:c['Calendar連結']?'已同步':'未同步', link:'' });
+    });
+    sessions.forEach(function(s){
+      if (s['活動日期']) items.push({ type:'場次', id:s['活動ID'], caseId:s['專案ID'], title:s['活動名稱'], date:s['活動日期'], time:s['開始時間']+' ~ '+s['結束時間'], location:s['活動地點']||'', synced:s['已同步日曆']||'否', link:s['CalendarLink']||'' });
+    });
+    return { success: true, data: items, message: '日曆事件清單完成，共 ' + items.length + ' 項', timestamp: govopsNow_() };
+  }
+
+  // updateCalendarSync: 回寫 Calendar 同步結果（前端 gapi 建完事件後呼叫）
+  if (action === 'updateCalendarSync') {
+    var itemId = params.itemId || '';
+    var itemType = params.itemType || 'session';
+    var eventId = params.CalendarEventID || params.calendarEventId || '';
+    var eventLink = params.CalendarLink || params.calendarLink || '';
+    if (!itemId || !eventId) return { success: false, error: 'MISSING_PARAM', message: 'itemId 和 CalendarEventID 為必填', timestamp: govopsNow_() };
+    if (itemType === 'case' || itemType === '案件') {
+      var allCases = govopsRows_('01_專案主檔', CASE_HEADERS);
+      for (var i = 0; i < allCases.length; i++) {
+        if (allCases[i]['專案ID'] === itemId) {
+          govopsUpdate_('01_專案主檔', CASE_HEADERS, allCases[i]._row, { 'Calendar連結': eventLink, '更新時間': govopsNow_() });
+          break;
+        }
+      }
+    } else {
+      var allSes = govopsRows_('02_場次活動', SESSION_HEADERS);
+      for (var i = 0; i < allSes.length; i++) {
+        if (allSes[i]['活動ID'] === itemId) {
+          govopsUpdate_('02_場次活動', SESSION_HEADERS, allSes[i]._row, { 'CalendarEventID': eventId, 'CalendarLink': eventLink, '已同步日曆': '是', '日曆同步狀態': '已同步', '更新時間': govopsNow_() });
+          break;
+        }
+      }
+    }
+    return { success: true, data: { itemId: itemId, eventId: eventId }, message: 'Calendar 同步狀態已更新', timestamp: govopsNow_() };
+  }
+
+  // getUpcomingSchedule: 取得近期行程（未來30天）供 dashboard 使用
+  if (action === 'getUpcomingSchedule') {
+    var days = parseInt(params.days || '30', 10);
+    var now = new Date();
+    var cutoff = new Date(now.getTime() + days * 86400000);
+    var sessions = govopsRows_('02_場次活動', SESSION_HEADERS).filter(function(s){
+      if (!s['活動日期'] || String(s['狀態']) === '封存' || String(s['狀態']) === '取消') return false;
+      var d = new Date(String(s['活動日期']).replace(/\//g,'-'));
+      return d >= now && d <= cutoff;
+    });
+    sessions.sort(function(a,b){ return String(a['活動日期']).localeCompare(String(b['活動日期'])); });
+    var clean = sessions.slice(0,20).map(function(s){ return { 日期:s['活動日期'], 名稱:s['活動名稱'], 地點:s['活動地點']||'', 時間:s['開始時間']+' ~ '+s['結束時間'], 狀態:s['狀態'], 場次ID:s['活動ID'], 案件ID:s['專案ID'] }; });
+    return { success: true, data: clean, message: '近期行程查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Finance v1 Route — 擴充財務收支（v0.1 基礎）
+// ════════════════════════════════════════════════════════
+var FINANCE_HEADERS = ['收支ID','案件ID','場次ID','類型','科目','對象名稱','金額','付款方式','預計收付日','實際收付日','收付狀態','憑證連結','備註','建立時間','更新時間'];
+function govopsFinanceV1Route_(params, action) {
+  if (action === 'getFinanceRecords') {
+    var rows = govopsRows_('財務收支', FINANCE_HEADERS);
+    var caseId = params.caseId || '';
+    var type = params.type || '';
+    var status = params.status || '';
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    if (type) rows = rows.filter(function(r){ return String(r['類型']) === type; });
+    if (status) rows = rows.filter(function(r){ return String(r['收付狀態']) === status; });
+    var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){if(k!=='_row')o[k]=r[k];}); return o; });
+    return { success: true, data: clean, message: '財務查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+  }
+  if (action === 'createFinanceRecord') {
+    var amount = params['金額'] || params.amount;
+    if (!amount) return { success: false, error: 'MISSING_REQUIRED', message: '金額為必填', timestamp: govopsNow_() };
+    var obj = {
+      '收支ID': govopsId_('FIN'),
+      '案件ID': params.caseId || params['案件ID'] || '',
+      '場次ID': params.sessionId || params['場次ID'] || '',
+      '類型': params['類型'] || '支出',
+      '科目': params['科目'] || '其他',
+      '對象名稱': params['對象名稱'] || '',
+      '金額': amount,
+      '付款方式': params['付款方式'] || '匯款',
+      '預計收付日': params['預計收付日'] || '',
+      '實際收付日': params['實際收付日'] || '',
+      '收付狀態': params['收付狀態'] || '未付款',
+      '憑證連結': params['憑證連結'] || '',
+      '備註': params['備註'] || '',
+      '建立時間': govopsNow_(),
+      '更新時間': govopsNow_()
+    };
+    govopsAppend_('財務收支', FINANCE_HEADERS, obj);
+    return { success: true, data: { finId: obj['收支ID'], row: obj }, message: '財務紀錄已新增', timestamp: govopsNow_() };
+  }
+  if (action === 'updateFinanceRecord') {
+    var finId = params.finId || params['收支ID'];
+    if (!finId) return { success: false, error: 'MISSING_ID', message: '缺少收支ID', timestamp: govopsNow_() };
+    var rows = govopsRows_('財務收支', FINANCE_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['收支ID'] === finId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到財務紀錄', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['類型','科目','對象名稱','金額','付款方式','預計收付日','實際收付日','收付狀態','憑證連結','備註'].forEach(function(f){ if (params[f] !== undefined && params[f] !== '') patch[f] = params[f]; });
+    govopsUpdate_('財務收支', FINANCE_HEADERS, found._row, patch);
+    return { success: true, data: { finId: finId, updated: patch }, message: '財務紀錄已更新', timestamp: govopsNow_() };
+  }
+  if (action === 'getFinanceSummary') {
+    var caseId = params.caseId || '';
+    var rows = govopsRows_('財務收支', FINANCE_HEADERS);
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    var income = 0, expense = 0, received = 0, paid = 0, pending = 0;
+    rows.forEach(function(r){
+      var amt = parseFloat(String(r['金額']).replace(/,/g,'')) || 0;
+      var type = String(r['類型']);
+      var status = String(r['收付狀態']);
+      if (type === '收入') { income += amt; if (status === '已收款') received += amt; }
+      if (type === '支出') { expense += amt; if (status === '已付款') paid += amt; }
+      if (type === '收入' && status !== '已收款') pending += amt;
+    });
+    return { success: true, data: { totalIncome: income, totalExpense: expense, received: received, paid: paid, pendingReceivable: pending, profit: received - paid }, message: '財務摘要完成', timestamp: govopsNow_() };
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Closing Route v0.1 — 結案檢核與成果報告
+// ════════════════════════════════════════════════════════
+var CLOSING_CHECK_HEADERS = ['檢核ID','案件ID','檢核項目','檢核類別','是否必要','完成狀態','完成日期','負責人','備註','建立時間','更新時間'];
+var DEFAULT_CLOSING_ITEMS = [
+  ['合約與公文','最終契約書','法務',true],
+  ['合約與公文','計畫書（原版）','行政',true],
+  ['執行紀錄','所有場次簽到表','行政',true],
+  ['執行紀錄','所有場次照片','行政',true],
+  ['執行紀錄','問卷回收','行政',false],
+  ['財務核銷','所有講師領據','財務',true],
+  ['財務核銷','工作人員簽收單','財務',true],
+  ['財務核銷','核銷憑證清單','財務',true],
+  ['財務核銷','請款文件','財務',true],
+  ['成果報告','成果報告初稿','行政',true],
+  ['成果報告','成果報告定稿','行政',true],
+  ['其他','結案報告上傳系統','行政',false]
+];
+
+function govopsClosingRoute_(params, action) {
+  if (action === 'initClosingChecklist') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    var existing = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS).filter(function(r){ return r['案件ID'] === caseId; });
+    if (existing.length > 0) return { success: true, data: { count: existing.length }, message: '檢核清單已存在', timestamp: govopsNow_() };
+    DEFAULT_CLOSING_ITEMS.forEach(function(item){
+      var obj = { '檢核ID':govopsId_('CHK'), '案件ID':caseId, '檢核項目':item[1], '檢核類別':item[0], '是否必要':item[3]?'是':'否', '完成狀態':'待完成', '完成日期':'', '負責人':item[2], '備註':'', '建立時間':govopsNow_(), '更新時間':govopsNow_() };
+      govopsAppend_('結案檢核', CLOSING_CHECK_HEADERS, obj);
+    });
+    return { success: true, data: { count: DEFAULT_CLOSING_ITEMS.length }, message: '結案檢核清單初始化完成', timestamp: govopsNow_() };
+  }
+  if (action === 'getClosingChecklist') {
+    var caseId = params.caseId || '';
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    var rows = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS);
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){if(k!=='_row')o[k]=r[k];}); return o; });
+    var done = clean.filter(function(r){ return r['完成狀態']==='已完成'; }).length;
+    return { success: true, data: { list: clean, total: clean.length, done: done, remaining: clean.length - done }, message: '結案檢核清單查詢完成', timestamp: govopsNow_() };
+  }
+  if (action === 'updateClosingItem') {
+    var itemId = params.itemId || params['檢核ID'];
+    if (!itemId) return { success: false, error: 'MISSING_ID', message: '缺少檢核ID', timestamp: govopsNow_() };
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    var rows = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['檢核ID'] === itemId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到檢核項目', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    if (params['完成狀態']) patch['完成狀態'] = params['完成狀態'];
+    if (params['完成日期']) patch['完成日期'] = params['完成日期'];
+    if (params['備註']) patch['備註'] = params['備註'];
+    if (params['負責人']) patch['負責人'] = params['負責人'];
+    govopsUpdate_('結案檢核', CLOSING_CHECK_HEADERS, found._row, patch);
+    return { success: true, data: { itemId: itemId }, message: '結案項目已更新', timestamp: govopsNow_() };
+  }
+  if (action === 'generateClosingSummary') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    // 彙整各模組資料
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS).filter(function(r){ return r['專案ID'] === caseId; });
+    var caseData = caseRows[0] || {};
+    var sessions = govopsRows_('02_場次活動', SESSION_HEADERS).filter(function(r){ return r['專案ID'] === caseId && r['狀態'] !== '封存'; });
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){ return r['案件ID'] === caseId; });
+    var admitted = regs.filter(function(r){ return ['已錄取','備取'].indexOf(String(r['資格審查狀態'])) >= 0 || ['已錄取','備取'].indexOf(String(r['錄取狀態'])) >= 0; }).length;
+    var finRows = [];
+    try { finRows = govopsRows_('財務收支', FINANCE_HEADERS).filter(function(r){ return r['案件ID'] === caseId; }); } catch(e) {}
+    var totalIncome = 0, totalExpense = 0;
+    finRows.forEach(function(r){ var a = parseFloat(String(r['金額']).replace(/,/g,'')) || 0; if (r['類型']==='收入') totalIncome += a; else totalExpense += a; });
+    var closing = [];
+    try { closing = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS).filter(function(r){ return r['案件ID'] === caseId; }); } catch(e) {}
+    var closingDone = closing.filter(function(r){ return r['完成狀態']==='已完成'; }).length;
+    return {
+      success: true,
+      data: {
+        caseInfo: { 名稱: caseData['專案計畫名稱']||'', 類型: caseData['專案類型']||'', 客戶: caseData['主辦單位']||'', 期間: (caseData['開始日期']||'')+'~'+(caseData['結束日期']||'') },
+        sessionCount: sessions.length,
+        registrationCount: regs.length,
+        admittedCount: admitted,
+        finance: { income: totalIncome, expense: totalExpense, profit: totalIncome - totalExpense },
+        closing: { total: closing.length, done: closingDone, remaining: closing.length - closingDone }
+      },
+      message: '結案摘要產生完成', timestamp: govopsNow_()
+    };
+  }
   return null;
 }
 
