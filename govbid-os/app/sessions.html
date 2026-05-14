@@ -331,7 +331,7 @@ function renderTable(rows, el) {
     var name = ERPALIGNED.esc(r['活動名稱'] || '—');
     var type = ERPALIGNED.esc(r['活動類型'] || '');
     var date = ERPALIGNED.esc(shortDate(r['活動日期']));
-    var time = [r['開始時間'], r['結束時間']].filter(Boolean).join(' ~ ');
+    var time = [fmtTime(r['開始時間']), fmtTime(r['結束時間'])].filter(Boolean).join(' ~ ') || '—';
     var loc = ERPALIGNED.esc(r['活動地點'] || '—');
     var lec = ERPALIGNED.esc(r['講師'] || '—');
     var num = r['預計人數'] ? r['預計人數'] + '人' : '—';
@@ -364,6 +364,13 @@ function sesBadge(s) {
 function shortDate(v) {
   if (!v) return '—';
   return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+}
+function fmtTime(v) {
+  if (!v) return '';
+  var m = String(v).match(/T(d{2}):(d{2})/);
+  if (m) return m[1] + ':' + m[2];
+  if (/^d{1,2}:d{2}/.test(String(v))) return String(v).substring(0,5);
+  return '';
 }
 
 // ── 篩選 ─────────────────────────────────────────────────
