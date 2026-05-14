@@ -170,7 +170,7 @@
       ['dashboard.html','儀表板'],['cases.html','業務案件'],['sessions.html','場次管理'],['tender-pool.html','標案池'],['projects.html','專案'],['activities.html','活動'],
       ['registrations.html','報名管理'],['enrollment.html','招生報名'],['course-sop.html','開課SOP'],['course-ops.html','課程執行'],
       ['vendors.html','廠商'],['resource-master.html','人員主檔'],
-      ['crm.html','CRM'],['documents.html','文件產生'],['calendar.html','日曆'],['finance.html','財務'],['closing.html','結案'],['archive.html','核銷'],
+      ['crm.html','CRM'],['documents.html','文件產生'],['calendar.html','日曆'],['finance.html','財務'],['closing.html','結案'],['tasks.html','任務'],['archive.html','核銷'],
       ['finance-secretary.html','財務']
     ];
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
