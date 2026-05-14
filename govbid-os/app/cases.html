@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜業務案件</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+/* ── 快速篩選標籤 ── */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-tab{padding:5px 14px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.8rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.filter-tab .badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:10px;padding:0 6px;font-size:.75rem;margin-left:4px}
+.filter-tab:not(.active) .badge{background:var(--gray-100);color:var(--gray-500)}
+
+/* ── 搜尋列 ── */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.search-row input{flex:1;padding:9px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.88rem;font-family:var(--font)}
+.search-row input:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+.search-row select{padding:9px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.85rem;background:var(--white);font-family:var(--font);min-width:120px}
+
+/* ── 狀態徽章 ── */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:.76rem;font-weight:700;white-space:nowrap}
+.status-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.7}
+.s-草稿{background:#f0f2f5;color:#7f8c9a}
+.s-洽談中{background:#e8f0fe;color:#1a56db}
+.s-提案中{background:#ede9fe;color:#7c3aed}
+.s-已簽約{background:#e6f7f5;color:#0d9488}
+.s-執行中{background:#dcfce7;color:#16a34a}
+.s-待請款{background:#fff7ed;color:#ea580c}
+.s-待收款{background:#fef9c3;color:#ca8a04}
+.s-待結案{background:#fef3c7;color:#d97706}
+.s-已結案{background:#f0fdf4;color:#15803d}
+.s-暫停{background:#fff4e5;color:#b45309}
+.s-取消{background:#fef2f2;color:#b91c1c}
+.s-封存{background:#f3f4f6;color:#6b7280}
+
+/* ── 案件類型標籤 ── */
+.type-chip{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.73rem;background:var(--gold-pale);color:var(--navy);font-weight:600;white-space:nowrap}
+
+/* ── 表格操作按鈕 ── */
+.row-actions{display:flex;gap:4px}
+.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.75rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+
+/* ── KPI 小卡 ── */
+.case-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.ckpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.ckpi .num{font-size:1.6rem;font-weight:800;color:var(--navy)}
+.ckpi .label{font-size:.75rem;color:var(--gray-500);margin-top:2px}
+.ckpi.warn .num{color:var(--gold)}
+.ckpi.alert .num{color:var(--danger)}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--white);z-index:1;padding-bottom:12px;border-bottom:1.5px solid var(--gray-100)}
+.modal-header h2{font-size:1rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.3rem;color:var(--gray-400);cursor:pointer;padding:4px 8px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:12px 24px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+
+/* ── 表單 ── */
+.form-section{margin-bottom:18px}
+.form-section-title{font-size:.78rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid var(--gold-pale)}
+.form-row{display:grid;gap:12px;margin-bottom:12px}
+.form-row.cols2{grid-template-columns:1fr 1fr}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.field label{display:block;font-size:.78rem;font-weight:600;color:var(--navy-mid);margin-bottom:4px}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.88rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+.field textarea{min-height:72px;resize:vertical}
+.field .hint{font-size:.72rem;color:var(--gray-400);margin-top:3px}
+
+/* ── 空狀態 ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--gray-400)}
+.empty-state .ico{font-size:2.4rem;margin-bottom:10px}
+.empty-state p{font-size:.9rem}
+
+/* ── 確認 Dialog ── */
+.confirm-box{background:var(--white);border-radius:12px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.confirm-box h3{font-size:1rem;font-weight:700;color:var(--navy);margin:0 0 8px}
+.confirm-box p{font-size:.85rem;color:var(--gray-500);margin:0 0 20px}
+.confirm-box .btns{display:flex;gap:8px;justify-content:center}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">業務案件管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>業務案件</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openCreateModal()">＋ 新增案件</button>
+      <button class="secondary" onclick="loadCases()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- KPI 統計列 -->
+  <div class="case-kpis" id="caseKpis">
+    <div class="ckpi"><div class="num">—</div><div class="label">全部案件</div></div>
+    <div class="ckpi"><div class="num">—</div><div class="label">進行中</div></div>
+    <div class="ckpi warn"><div class="num">—</div><div class="label">需行動</div></div>
+    <div class="ckpi alert"><div class="num">—</div><div class="label">已結案</div></div>
+  </div>
+
+  <section class="card">
+    <!-- 快速篩選標籤 -->
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-status="" onclick="setStatusFilter(this,'')">全部</button>
+      <button class="filter-tab" data-status="執行中" onclick="setStatusFilter(this,'執行中')">執行中</button>
+      <button class="filter-tab" data-status="待請款" onclick="setStatusFilter(this,'待請款')">待請款</button>
+      <button class="filter-tab" data-status="待收款" onclick="setStatusFilter(this,'待收款')">待收款</button>
+      <button class="filter-tab" data-status="待結案" onclick="setStatusFilter(this,'待結案')">待結案</button>
+      <button class="filter-tab" data-status="已結案" onclick="setStatusFilter(this,'已結案')">已結案</button>
+      <button class="filter-tab" data-status="草稿" onclick="setStatusFilter(this,'草稿')">草稿</button>
+    </div>
+
+    <!-- 搜尋列 -->
+    <div class="search-row">
+      <input id="kwInput" type="search" placeholder="搜尋案件名稱、客戶…" oninput="debouncedSearch()" />
+      <select id="typeFilter" onchange="loadCases()">
+        <option value="">所有類型</option>
+        <option value="01 政府標案">政府標案</option>
+        <option value="02 政府補助計畫">補助計畫</option>
+        <option value="03 教育訓練課程">教育訓練</option>
+        <option value="04 職涯諮詢">職涯諮詢</option>
+        <option value="05 顧問服務">顧問服務</option>
+        <option value="06 企業合作">企業合作</option>
+        <option value="07 公會協會專案">公會協會</option>
+        <option value="08 講座活動">講座活動</option>
+        <option value="09 招生課程">招生課程</option>
+        <option value="10 AI系統開發">AI開發</option>
+        <option value="11 行銷專案">行銷專案</option>
+        <option value="12 內部行政">內部行政</option>
+        <option value="13 臨時人力案">臨時人力</option>
+        <option value="14 其他">其他</option>
+      </select>
+    </div>
+
+    <!-- 案件表格 -->
+    <div id="caseMsg" class="msg" style="display:none"></div>
+    <div id="caseTable"></div>
+  </section>
+</main>
+
+<!-- ── 新增/編輯案件 Modal ── -->
+<div class="modal-overlay" id="caseModal" style="display:none" onclick="closeModalOnBg(event)">
+  <div class="modal-box" id="caseModalBox">
+    <div class="modal-header">
+      <h2 id="modalTitle">新增案件</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editCaseId">
+
+      <div class="form-section">
+        <div class="form-section-title">基本資訊</div>
+        <div class="form-row">
+          <div class="field">
+            <label>案件名稱 <span class="req">*</span></label>
+            <input id="f_name" placeholder="例如：2026年職業訓練計畫執行" />
+          </div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field">
+            <label>案件類型 <span class="req">*</span></label>
+            <select id="f_type">
+              <option value="">請選擇…</option>
+              <option>01 政府標案</option>
+              <option>02 政府補助計畫</option>
+              <option>03 教育訓練課程</option>
+              <option>04 職涯諮詢</option>
+              <option>05 顧問服務</option>
+              <option>06 企業合作</option>
+              <option>07 公會協會專案</option>
+              <option>08 講座活動</option>
+              <option>09 招生課程</option>
+              <option>10 AI系統開發</option>
+              <option>11 行銷專案</option>
+              <option>12 內部行政</option>
+              <option>13 臨時人力案</option>
+              <option>14 其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>案件狀態</label>
+            <select id="f_status">
+              <option value="草稿">草稿</option>
+              <option value="洽談中">洽談中</option>
+              <option value="提案中">提案中</option>
+              <option value="已簽約">已簽約</option>
+              <option value="執行中">執行中</option>
+              <option value="待請款">待請款</option>
+              <option value="待收款">待收款</option>
+              <option value="待結案">待結案</option>
+              <option value="已結案">已結案</option>
+              <option value="暫停">暫停</option>
+              <option value="取消">取消</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">客戶資訊</div>
+        <div class="form-row cols2">
+          <div class="field">
+            <label>客戶／主辦單位</label>
+            <input id="f_client" placeholder="例如：勞動部勞動力發展署" />
+          </div>
+          <div class="field">
+            <label>承辦窗口</label>
+            <input id="f_contact" placeholder="聯絡人姓名" />
+          </div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field">
+            <label>聯絡電話</label>
+            <input id="f_phone" placeholder="04-1234-5678" />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="f_email" type="email" placeholder="contact@example.gov.tw" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">期程與金額</div>
+        <div class="form-row cols3">
+          <div class="field">
+            <label>開始日期</label>
+            <input id="f_start" type="date" />
+          </div>
+          <div class="field">
+            <label>結束日期</label>
+            <input id="f_end" type="date" />
+          </div>
+          <div class="field">
+            <label>結案期限</label>
+            <input id="f_deadline" type="date" />
+          </div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field">
+            <label>預估收入（元）</label>
+            <input id="f_income" type="number" placeholder="0" min="0" />
+          </div>
+          <div class="field">
+            <label>預估成本（元）</label>
+            <input id="f_cost" type="number" placeholder="0" min="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">備註</div>
+        <div class="field">
+          <textarea id="f_note" placeholder="重要備註、執行說明、特殊需求…"></textarea>
+        </div>
+      </div>
+
+      <div id="modalErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:10px 12px;font-size:.83rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" id="submitBtn" onclick="submitCase()">新增案件</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 確認封存 Dialog ── -->
+<div class="modal-overlay" id="confirmModal" style="display:none">
+  <div class="confirm-box">
+    <h3>確認封存案件？</h3>
+    <p id="confirmMsg">封存後不會刪除資料，但預設篩選不顯示。</p>
+    <div class="btns">
+      <button class="secondary" onclick="closeConfirm()">取消</button>
+      <button id="confirmOkBtn" class="danger" onclick="doArchive()">封存</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+// ── 狀態 ──────────────────────────────────────────────────
+var _statusFilter = '';
+var _pendingArchiveId = '';
+var _searchTimer = null;
+var _statsCache = null;
+
+// ── 初始化 ────────────────────────────────────────────────
+function init() {
+  var profile = (() => { try { return JSON.parse(localStorage.getItem('govops_profile') || 'null'); } catch(e){ return null; } })();
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  loadStats();
+  loadCases();
+}
+
+// ── 統計 KPI ─────────────────────────────────────────────
+async function loadStats() {
+  var r = await ERPALIGNED.api({ action: 'getCaseStats' });
+  if (!r.success) return;
+  var d = r.data || {};
+  var bs = d.byStatus || {};
+  _statsCache = d;
+  var total = d.total || 0;
+  var active = d.active || 0;
+  var urgent = d.urgent || 0;
+  var closed = bs['已結案'] || 0;
+  document.getElementById('caseKpis').innerHTML =
+    kpiCard('全部案件', total, '') +
+    kpiCard('進行中', active, '') +
+    kpiCard('需行動', urgent, urgent > 0 ? 'warn' : '') +
+    kpiCard('已結案', closed, 'alert');
+  // 更新 tab badges
+  updateTabBadges(bs);
+}
+
+function kpiCard(label, num, cls) {
+  return '<div class="ckpi' + (cls ? ' ' + cls : '') + '"><div class="num">' + num + '</div><div class="label">' + label + '</div></div>';
+}
+
+function updateTabBadges(bs) {
+  document.querySelectorAll('.filter-tab[data-status]').forEach(function(btn) {
+    var s = btn.dataset.status;
+    if (!s) return;
+    var n = bs[s] || 0;
+    var badge = btn.querySelector('.badge');
+    if (!badge) { badge = document.createElement('span'); badge.className = 'badge'; btn.appendChild(badge); }
+    badge.textContent = n;
+  });
+}
+
+// ── 查詢案件 ─────────────────────────────────────────────
+async function loadCases() {
+  var msg = document.getElementById('caseMsg');
+  var tbl = document.getElementById('caseTable');
+  msg.style.display = ''; msg.textContent = '查詢中…';
+  tbl.innerHTML = '';
+
+  var params = { action: 'getCases' };
+  var kw = document.getElementById('kwInput').value.trim();
+  var typeVal = document.getElementById('typeFilter').value;
+  if (kw) params.keyword = kw;
+  if (typeVal) params.type = typeVal;
+  if (_statusFilter) params.status = _statusFilter;
+
+  var r = await ERPALIGNED.api(params);
+  msg.style.display = 'none';
+  if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ 查詢失敗：' + (r.message || '未知錯誤'); return; }
+
+  var rows = r.data || [];
+  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆' + (_statusFilter ? '（' + _statusFilter + '）' : '');
+
+  if (!rows.length) {
+    tbl.innerHTML = '<div class="empty-state"><div class="ico">📋</div><p>目前沒有案件資料</p></div>';
+    return;
+  }
+  renderCaseTable(rows, tbl);
+}
+
+// ── 渲染表格 ─────────────────────────────────────────────
+function renderCaseTable(rows, el) {
+  var html = '<div style="overflow-x:auto"><table class="erp-table" style="min-width:820px">';
+  html += '<thead><tr><th>案件編號</th><th>案件名稱</th><th>類型</th><th>客戶</th><th>期間</th><th>狀態</th><th style="text-align:right">預估收入</th><th>操作</th></tr></thead><tbody>';
+  rows.forEach(function(r) {
+    var id = ERPALIGNED.esc(r['專案ID'] || '');
+    var name = ERPALIGNED.esc(r['專案計畫名稱'] || '—');
+    var type = r['專案類型'] || '';
+    var client = ERPALIGNED.esc(r['主辦單位'] || '—');
+    var start = shortDate(r['開始日期']);
+    var end = shortDate(r['結束日期']);
+    var period = (start || end) ? (start || '?') + ' ~ ' + (end || '?') : '—';
+    var status = r['狀態'] || '';
+    var income = r['契約金額'] ? numFmt(r['契約金額']) : '—';
+    var typeShort = type.replace(/^\d+\s/, '');
+    html += '<tr>';
+    html += '<td style="font-size:.75rem;color:var(--gray-400);font-family:monospace">' + id + '</td>';
+    html += '<td><strong>' + name + '</strong></td>';
+    html += '<td>' + (typeShort ? '<span class="type-chip">' + ERPALIGNED.esc(typeShort) + '</span>' : '—') + '</td>';
+    html += '<td>' + client + '</td>';
+    html += '<td style="font-size:.8rem;white-space:nowrap">' + ERPALIGNED.esc(period) + '</td>';
+    html += '<td>' + statusBadge(status) + '</td>';
+    html += '<td style="text-align:right;font-weight:600">' + ERPALIGNED.esc(income) + '</td>';
+    html += '<td><div class="row-actions">';
+    html += '<button class="row-btn" onclick="openEditModal(\'' + id + '\')">編輯</button>';
+    html += '<button class="row-btn" onclick="goSessions(\'' + id + '\',\'' + ERPALIGNED.esc(r['專案計畫名稱']||'') + '\')">場次</button>';
+    html += '<button class="row-btn danger" onclick="confirmArchive(\'' + id + '\',\'' + name + '\')">封存</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function statusBadge(s) {
+  return '<span class="status-badge s-' + ERPALIGNED.esc(s) + '">' + ERPALIGNED.esc(s || '—') + '</span>';
+}
+
+function shortDate(v) {
+  if (!v) return '';
+  return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+}
+
+function numFmt(v) {
+  var n = parseInt(String(v).replace(/,/g, ''), 10);
+  return isNaN(n) ? v : n.toLocaleString();
+}
+
+// ── 篩選控制 ─────────────────────────────────────────────
+function setStatusFilter(btn, status) {
+  _statusFilter = status;
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadCases();
+}
+
+function debouncedSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(loadCases, 350);
+}
+
+// ── Create Modal ─────────────────────────────────────────
+function openCreateModal() {
+  clearModalForm();
+  document.getElementById('editCaseId').value = '';
+  document.getElementById('modalTitle').textContent = '新增案件';
+  document.getElementById('submitBtn').textContent = '新增案件';
+  document.getElementById('caseModal').style.display = 'flex';
+}
+
+// ── Edit Modal ────────────────────────────────────────────
+async function openEditModal(caseId) {
+  document.getElementById('modalTitle').textContent = '編輯案件';
+  document.getElementById('submitBtn').textContent = '儲存變更';
+  document.getElementById('editCaseId').value = caseId;
+  document.getElementById('caseModal').style.display = 'flex';
+
+  // 從表格 DOM 讀取（若已存在），否則 fetch
+  var r = await ERPALIGNED.api({ action: 'getCases', keyword: caseId });
+  var rows = (r.data || []).filter(function(x){ return x['專案ID'] === caseId; });
+  if (!rows.length) { showModalErr('找不到案件資料'); return; }
+  fillModalForm(rows[0]);
+}
+
+function fillModalForm(row) {
+  document.getElementById('f_name').value = row['專案計畫名稱'] || '';
+  document.getElementById('f_type').value = row['專案類型'] || '';
+  document.getElementById('f_status').value = row['狀態'] || '草稿';
+  document.getElementById('f_client').value = row['主辦單位'] || '';
+  document.getElementById('f_contact').value = row['承辦窗口'] || '';
+  document.getElementById('f_phone').value = row['聯絡電話'] || '';
+  document.getElementById('f_email').value = row['Email'] || '';
+  document.getElementById('f_start').value = isoDate(row['開始日期']);
+  document.getElementById('f_end').value = isoDate(row['結束日期']);
+  document.getElementById('f_deadline').value = isoDate(row['結案期限']);
+  document.getElementById('f_income').value = row['契約金額'] || '';
+  document.getElementById('f_cost').value = row['預估成本'] || '';
+  document.getElementById('f_note').value = row['專案說明'] || '';
+}
+
+function isoDate(v) {
+  if (!v) return '';
+  var m = String(v).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  if (!m) return '';
+  return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+}
+
+function clearModalForm() {
+  ['f_name','f_type','f_status','f_client','f_contact','f_phone','f_email','f_start','f_end','f_deadline','f_income','f_cost','f_note'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el.tagName === 'SELECT' && id === 'f_status') el.value = '草稿';
+    else if (el.tagName === 'SELECT') el.value = '';
+    else el.value = '';
+  });
+  hideModalErr();
+}
+
+// ── Submit ────────────────────────────────────────────────
+async function submitCase() {
+  hideModalErr();
+  var name = document.getElementById('f_name').value.trim();
+  var type = document.getElementById('f_type').value;
+  if (!name) { showModalErr('案件名稱為必填'); return; }
+  if (!type) { showModalErr('案件類型為必填'); return; }
+
+  var caseId = document.getElementById('editCaseId').value;
+  var isEdit = !!caseId;
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '處理中…';
+
+  var params = {
+    action: isEdit ? 'updateCase' : 'createCase',
+    '案件名稱': name,
+    '案件類型': type,
+    '案件狀態': document.getElementById('f_status').value,
+    '主辦單位': document.getElementById('f_client').value,
+    '承辦窗口': document.getElementById('f_contact').value,
+    '聯絡電話': document.getElementById('f_phone').value,
+    'Email': document.getElementById('f_email').value,
+    '開始日期': document.getElementById('f_start').value,
+    '結束日期': document.getElementById('f_end').value,
+    '結案期限': document.getElementById('f_deadline').value,
+    '預估收入': document.getElementById('f_income').value,
+    '預估成本': document.getElementById('f_cost').value,
+    '重要備註': document.getElementById('f_note').value
+  };
+  if (isEdit) params.caseId = caseId;
+
+  var r = await ERPALIGNED.api(params);
+  btn.disabled = false;
+  btn.textContent = isEdit ? '儲存變更' : '新增案件';
+
+  if (!r.success) { showModalErr(r.message || '操作失敗，請稍後再試'); return; }
+  closeModal();
+  loadStats();
+  loadCases();
+}
+
+// ── Archive ───────────────────────────────────────────────
+function confirmArchive(caseId, name) {
+  _pendingArchiveId = caseId;
+  document.getElementById('confirmMsg').textContent = '「' + name + '」封存後仍可透過「顯示封存」找回。';
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+
+async function doArchive() {
+  if (!_pendingArchiveId) return;
+  document.getElementById('confirmOkBtn').disabled = true;
+  var r = await ERPALIGNED.api({ action: 'archiveCase', caseId: _pendingArchiveId });
+  document.getElementById('confirmOkBtn').disabled = false;
+  closeConfirm();
+  if (r.success) { loadStats(); loadCases(); }
+  else alert('封存失敗：' + (r.message || '未知錯誤'));
+}
+
+// ── 場次跳轉 ─────────────────────────────────────────────
+function goSessions(caseId, caseName) {
+  location.href = './activities.html?caseId=' + encodeURIComponent(caseId) + '&caseName=' + encodeURIComponent(caseName);
+}
+
+// ── 輔助 ─────────────────────────────────────────────────
+function closeModal() { document.getElementById('caseModal').style.display = 'none'; }
+function closeConfirm() { document.getElementById('confirmModal').style.display = 'none'; _pendingArchiveId = ''; }
+function closeModalOnBg(e) { if (e.target === document.getElementById('caseModal')) closeModal(); }
+function showModalErr(msg) { var el = document.getElementById('modalErr'); el.textContent = msg; el.style.display = ''; }
+function hideModalErr() { document.getElementById('modalErr').style.display = 'none'; }
+
+init();
+</script>
+</body>
+</html>
