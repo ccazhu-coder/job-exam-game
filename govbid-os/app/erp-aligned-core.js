@@ -1,4 +1,4 @@
-/* GovOps OS｜ERP Aligned Core v4 — 深海軍藍×古金色 */
+﻿/* GovOps OS｜ERP Aligned Core v4 — 深海軍藍×古金色 */
 (function(){
   function $(id){return document.getElementById(id)}
   function profile(){try{return Object.assign({tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'},JSON.parse(localStorage.getItem('govops_profile')||'{}'),JSON.parse(localStorage.getItem('govops_auth')||'{}'))}catch(e){return{tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'}}}
@@ -167,7 +167,7 @@
   function nav(){
     const path=location.pathname.split('/').pop()||'index.html';
     const pages=[
-      ['dashboard.html','儀表板'],['tender-pool.html','標案池'],['projects.html','專案'],['activities.html','活動'],
+      ['dashboard.html','儀表板'],['cases.html','業務案件'],['tender-pool.html','標案池'],['projects.html','專案'],['activities.html','活動'],
       ['enrollment.html','招生報名'],['course-sop.html','開課SOP'],['course-ops.html','課程執行'],
       ['vendors.html','廠商'],['resource-master.html','人員主檔'],
       ['crm.html','CRM'],['archive.html','核銷'],
@@ -226,3 +226,4 @@
     chip.innerHTML=userChip();
   }
 })();
+
