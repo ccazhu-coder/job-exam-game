@@ -159,13 +159,13 @@ function init(){
 async function loadCasesDropdown(){
   var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
   if(!r.success)return;
-  (r.data&&r.data.rows||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+  (r.data||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
 }
 async function loadSessions(){
   _caseId=document.getElementById('caseSelect').value;var sel=document.getElementById('sessionSelect');
   sel.innerHTML='<option value="">— 選擇場次（選填）—</option>';if(!_caseId)return;
   var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
-  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sel.appendChild(o);});
+  if(r.success)(r.data||[]).forEach(function(s){var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sel.appendChild(o);});
 }
 async function loadBatches(){
   var r=await ERPALIGNED.api({action:'getImportBatches'});
