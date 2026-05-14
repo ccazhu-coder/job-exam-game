@@ -77,6 +77,9 @@ function govopsMainRouter_(params) {
   result = govopsDocumentRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsBudgetRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsCalendarRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -1142,7 +1145,217 @@ function govopsDocumentRoute_(params, action) {
     var admitted = filtered.filter(function(r){ return ['已錄取','備取'].indexOf(String(r['資格審查狀態'])) >= 0 || ['已錄取','備取'].indexOf(String(r['錄取狀態'])) >= 0; }).length;
     var withAddr = filtered.filter(function(r){ return !!r['地址']; }).length;
     var needMeal = filtered.filter(function(r){ return r['用餐習慣'] && r['用餐習慣'] !== '不需要'; }).length;
-    return { success: true, data: { total: total, admitted: admitted, withAddress: withAddr, needMeal: needMeal }, message: '文件資料彙整完成', timestamp: govopsNow_() };
+    // Manpower counts
+    var staffCount = 0, lecCount = 0;
+    try {
+      var staffRows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+      var sf = sessionId ? staffRows.filter(function(r){ return String(r['場次ID'])===sessionId; }) : staffRows.filter(function(r){ return String(r['案件ID'])===caseId; });
+      staffCount = sf.filter(function(r){ return r['審核狀態']==='已錄取'; }).length;
+    } catch(e) {}
+    // Session info for 講師
+    var sesInfo = null;
+    if (sessionId) {
+      var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+      sesInfo = sesRows.filter(function(r){ return String(r['活動ID'])===sessionId; })[0] || null;
+      if (sesInfo) lecCount = sesInfo['講師'] ? 1 : 0;
+    }
+    // Tasks for work checklist
+    var taskCount = 0;
+    try { taskCount = govopsRows_('案件任務清單', TASK_HEADERS).filter(function(r){ return caseId ? String(r['案件ID'])===caseId : true; }).length; } catch(e) {}
+    // Budget items
+    var budgetCount = 0;
+    try { budgetCount = govopsRows_('案件預算明細', BUDGET_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; }).length; } catch(e) {}
+    return { success: true, data: {
+      total: total, admitted: admitted, withAddress: withAddr, needMeal: needMeal,
+      staffCount: staffCount, lecCount: lecCount, taskCount: taskCount, budgetCount: budgetCount,
+      sessionInfo: sesInfo ? { 活動名稱: sesInfo['活動名稱'], 活動日期: sesInfo['活動日期'], 活動地點: sesInfo['活動地點'], 開始時間: sesInfo['開始時間'], 結束時間: sesInfo['結束時間'], 講師: sesInfo['講師'], 工作人員: sesInfo['工作人員'] } : null
+    }, message: '文件資料彙整完成', timestamp: govopsNow_() };
+  }
+
+  // generateLecturerReceipt: 講師鐘點費領據資料
+  if (action === 'generateLecturerReceipt') {
+    var sessionId = params.sessionId || params['活動ID'];
+    if (!sessionId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var ses = sesRows.filter(function(r){ return String(r['活動ID'])===sessionId; })[0];
+    if (!ses) return { success: false, error: 'NOT_FOUND', message: '找不到場次', timestamp: govopsNow_() };
+    // Get case info for 承辦單位
+    var caseId = ses['專案ID'] || params.caseId || '';
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var caseInfo = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    // Get lecturer info from 講師資料 or from manpower
+    var lecName = ses['講師'] || '';
+    var hours = parseFloat(params.hours) || 0;
+    var hourlyRate = parseFloat(params.hourlyRate) || 0;
+    var amount = Math.round(hours * hourlyRate);
+    // Try to find lecturer in resource master
+    var lecInfo = {};
+    try {
+      var lecRows = govopsRows_('18_講師資料', ['講師ID','姓名','電話','Email','身分證字號','出生日期','地址','銀行','帳號','戶名','備註']);
+      var found = lecRows.filter(function(r){ return String(r['姓名'])===lecName; })[0];
+      if (found) lecInfo = found;
+    } catch(e) {}
+    var receipt = {
+      承辦單位名稱: caseInfo['主辦單位'] || params.orgName || '',
+      計畫名稱: caseInfo['專案計畫名稱'] || ses['專案計畫名稱'] || '',
+      場次名稱: ses['活動名稱'] || '',
+      場次日期: ses['活動日期'] || '',
+      上課時間: (ses['開始時間']||'') + (ses['結束時間']?' ~ '+ses['結束時間']:''),
+      領款人: lecName,
+      身份證字號: lecInfo['身分證字號'] || params.idNumber || '',
+      出生年月日: lecInfo['出生日期'] || params.birthDate || '',
+      戶籍地址: lecInfo['地址'] || params.address || '',
+      扣繳憑單地址: lecInfo['地址'] || params.address || '',
+      小時數: hours || '',
+      時薪: hourlyRate || '',
+      金額: amount || (parseFloat(params.amount)||0),
+      銀行名稱: lecInfo['銀行'] || params.bank || '',
+      戶名: lecInfo['戶名'] || params.accountName || lecName,
+      銀行帳號: lecInfo['帳號'] || params.account || '',
+      費用類型: '講師鐘點費'
+    };
+    return { success: true, data: receipt, message: '講師領據資料產生完成', timestamp: govopsNow_() };
+  }
+
+  // generateStaffReceipts: 工作人員領據資料（批次，一次產所有已錄取人員）
+  if (action === 'generateStaffReceipts') {
+    var sessionId = params.sessionId || params['活動ID'];
+    var needId = params.needId || '';
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var staffRows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var hoursRows = govopsRows_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var filtered = staffRows.filter(function(r){
+      if (r['審核狀態'] !== '已錄取') return false;
+      if (sessionId && String(r['場次ID']) !== sessionId) return false;
+      if (needId && String(r['需求ID']) !== needId) return false;
+      return true;
+    });
+    var caseId = params.caseId || (filtered[0] ? filtered[0]['案件ID'] : '');
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var caseInfo = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var receipts = filtered.map(function(s) {
+      var myHours = hoursRows.filter(function(h){ return h['人員ID']===s['人員ID'] && h['工作狀態']==='已確認'; });
+      var totalHours = myHours.reduce(function(sum,h){ return sum+(parseFloat(h['工時'])||0); }, 0);
+      var hourlyRate = parseFloat(params.hourlyRate) || 190;
+      var amount = Math.round(totalHours * hourlyRate);
+      return {
+        承辦單位名稱: caseInfo['主辦單位'] || params.orgName || '',
+        計畫名稱: caseInfo['專案計畫名稱'] || '',
+        領款人: s['姓名'] || '',
+        身份證字號: s['身分證'] || '',
+        出生年月日: '',
+        戶籍地址: '',
+        身分別: s['身分別'] || '工作人員',
+        小時數: totalHours,
+        時薪: hourlyRate,
+        金額: amount,
+        銀行名稱: s['銀行'] || '',
+        戶名: s['戶名'] || s['姓名'] || '',
+        銀行帳號: s['帳號'] || '',
+        費用類型: '工作人員鐘點費'
+      };
+    });
+    return { success: true, data: { receipts: receipts, count: receipts.length }, message: '工作人員領據資料產生完成，共 '+receipts.length+' 筆', timestamp: govopsNow_() };
+  }
+
+  // generateWorkChecklist: 工作檢核表（從結案檢核 + 任務清單）
+  if (action === 'generateWorkChecklist') {
+    var caseId = params.caseId || '';
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('結案檢核', CLOSING_CHECK_HEADERS);
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var checks = govopsRows_('結案檢核', CLOSING_CHECK_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var tasks = govopsRows_('案件任務清單', TASK_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    return { success: true, data: { checks: checks, tasks: tasks, checkCount: checks.length, taskCount: tasks.length }, message: '工作檢核表資料產生完成', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Budget Route — 案件預算明細（核銷依據）
+// 每個案件的標價清單項目不同，由使用者逐案建立
+// ════════════════════════════════════════════════════════
+var BUDGET_HEADERS = ['預算ID','案件ID','項目編號','支出項目','單位','數量','單價','場次數','預算金額','實際支出','核銷狀態','憑證連結','備註','建立時間','更新時間'];
+
+function govopsBudgetRoute_(params, action) {
+
+  if (action === 'getBudgetItems') {
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var rows = govopsRows_('案件預算明細', BUDGET_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    // 計算合計
+    var totalBudget = rows.reduce(function(s,r){ return s+(parseFloat(r['預算金額'])||0); }, 0);
+    var totalActual = rows.reduce(function(s,r){ return s+(parseFloat(r['實際支出'])||0); }, 0);
+    return { success: true, data: { rows: rows, count: rows.length, totalBudget: totalBudget, totalActual: totalActual, balance: totalBudget-totalActual }, message: '預算明細查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createBudgetItem') {
+    if (!params.caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var rows = govopsRows_('案件預算明細', BUDGET_HEADERS);
+    var num = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; }).length + 1;
+    var qty = parseFloat(params.quantity)||1, price = parseFloat(params.unitPrice)||0, ses = parseFloat(params.sessions)||1;
+    var amount = qty * price * ses;
+    var now = govopsNow_();
+    var obj = {
+      '預算ID': govopsId_('BDG'), '案件ID': params.caseId,
+      '項目編號': num, '支出項目': params.itemName || '',
+      '單位': params.unit || '式', '數量': qty, '單價': price, '場次數': ses,
+      '預算金額': amount, '實際支出': 0, '核銷狀態': '未核銷',
+      '憑證連結': '', '備註': params.remark || '',
+      '建立時間': now, '更新時間': now
+    };
+    govopsAppend_('案件預算明細', BUDGET_HEADERS, obj);
+    return { success: true, data: obj, message: '預算項目已新增', timestamp: now };
+  }
+
+  if (action === 'updateBudgetItem') {
+    var id = params.budgetId;
+    if (!id) return { success: false, error: 'MISSING_PARAM', message: '缺少 budgetId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var rows = govopsRows_('案件預算明細', BUDGET_HEADERS);
+    var found = null; for(var i=0;i<rows.length;i++){if(rows[i]['預算ID']===id){found=rows[i];break;}}
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到預算項目', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['支出項目','單位','數量','單價','場次數','預算金額','實際支出','核銷狀態','憑證連結','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+    // 重算金額
+    var q = parseFloat(patch['數量']||found['數量']||1);
+    var p2 = parseFloat(patch['單價']||found['單價']||0);
+    var s2 = parseFloat(patch['場次數']||found['場次數']||1);
+    if (patch['數量']||patch['單價']||patch['場次數']) patch['預算金額'] = q*p2*s2;
+    govopsUpdate_('案件預算明細', BUDGET_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '預算項目已更新', timestamp: patch['更新時間'] };
+  }
+
+  if (action === 'deleteBudgetItem') {
+    var id = params.budgetId;
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var rows = govopsRows_('案件預算明細', BUDGET_HEADERS);
+    var found = null; for(var i=0;i<rows.length;i++){if(rows[i]['預算ID']===id){found=rows[i];break;}}
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到預算項目', timestamp: govopsNow_() };
+    govopsDeleteRow_('案件預算明細', found._row);
+    return { success: true, data: { budgetId: id }, message: '預算項目已刪除', timestamp: govopsNow_() };
+  }
+
+  if (action === 'generateReimbursementList') {
+    // 核銷清單：預算項目 + 實際財務支出對比
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    govopsEnsureSheet_('財務收支', FINANCE_HEADERS);
+    var budgets = govopsRows_('案件預算明細', BUDGET_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var expenses = govopsRows_('財務收支', FINANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId && r['類型']==='支出'; });
+    var totalBudget = budgets.reduce(function(s,r){ return s+(parseFloat(r['預算金額'])||0); }, 0);
+    var totalActual = expenses.reduce(function(s,r){ return s+(parseFloat(r['金額'])||0); }, 0);
+    // Get case info
+    var caseInfo = govopsRows_('01_專案主檔', CASE_HEADERS).filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    return { success: true, data: {
+      caseInfo: { 案件名稱: caseInfo['專案計畫名稱']||'', 主辦單位: caseInfo['主辦單位']||'', 執行期間: (caseInfo['開始日期']||'')+' ~ '+(caseInfo['結束日期']||'') },
+      budgetItems: budgets, expenses: expenses,
+      totalBudget: totalBudget, totalActual: totalActual, balance: totalBudget - totalActual
+    }, message: '核銷清單產生完成', timestamp: govopsNow_() };
   }
 
   return null;
@@ -1687,131 +1900,267 @@ function govopsTaskRoute_(params, action) {
   return null;
 }
 
-// ── Manpower Route ────────────────────────────────────────
-var VACANCY_HEADERS = ['職缺ID','案件ID','職缺名稱','職務類型','需求人數','薪資範圍','工作地點','開始日期','結束日期','職缺說明','任職資格','狀態','建立時間','更新時間'];
-var APPLICANT_HEADERS = ['應徵者ID','職缺ID','案件ID','姓名','電話','Email','履歷連結','應徵日期','審查狀態','面試日期','面試地點','面試備註','薪資期望','備註','建立時間','更新時間'];
+// ── Manpower Route v2 — 支援人力管理 ─────────────────────
+var MPOWER_NEED_HEADERS  = ['需求ID','案件ID','場次ID','需求名稱','人力類型','需求人數','工作說明','工作日期','開始時間','結束時間','工作地點','時薪','招募截止日','狀態','建立時間','更新時間'];
+var MPOWER_STAFF_HEADERS = ['人員ID','需求ID','案件ID','場次ID','姓名','電話','Email','身分別','銀行','帳號','戶名','身分證','應徵日期','審核狀態','備註','建立時間','更新時間'];
+var MPOWER_HOURS_HEADERS = ['工時ID','人員ID','需求ID','場次ID','案件ID','姓名','工作日期','開始時間','結束時間','工時','工作狀態','備註','建立時間','更新時間'];
+var MPOWER_PAY_HEADERS   = ['付款ID','人員ID','需求ID','場次ID','案件ID','姓名','付款類型','應付金額','實際付款金額','付款方式','付款狀態','付款日期','戶名','帳號','憑證連結','備註','建立時間','更新時間'];
 
 function govopsManpowerRoute_(params, action) {
 
-  // ── 職缺 ─────────────────────────────────────────────────
-  if (action === 'getVacancies') {
-    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
-    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
-    if (params.caseId) rows = rows.filter(function(r){ return r['案件ID'] === params.caseId; });
-    if (params.status) rows = rows.filter(function(r){ return r['狀態'] === params.status; });
-    return { success: true, data: { rows: rows, count: rows.length }, message: '職缺查詢完成', timestamp: govopsNow_() };
+  // ── 統計 KPI ──────────────────────────────────────────────
+  if (action === 'getManpowerStats') {
+    govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    var needs  = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS);
+    var staffs = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var pays   = govopsRows_('支援人員付款', MPOWER_PAY_HEADERS);
+    var totalNeeds = needs.reduce(function(s,r){ return s + (parseInt(r['需求人數'])||0); }, 0);
+    var recruiting = needs.filter(function(r){ return r['狀態']==='招募中'; }).reduce(function(s,r){ return s+(parseInt(r['需求人數'])||0); },0);
+    var applied  = staffs.length;
+    var pending  = staffs.filter(function(r){ return r['審核狀態']==='待審'; }).length;
+    var hired    = staffs.filter(function(r){ return r['審核狀態']==='已錄取'; }).length;
+    var unpaid   = pays.filter(function(r){ return r['付款狀態']==='待付'; }).length;
+    return { success: true, data: { totalNeeds: totalNeeds, recruiting: recruiting, applied: applied, pending: pending, hired: hired, unpaid: unpaid }, message: '人力統計完成', timestamp: govopsNow_() };
   }
 
-  if (action === 'createVacancy') {
-    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
+  // ── 人力需求 ──────────────────────────────────────────────
+  if (action === 'getManpowerNeeds') {
+    govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
+    var rows = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS);
+    if (params.caseId)   rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
+    if (params.status)   rows = rows.filter(function(r){ return r['狀態']===params.status; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '人力需求查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createManpowerNeed') {
+    if (!params.needName) return { success: false, error: 'MISSING_PARAM', message: '需求名稱必填', timestamp: govopsNow_() };
+    govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
     var now = govopsNow_();
     var obj = {
-      '職缺ID': 'VAC-' + now.replace(/[^0-9]/g,'').substring(0,14) + '-' + Math.floor(Math.random()*9000+1000),
-      '案件ID': params.caseId || '',
-      '職缺名稱': params.vacancyName || '',
-      '職務類型': params.jobType || '正職',
-      '需求人數': params.headcount || 1,
-      '薪資範圍': params.salaryRange || '',
+      '需求ID': govopsId_('MPN'),
+      '案件ID': params.caseId || '', '場次ID': params.sessionId || '',
+      '需求名稱': params.needName,
+      '人力類型': params.staffType || '工作人員',
+      '需求人數': parseInt(params.headcount) || 1,
+      '工作說明': params.description || '',
+      '工作日期': params.workDate || '',
+      '開始時間': params.startTime || '', '結束時間': params.endTime || '',
       '工作地點': params.location || '',
-      '開始日期': params.startDate || '',
-      '結束日期': params.endDate || '',
-      '職缺說明': params.description || '',
-      '任職資格': params.requirements || '',
+      '時薪': parseFloat(params.hourlyRate) || 0,
+      '招募截止日': params.deadline || '',
       '狀態': '招募中',
-      '建立時間': now,
-      '更新時間': now
+      '建立時間': now, '更新時間': now
     };
-    govopsAppend_('人力職缺', VACANCY_HEADERS, obj);
-    return { success: true, data: obj, message: '職缺已建立', timestamp: now };
+    govopsAppend_('人力需求清單', MPOWER_NEED_HEADERS, obj);
+    return { success: true, data: obj, message: '人力需求已建立', timestamp: now };
   }
 
-  if (action === 'updateVacancy') {
-    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
-    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
-    var found = rows.filter(function(r){ return r['職缺ID'] === params.vacancyId; })[0];
-    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到職缺', timestamp: govopsNow_() };
-    var patch = {};
-    ['職缺名稱','職務類型','需求人數','薪資範圍','工作地點','開始日期','結束日期','職缺說明','任職資格','狀態'].forEach(function(k){
-      if (params[k] !== undefined) patch[k] = params[k];
-    });
-    patch['更新時間'] = govopsNow_();
-    govopsUpdate_('人力職缺', VACANCY_HEADERS, found._row, patch);
-    return { success: true, data: patch, message: '職缺已更新', timestamp: patch['更新時間'] };
+  if (action === 'updateManpowerNeed') {
+    var needId = params.needId;
+    if (!needId) return { success: false, error: 'MISSING_PARAM', message: '缺少 needId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
+    var rows = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS);
+    var found = null; for (var i=0;i<rows.length;i++){ if(rows[i]['需求ID']===needId){found=rows[i];break;} }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到需求', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['需求名稱','人力類型','需求人數','工作說明','工作日期','開始時間','結束時間','工作地點','時薪','招募截止日','狀態'].forEach(function(k){ if (params[k]!==undefined) patch[k]=params[k]; });
+    govopsUpdate_('人力需求清單', MPOWER_NEED_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '人力需求已更新', timestamp: patch['更新時間'] };
   }
 
-  if (action === 'getVacancyStats') {
-    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
-    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
-    var stats = { total: rows.length, recruiting: 0, paused: 0, closed: 0 };
-    rows.forEach(function(r){
-      if (r['狀態'] === '招募中') stats.recruiting++;
-      else if (r['狀態'] === '暫停') stats.paused++;
-      else if (r['狀態'] === '已關閉') stats.closed++;
-    });
-    return { success: true, data: stats, message: '職缺統計完成', timestamp: govopsNow_() };
+  // ── 支援人員名單 ──────────────────────────────────────────
+  if (action === 'getStaffList') {
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var rows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    if (params.needId)   rows = rows.filter(function(r){ return String(r['需求ID'])===params.needId; });
+    if (params.caseId)   rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
+    if (params.status)   rows = rows.filter(function(r){ return r['審核狀態']===params.status; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '人員名單查詢完成', timestamp: govopsNow_() };
   }
 
-  // ── 應徵者 ───────────────────────────────────────────────
-  if (action === 'getApplicants') {
-    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
-    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
-    if (params.vacancyId) rows = rows.filter(function(r){ return r['職缺ID'] === params.vacancyId; });
-    if (params.caseId) rows = rows.filter(function(r){ return r['案件ID'] === params.caseId; });
-    if (params.status) rows = rows.filter(function(r){ return r['審查狀態'] === params.status; });
-    return { success: true, data: { rows: rows, count: rows.length }, message: '應徵者查詢完成', timestamp: govopsNow_() };
-  }
-
-  if (action === 'createApplicant') {
-    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
+  if (action === 'createStaff') {
+    if (!params.name) return { success: false, error: 'MISSING_PARAM', message: '姓名必填', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
     var now = govopsNow_();
     var obj = {
-      '應徵者ID': 'APP-' + now.replace(/[^0-9]/g,'').substring(0,14) + '-' + Math.floor(Math.random()*9000+1000),
-      '職缺ID': params.vacancyId || '',
-      '案件ID': params.caseId || '',
-      '姓名': params.name || '',
-      '電話': params.phone || '',
-      'Email': params.email || '',
-      '履歷連結': params.resumeLink || '',
+      '人員ID': govopsId_('STA'),
+      '需求ID': params.needId || '', '案件ID': params.caseId || '', '場次ID': params.sessionId || '',
+      '姓名': params.name, '電話': params.phone || '', 'Email': params.email || '',
+      '身分別': params.staffType || '工作人員',
+      '銀行': params.bank || '', '帳號': params.account || '', '戶名': params.accountName || '',
+      '身分證': params.idNumber || '',
       '應徵日期': params.applyDate || now.substring(0,10),
-      '審查狀態': '待審',
-      '面試日期': '',
-      '面試地點': '',
-      '面試備註': '',
-      '薪資期望': params.salaryExpect || '',
-      '備註': params.remark || '',
-      '建立時間': now,
-      '更新時間': now
+      '審核狀態': '待審', '備註': params.remark || '',
+      '建立時間': now, '更新時間': now
     };
-    govopsAppend_('應徵者資料', APPLICANT_HEADERS, obj);
-    return { success: true, data: obj, message: '應徵者已建立', timestamp: now };
+    govopsAppend_('支援人員名單', MPOWER_STAFF_HEADERS, obj);
+    return { success: true, data: obj, message: '人員已新增', timestamp: now };
   }
 
-  if (action === 'updateApplicant') {
-    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
-    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
-    var found = rows.filter(function(r){ return r['應徵者ID'] === params.applicantId; })[0];
-    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到應徵者', timestamp: govopsNow_() };
-    var patch = {};
-    ['姓名','電話','Email','履歷連結','應徵日期','審查狀態','面試日期','面試地點','面試備註','薪資期望','備註'].forEach(function(k){
-      if (params[k] !== undefined) patch[k] = params[k];
-    });
-    patch['更新時間'] = govopsNow_();
-    govopsUpdate_('應徵者資料', APPLICANT_HEADERS, found._row, patch);
-    return { success: true, data: patch, message: '應徵者資料已更新', timestamp: patch['更新時間'] };
+  if (action === 'updateStaffStatus') {
+    var staffId = params.staffId;
+    if (!staffId) return { success: false, error: 'MISSING_PARAM', message: '缺少 staffId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var rows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var found = null; for (var i=0;i<rows.length;i++){ if(rows[i]['人員ID']===staffId){found=rows[i];break;} }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到人員', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['姓名','電話','Email','身分別','銀行','帳號','戶名','身分證','審核狀態','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+    govopsUpdate_('支援人員名單', MPOWER_STAFF_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '人員資料已更新', timestamp: patch['更新時間'] };
   }
 
-  if (action === 'getApplicantStats') {
-    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
-    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
-    var stats = { total: rows.length, pending: 0, interview: 0, hired: 0, rejected: 0 };
-    rows.forEach(function(r){
-      var s = r['審查狀態'];
-      if (s === '待審') stats.pending++;
-      else if (s === '通知面試' || s === '面試完成') stats.interview++;
-      else if (s === '錄取') stats.hired++;
-      else if (s === '未錄取') stats.rejected++;
+  if (action === 'batchApproveStaff') {
+    var ids = String(params.staffIds||'').split(',').map(function(s){return s.trim();}).filter(Boolean).slice(0,50);
+    var status = params.status || '已錄取';
+    if (!ids.length) return { success: false, error: 'MISSING_PARAM', message: '缺少 staffIds', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var rows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var updated = 0;
+    rows.forEach(function(r){ if(ids.indexOf(r['人員ID'])>=0){ govopsUpdate_('支援人員名單',MPOWER_STAFF_HEADERS,r._row,{'審核狀態':status,'更新時間':govopsNow_()}); updated++; } });
+    return { success: true, data: { updated: updated }, message: '批次審核完成：'+updated+' 筆', timestamp: govopsNow_() };
+  }
+
+  // ── 排班工時 ──────────────────────────────────────────────
+  if (action === 'getWorkHours') {
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var rows = govopsRows_('支援人員工時', MPOWER_HOURS_HEADERS);
+    if (params.staffId)  rows = rows.filter(function(r){ return String(r['人員ID'])===params.staffId; });
+    if (params.needId)   rows = rows.filter(function(r){ return String(r['需求ID'])===params.needId; });
+    if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '工時查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createWorkHour') {
+    if (!params.staffId || !params.needId) return { success: false, error: 'MISSING_PARAM', message: '缺少 staffId 或 needId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var staffRow = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS).filter(function(r){ return r['人員ID']===params.staffId; })[0];
+    var now = govopsNow_();
+    var hours = parseFloat(params.hours) || 0;
+    if (!hours && params.startTime && params.endTime) {
+      var s = params.startTime.split(':'), e = params.endTime.split(':');
+      hours = Math.round(((parseInt(e[0])*60+parseInt(e[1]))-(parseInt(s[0])*60+parseInt(s[1])))/60*10)/10;
+    }
+    var obj = {
+      '工時ID': govopsId_('WRK'),
+      '人員ID': params.staffId, '需求ID': params.needId,
+      '場次ID': params.sessionId || (staffRow&&staffRow['場次ID']||''),
+      '案件ID': params.caseId || (staffRow&&staffRow['案件ID']||''),
+      '姓名': staffRow ? staffRow['姓名'] : (params.name||''),
+      '工作日期': params.workDate || '',
+      '開始時間': params.startTime || '', '結束時間': params.endTime || '',
+      '工時': hours, '工作狀態': params.workStatus || '待確認',
+      '備註': params.remark || '', '建立時間': now, '更新時間': now
+    };
+    govopsAppend_('支援人員工時', MPOWER_HOURS_HEADERS, obj);
+    return { success: true, data: obj, message: '工時已記錄', timestamp: now };
+  }
+
+  if (action === 'updateWorkHour') {
+    var hourId = params.hourId;
+    if (!hourId) return { success: false, error: 'MISSING_PARAM', message: '缺少 hourId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var rows = govopsRows_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var found = null; for(var i=0;i<rows.length;i++){if(rows[i]['工時ID']===hourId){found=rows[i];break;}}
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到工時紀錄', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['工作日期','開始時間','結束時間','工時','工作狀態','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+    govopsUpdate_('支援人員工時', MPOWER_HOURS_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '工時已更新', timestamp: patch['更新時間'] };
+  }
+
+  // ── 簽收付款 ──────────────────────────────────────────────
+  if (action === 'getPayments') {
+    govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    var rows = govopsRows_('支援人員付款', MPOWER_PAY_HEADERS);
+    if (params.staffId)  rows = rows.filter(function(r){ return String(r['人員ID'])===params.staffId; });
+    if (params.needId)   rows = rows.filter(function(r){ return String(r['需求ID'])===params.needId; });
+    if (params.caseId)   rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.status)   rows = rows.filter(function(r){ return r['付款狀態']===params.status; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '付款查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createPayment') {
+    if (!params.staffId) return { success: false, error: 'MISSING_PARAM', message: '缺少 staffId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var staffRow = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS).filter(function(r){ return r['人員ID']===params.staffId; })[0];
+    var now = govopsNow_();
+    var obj = {
+      '付款ID': govopsId_('PAY'),
+      '人員ID': params.staffId, '需求ID': params.needId || '',
+      '場次ID': params.sessionId || (staffRow&&staffRow['場次ID']||''),
+      '案件ID': params.caseId || (staffRow&&staffRow['案件ID']||''),
+      '姓名': staffRow ? staffRow['姓名'] : (params.name||''),
+      '付款類型': params.payType || '工讀酬勞',
+      '應付金額': parseFloat(params.amount) || 0,
+      '實際付款金額': parseFloat(params.actualAmount) || parseFloat(params.amount) || 0,
+      '付款方式': params.payMethod || '轉帳',
+      '付款狀態': '待付', '付款日期': '',
+      '戶名': staffRow ? staffRow['戶名'] : (params.accountName||''),
+      '帳號': staffRow ? staffRow['帳號'] : (params.account||''),
+      '憑證連結': '', '備註': params.remark || '',
+      '建立時間': now, '更新時間': now
+    };
+    govopsAppend_('支援人員付款', MPOWER_PAY_HEADERS, obj);
+    return { success: true, data: obj, message: '付款單已建立', timestamp: now };
+  }
+
+  if (action === 'updatePaymentStatus') {
+    var payId = params.payId;
+    if (!payId) return { success: false, error: 'MISSING_PARAM', message: '缺少 payId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    var rows = govopsRows_('支援人員付款', MPOWER_PAY_HEADERS);
+    var found = null; for(var i=0;i<rows.length;i++){if(rows[i]['付款ID']===payId){found=rows[i];break;}}
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到付款記錄', timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['付款狀態','付款日期','實際付款金額','付款方式','憑證連結','備註'].forEach(function(k){ if(params[k]!==undefined) patch[k]=params[k]; });
+    govopsUpdate_('支援人員付款', MPOWER_PAY_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '付款狀態已更新', timestamp: patch['更新時間'] };
+  }
+
+  if (action === 'batchGeneratePayments') {
+    // 從已確認工時批次產生付款單（僅針對有時薪的需求）
+    var needId = params.needId;
+    if (!needId) return { success: false, error: 'MISSING_PARAM', message: '缺少 needId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var need = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS).filter(function(r){ return r['需求ID']===needId; })[0];
+    if (!need) return { success: false, error: 'NOT_FOUND', message: '找不到人力需求', timestamp: govopsNow_() };
+    var hourlyRate = parseFloat(need['時薪']) || 0;
+    var hours = govopsRows_('支援人員工時', MPOWER_HOURS_HEADERS).filter(function(r){ return r['需求ID']===needId && r['工作狀態']==='已確認'; });
+    var staffRows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var existPays = govopsRows_('支援人員付款', MPOWER_PAY_HEADERS).filter(function(r){ return r['需求ID']===needId; });
+    var created = 0;
+    hours.forEach(function(h){
+      var alreadyPaid = existPays.some(function(p){ return p['人員ID']===h['人員ID'] && p['付款類型']==='工讀酬勞'; });
+      if (alreadyPaid) return;
+      var staffRow = staffRows.filter(function(s){ return s['人員ID']===h['人員ID']; })[0];
+      var hrs = parseFloat(h['工時']) || 0;
+      var amt = hourlyRate ? Math.round(hourlyRate * hrs) : 0;
+      var now = govopsNow_();
+      var obj = {
+        '付款ID': govopsId_('PAY'), '人員ID': h['人員ID'], '需求ID': needId,
+        '場次ID': h['場次ID']||'', '案件ID': h['案件ID']||'',
+        '姓名': h['姓名']||'', '付款類型': '工讀酬勞',
+        '應付金額': amt, '實際付款金額': amt, '付款方式': '轉帳',
+        '付款狀態': '待付', '付款日期': '',
+        '戶名': staffRow ? staffRow['戶名'] : '',
+        '帳號': staffRow ? staffRow['帳號'] : '',
+        '憑證連結': '', '備註': '工時 '+hrs+' 小時 × 時薪 '+hourlyRate,
+        '建立時間': now, '更新時間': now
+      };
+      govopsAppend_('支援人員付款', MPOWER_PAY_HEADERS, obj);
+      created++;
     });
-    return { success: true, data: stats, message: '應徵者統計完成', timestamp: govopsNow_() };
+    return { success: true, data: { created: created }, message: '已產生 '+created+' 筆付款單', timestamp: govopsNow_() };
   }
 
   return null;
