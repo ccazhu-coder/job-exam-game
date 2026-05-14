@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜收發公文管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.doc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:16px}
+.dkpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:11px 13px;cursor:pointer;transition:.15s}
+.dkpi:hover{border-color:var(--navy-mid)}
+.dkpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.dkpi .label{font-size:.71rem;color:var(--gray-500);margin-top:1px}
+.dkpi.alert .num{color:var(--danger)}
+.dkpi.warn .num{color:var(--gold)}
+.dkpi.ok .num{color:#16a34a}
+
+/* 公文類型 */
+.doc-type{display:inline-block;padding:2px 8px;border-radius:5px;font-size:.73rem;font-weight:700}
+.dt-來文{background:#e8f0fe;color:#1a56db}
+.dt-發文{background:#f0fdf4;color:#16a34a}
+
+/* 處理狀態徽章 */
+.doc-status{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.73rem;font-weight:700}
+.ds-未處理{background:#fef2f2;color:#b91c1c}
+.ds-處理中{background:#fff7ed;color:#ea580c}
+.ds-待回覆{background:#fef9c3;color:#ca8a04}
+.ds-待補件{background:#ede9fe;color:#7c3aed}
+.ds-已完成{background:#dcfce7;color:#16a34a}
+.ds-已歸檔{background:#f3f4f6;color:#6b7280}
+
+/* 緊急標示 */
+.overdue-warn{font-size:.72rem;color:var(--danger);font-weight:700}
+
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filter-tab{padding:5px 13px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--gray-500)}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+
+.search-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.search-row input,.search-row select{padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white)}
+.search-row input{flex:1;min-width:160px}
+.search-row input:focus,.search-row select:focus{outline:none;border-color:var(--navy-mid)}
+
+.row-actions{display:flex;gap:4px}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid)}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fr{display:grid;gap:9px;margin-bottom:9px}
+.fr.c2{grid-template-columns:1fr 1fr}
+.fr.c3{grid-template-columns:1fr 1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi label .req{color:var(--danger)}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:60px;resize:vertical}
+.fs-title{font-size:.74rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:3px;border-bottom:1px solid var(--gold-pale)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">收發公文管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>收發公文管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openAddModal('來文')">＋ 登錄來文</button>
+      <button class="secondary" onclick="openAddModal('發文')">＋ 登錄發文</button>
+      <button class="ghost" onclick="loadAll()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="doc-kpis" id="docKpis">
+    <div class="dkpi alert" onclick="setFilter('未處理')"><div class="num" id="kpi_未處理">—</div><div class="label">未處理</div></div>
+    <div class="dkpi warn" onclick="setFilter('待回覆')"><div class="num" id="kpi_待回覆">—</div><div class="label">待回覆</div></div>
+    <div class="dkpi warn" onclick="setFilter('待補件')"><div class="num" id="kpi_待補件">—</div><div class="label">待補件</div></div>
+    <div class="dkpi ok" onclick="setFilter('已完成')"><div class="num" id="kpi_已完成">—</div><div class="label">已完成</div></div>
+    <div class="dkpi" onclick="setFilter('')"><div class="num" id="kpi_total">—</div><div class="label">全部</div></div>
+  </div>
+
+  <section class="card">
+    <!-- 篩選 -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" id="tab_all" onclick="setFilter('')">全部</button>
+      <button class="filter-tab" id="tab_來文" onclick="setFilter('','來文')">來文</button>
+      <button class="filter-tab" id="tab_發文" onclick="setFilter('','發文')">發文</button>
+      <button class="filter-tab" id="tab_未處理" onclick="setFilter('未處理')">未處理</button>
+      <button class="filter-tab" id="tab_待回覆" onclick="setFilter('待回覆')">待回覆</button>
+      <button class="filter-tab" id="tab_已完成" onclick="setFilter('已完成')">已完成</button>
+    </div>
+
+    <!-- 搜尋 -->
+    <div class="search-row">
+      <input id="kwInput" type="search" placeholder="搜尋主旨、公文編號、發文單位…" oninput="debouncedSearch()">
+      <select id="caseFilter" onchange="loadDocs()"><option value="">所有案件</option></select>
+    </div>
+
+    <div id="docMsg" class="msg" style="display:none"></div>
+    <div id="docTable"></div>
+  </section>
+</main>
+
+<!-- 新增/編輯公文 Modal -->
+<div class="modal-overlay" id="docModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalTitle">登錄來文</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editDocId">
+
+      <div style="margin-bottom:14px">
+        <div class="fs-title">公文基本資訊</div>
+        <div class="fr c2">
+          <div class="fi"><label>公文類型</label>
+            <select id="f_type"><option value="來文">來文（收到的）</option><option value="發文">發文（我方發出）</option></select>
+          </div>
+          <div class="fi"><label>公文編號</label><input id="f_docnum" placeholder="例如：彰教字第1110012345號"></div>
+        </div>
+        <div class="fr"><div class="fi"><label>主旨 <span class="req">*</span></label><input id="f_subj" placeholder="公文主旨摘要（50字內）"></div></div>
+        <div class="fr c2">
+          <div class="fi"><label>發文單位</label><input id="f_from" placeholder="發文機關名稱"></div>
+          <div class="fi"><label>收文單位</label><input id="f_to" placeholder="收文對象"></div>
+        </div>
+        <div class="fr c2">
+          <div class="fi"><label>承辦窗口</label><input id="f_contact" placeholder="承辦人姓名"></div>
+          <div class="fi"><label>聯絡電話</label><input id="f_phone" type="tel" placeholder="04-xxxx-xxxx"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div class="fs-title">日期與期限</div>
+        <div class="fr c3">
+          <div class="fi"><label>來文日期</label><input id="f_recvDate" type="date"></div>
+          <div class="fi"><label>發文日期</label><input id="f_sendDate" type="date"></div>
+          <div class="fi"><label>辦理期限</label><input id="f_deadline" type="date"></div>
+        </div>
+        <div class="fr c2">
+          <div class="fi"><label>是否需回覆</label>
+            <select id="f_needReply" onchange="toggleReply()"><option value="否">否</option><option value="是">是</option></select>
+          </div>
+          <div class="fi" id="replyDateField" style="display:none"><label>回覆期限</label><input id="f_replyDate" type="date"></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div class="fs-title">處理狀態</div>
+        <div class="fr c2">
+          <div class="fi"><label>處理狀態</label>
+            <select id="f_status">
+              <option value="未處理">未處理</option>
+              <option value="處理中">處理中</option>
+              <option value="待回覆">待回覆</option>
+              <option value="待補件">待補件</option>
+              <option value="已完成">已完成</option>
+              <option value="已歸檔">已歸檔</option>
+            </select>
+          </div>
+          <div class="fi"><label>負責人</label><input id="f_assignee" placeholder="負責處理人員"></div>
+        </div>
+        <div class="fr">
+          <div class="fi"><label>關聯案件</label><select id="f_case"><option value="">不指定</option></select></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px">
+        <div class="fs-title">附件與備註</div>
+        <div class="fr">
+          <div class="fi"><label>公文摘要</label><textarea id="f_summary" placeholder="公文內容重點摘要…"></textarea></div>
+        </div>
+        <div class="fr c2">
+          <div class="fi"><label>附件連結（Google Drive）</label><input id="f_attach" placeholder="https://drive.google.com/..."></div>
+          <div class="fi"><label>備註</label><input id="f_note" placeholder="其他備注"></div>
+        </div>
+      </div>
+
+      <div id="modalErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:9px 12px;font-size:.82rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" id="submitBtn" onclick="submitDoc()">登錄公文</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _statusFilter = '';
+var _typeFilter = '';
+var _searchTimer = null;
+var _today = new Date().toISOString().substring(0,10);
+var _cases = [];
+
+function init() {
+  var p = safeJSON('govops_profile');
+  if (!p || !p.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp = new URLSearchParams(location.search);
+  var caseId = sp.get('caseId') || '';
+  loadCases().then(function() {
+    if (caseId) { document.getElementById('caseFilter').value = caseId; document.getElementById('f_case').value = caseId; }
+    loadAll();
+  });
+}
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases' });
+  _cases = r.data || [];
+  var opts = _cases.map(function(c){ return '<option value="'+ERPALIGNED.esc(c['專案ID'])+'">'+ERPALIGNED.esc(c['專案計畫名稱'])+'</option>'; }).join('');
+  ['caseFilter','f_case'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=(id==='caseFilter'?'<option value="">所有案件</option>':'<option value="">不指定</option>')+opts; });
+}
+
+async function loadAll() { await Promise.all([loadStats(), loadDocs()]); }
+
+async function loadStats() {
+  var params = { action: 'getOfficialDocStats' };
+  var caseId = document.getElementById('caseFilter').value;
+  if (caseId) params.caseId = caseId;
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) return;
+  var d = r.data || {};
+  var bs = d.byStatus || {};
+  document.getElementById('kpi_total').textContent = d.total || 0;
+  ['未處理','待回覆','待補件','已完成'].forEach(function(s){ var el=document.getElementById('kpi_'+s); if(el)el.textContent=bs[s]||0; });
+  if (d.overdueReply > 0) {
+    document.getElementById('pageSubtitle').textContent += '　⚠ 逾期回覆：'+d.overdueReply+'件';
+  }
+}
+
+async function loadDocs() {
+  var msg = document.getElementById('docMsg');
+  var tbl = document.getElementById('docTable');
+  msg.style.display=''; msg.textContent='查詢中…'; tbl.innerHTML='';
+  var params = { action: 'getOfficialDocs' };
+  var kw = document.getElementById('kwInput').value.trim();
+  var caseId = document.getElementById('caseFilter').value;
+  if (kw) params.keyword = kw;
+  if (caseId) params.caseId = caseId;
+  if (_statusFilter) params.status = _statusFilter;
+  if (_typeFilter) params.type = _typeFilter;
+  var r = await ERPALIGNED.api(params);
+  msg.style.display='none';
+  if (!r.success) { msg.style.display=''; msg.textContent='⚠ '+r.message; return; }
+  var rows = r.data || [];
+  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆公文';
+  if (!rows.length) { tbl.innerHTML='<div style="text-align:center;padding:50px;color:var(--gray-400)"><div style="font-size:2rem">📋</div><p>查無公文資料</p></div>'; return; }
+  renderDocTable(rows, tbl);
+  window.__docRows__ = rows;
+}
+
+function renderDocTable(rows, el) {
+  var html='<div style="overflow-x:auto"><table class="erp-table" style="min-width:900px">';
+  html+='<thead><tr><th>類型</th><th>公文編號</th><th>主旨</th><th>發文單位</th><th>辦理期限</th><th>回覆期限</th><th>狀態</th><th>負責人</th><th>操作</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var id=ERPALIGNED.esc(r['公文ID']||'');
+    var deadline=String(r['辦理期限']||'');
+    var replyDl=String(r['回覆期限']||'');
+    var isDeadlineOver=deadline&&deadline<_today&&['未處理','處理中'].indexOf(String(r['處理狀態']))>=0;
+    var isReplyOver=replyDl&&replyDl<_today&&['未處理','待回覆'].indexOf(String(r['處理狀態']))>=0;
+    html+='<tr'+(isDeadlineOver||isReplyOver?' style="background:rgba(192,57,43,.04)"':'')+'>';
+    html+='<td><span class="doc-type dt-'+ERPALIGNED.esc(r['公文類型']||'')+'">'+ERPALIGNED.esc(r['公文類型']||'')+'</span></td>';
+    html+='<td style="font-size:.77rem;font-family:monospace">'+ERPALIGNED.esc(r['公文編號']||'—')+'</td>';
+    html+='<td><strong>'+ERPALIGNED.esc((r['主旨']||'—').substring(0,40))+'</strong>'+(isDeadlineOver||isReplyOver?'<span class="overdue-warn"> ⚠逾期</span>':'')+'</td>';
+    html+='<td style="font-size:.8rem">'+ERPALIGNED.esc(r['發文單位']||'—')+'</td>';
+    html+='<td style="font-size:.78rem;'+(isDeadlineOver?'color:var(--danger);font-weight:700':'')+'">'+ERPALIGNED.esc(deadline||'—')+'</td>';
+    html+='<td style="font-size:.78rem;'+(isReplyOver?'color:var(--danger);font-weight:700':'')+'">'+ERPALIGNED.esc(replyDl||'—')+'</td>';
+    html+='<td><span class="doc-status ds-'+ERPALIGNED.esc(r['處理狀態']||'未處理')+'">'+ERPALIGNED.esc(r['處理狀態']||'未處理')+'</span></td>';
+    html+='<td style="font-size:.8rem">'+ERPALIGNED.esc(r['負責人']||'—')+'</td>';
+    html+='<td><div class="row-actions">';
+    html+='<button class="row-btn" onclick="openEditModal(\''+id+'\')">編輯</button>';
+    html+='<button class="row-btn ok" onclick="quickStatus(\''+id+'\',\'已完成\')">完成</button>';
+    html+='<button class="row-btn danger" onclick="deleteDoc(\''+id+'\',\''+ERPALIGNED.esc((r['主旨']||'').substring(0,20))+'\')">刪除</button>';
+    html+='</div></td></tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+function setFilter(status, type) {
+  _statusFilter = status || '';
+  _typeFilter = type || (_statusFilter ? '' : _typeFilter);
+  if (type !== undefined && !status) _typeFilter = type;
+  document.querySelectorAll('.filter-tab').forEach(function(b){b.classList.remove('active');});
+  var map={'':'tab_all','未處理':'tab_未處理','待回覆':'tab_待回覆','已完成':'tab_已完成'};
+  var tab='tab_all';
+  if (type==='來文') tab='tab_來文';
+  else if (type==='發文') tab='tab_發文';
+  else tab=map[status]||'tab_all';
+  var el=document.getElementById(tab); if(el) el.classList.add('active');
+  loadDocs();
+}
+
+function debouncedSearch(){clearTimeout(_searchTimer);_searchTimer=setTimeout(loadDocs,350);}
+
+async function quickStatus(docId, status) {
+  await ERPALIGNED.api({ action: 'updateOfficialDoc', docId: docId, '處理狀態': status });
+  loadAll();
+}
+
+async function deleteDoc(docId, subj) {
+  if (!confirm('確定刪除「'+subj+'…」？')) return;
+  await ERPALIGNED.api({ action: 'deleteOfficialDoc', docId: docId });
+  loadAll();
+}
+
+function openAddModal(type) {
+  clearForm();
+  document.getElementById('f_type').value = type || '來文';
+  document.getElementById('editDocId').value = '';
+  document.getElementById('modalTitle').textContent = (type==='發文')?'登錄發文':'登錄來文';
+  document.getElementById('submitBtn').textContent = '登錄公文';
+  var caseId = document.getElementById('caseFilter').value;
+  if (caseId) document.getElementById('f_case').value = caseId;
+  document.getElementById('docModal').style.display='flex';
+}
+
+async function openEditModal(docId) {
+  var rows = (window.__docRows__||[]).filter(function(r){return r['公文ID']===docId;});
+  if (!rows.length) { var r=await ERPALIGNED.api({action:'getOfficialDocs',keyword:docId}); rows=(r.data||[]).filter(function(x){return x['公文ID']===docId;}); }
+  if (!rows.length) { alert('找不到公文資料'); return; }
+  var row = rows[0];
+  document.getElementById('editDocId').value = docId;
+  document.getElementById('modalTitle').textContent = '編輯公文';
+  document.getElementById('submitBtn').textContent = '儲存變更';
+  document.getElementById('f_type').value = row['公文類型']||'來文';
+  document.getElementById('f_docnum').value = row['公文編號']||'';
+  document.getElementById('f_subj').value = row['主旨']||'';
+  document.getElementById('f_from').value = row['發文單位']||'';
+  document.getElementById('f_to').value = row['收文單位']||'';
+  document.getElementById('f_contact').value = row['承辦窗口']||'';
+  document.getElementById('f_phone').value = row['聯絡電話']||'';
+  document.getElementById('f_recvDate').value = isoDate(row['來文日期']);
+  document.getElementById('f_sendDate').value = isoDate(row['發文日期']);
+  document.getElementById('f_deadline').value = isoDate(row['辦理期限']);
+  document.getElementById('f_needReply').value = row['是否需回覆']||'否';
+  document.getElementById('f_replyDate').value = isoDate(row['回覆期限']);
+  document.getElementById('f_status').value = row['處理狀態']||'未處理';
+  document.getElementById('f_assignee').value = row['負責人']||'';
+  document.getElementById('f_case').value = row['案件ID']||'';
+  document.getElementById('f_summary').value = row['公文摘要']||'';
+  document.getElementById('f_attach').value = row['附件連結']||'';
+  document.getElementById('f_note').value = row['備註']||'';
+  toggleReply();
+  document.getElementById('docModal').style.display='flex';
+}
+
+function clearForm(){
+  ['f_docnum','f_subj','f_from','f_to','f_contact','f_phone','f_recvDate','f_sendDate','f_deadline','f_replyDate','f_summary','f_attach','f_note','f_assignee'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f_type').value='來文';
+  document.getElementById('f_status').value='未處理';
+  document.getElementById('f_needReply').value='否';
+  document.getElementById('f_case').value='';
+  toggleReply(); hideErr();
+}
+
+function toggleReply(){
+  var need=document.getElementById('f_needReply').value==='是';
+  document.getElementById('replyDateField').style.display=need?'':'none';
+}
+
+function isoDate(v){if(!v)return'';var m=String(v).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);return m?m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'):''; }
+
+async function submitDoc() {
+  hideErr();
+  var subj=document.getElementById('f_subj').value.trim();
+  if(!subj){showErr('主旨為必填');return;}
+  var docId=document.getElementById('editDocId').value;
+  var isEdit=!!docId;
+  var btn=document.getElementById('submitBtn'); btn.disabled=true; btn.textContent='處理中…';
+  var params={
+    action: isEdit?'updateOfficialDoc':'createOfficialDoc',
+    '公文類型': document.getElementById('f_type').value,
+    '公文編號': document.getElementById('f_docnum').value,
+    '主旨': subj,
+    '發文單位': document.getElementById('f_from').value,
+    '收文單位': document.getElementById('f_to').value,
+    '承辦窗口': document.getElementById('f_contact').value,
+    '聯絡電話': document.getElementById('f_phone').value,
+    '來文日期': document.getElementById('f_recvDate').value,
+    '發文日期': document.getElementById('f_sendDate').value,
+    '辦理期限': document.getElementById('f_deadline').value,
+    '是否需回覆': document.getElementById('f_needReply').value,
+    '回覆期限': document.getElementById('f_replyDate').value,
+    '處理狀態': document.getElementById('f_status').value,
+    '負責人': document.getElementById('f_assignee').value,
+    caseId: document.getElementById('f_case').value,
+    '公文摘要': document.getElementById('f_summary').value,
+    '附件連結': document.getElementById('f_attach').value,
+    '備註': document.getElementById('f_note').value
+  };
+  if(isEdit) params.docId=docId;
+  var r=await ERPALIGNED.api(params);
+  btn.disabled=false; btn.textContent=isEdit?'儲存變更':'登錄公文';
+  if(!r.success){showErr(r.message||'操作失敗');return;}
+  closeModal(); loadAll();
+}
+
+function showErr(msg){var el=document.getElementById('modalErr');el.textContent=msg;el.style.display='';}
+function hideErr(){document.getElementById('modalErr').style.display='none';}
+function closeModal(){document.getElementById('docModal').style.display='none';}
+function closeBg(e){if(e.target===document.getElementById('docModal'))closeModal();}
+
+init();
+</script>
+</body>
+</html>
