@@ -1828,14 +1828,24 @@ function govopsReviewNotifRoute_(params, action) {
       var existingPhones = {};
       existingRegs.forEach(function(r){ existingPhones[String(r['電話'] || '').trim()] = true; });
       var imported = 0; var skipped = 0; var duplicate = 0; var crmCreated = 0; var crmUpdated = 0;
+      var startTime = new Date().getTime();
+      var timeLimit = 270000; // 4.5分鐘安全上限，避免 Apps Script 6分鐘 hard limit
       for (var i = 1; i < srcData.length; i++) {
+        // 超時保護：若執行超過 4.5 分鐘，停止並回傳已完成部分
+        if (new Date().getTime() - startTime > timeLimit) {
+          return { success: true, message: '⚠ 資料量過大，本次已匯入 '+imported+' 筆（共 '+(srcData.length-1)+' 筆），請再執行一次以繼續。重複：'+duplicate+'，略過：'+skipped, data: { imported: imported, duplicate: duplicate, skipped: skipped, crmCreated: crmCreated, crmUpdated: crmUpdated, partial: true } };
+        }
         var r = srcData[i];
         var rName = String(r[nameIdx] || '').trim();
-        // 保留電話原始格式（避免 Google Sheet 把數字去掉開頭 0）
+        // 先讀取所有可選欄位（修正：變數宣告移到電話去重前）
         var rPhoneRaw = String(r[phoneIdx] || '').trim();
         var rPhone = rPhoneRaw.replace(/[\s\-]/g, '');
-        // 台灣手機號碼：若 9 位數自動補 0
         if (/^\d{9}$/.test(rPhone)) rPhone = '0' + rPhone;
+        var rEmail = emailIdx >= 0 ? String(r[emailIdx] || '').trim() : '';
+        var rUnit  = unitIdx  >= 0 ? String(r[unitIdx]  || '').trim() : '';
+        var rIdent = idIdx    >= 0 ? String(r[idIdx]    || '').trim() : '';
+        var rMeal  = mealIdx  >= 0 ? String(r[mealIdx]  || '').trim() : '';
+        var rNote  = noteIdx  >= 0 ? String(r[noteIdx]  || '').trim() : '';
         if (!rName || !rPhone) { skipped++; continue; }
         // Upsert：同一活動已有此電話，更新 Email/服務單位/用餐習慣（不覆蓋審核狀態）
         if (existingPhones[rPhone]) {
@@ -1851,12 +1861,7 @@ function govopsReviewNotifRoute_(params, action) {
           duplicate++;
           continue;
         }
-        var rEmail = emailIdx >= 0 ? String(r[emailIdx] || '').trim() : '';
-        var rUnit  = unitIdx  >= 0 ? String(r[unitIdx]  || '').trim() : '';
-        var rIdent = idIdx    >= 0 ? String(r[idIdx]    || '').trim() : '';
-        var rMeal  = mealIdx  >= 0 ? String(r[mealIdx]  || '').trim() : '';
-        var rNote  = noteIdx  >= 0 ? String(r[noteIdx]  || '').trim() : '';
-        // CRM 查找：先比對補 0 後的號碼，再比對原始號碼
+        // CRM 查找（使用已預載的 crmCache，不重複讀 sheet）
         var existCrm = crmCache.find(function(c){
           var cp = String(c['電話'] || '').trim();
           return cp === rPhone || cp === rPhoneRaw || (cp.length === 9 && '0'+cp === rPhone);
@@ -1867,21 +1872,21 @@ function govopsReviewNotifRoute_(params, action) {
             crmId = existCrm['CRM_ID'];
             var newCnt = parseInt(existCrm['累積報名次數'] || 0) + 1;
             govopsUpdate_('學員CRM', CRM_HEADERS, existCrm._row, { '更新時間': govopsNow_(), '最近參與活動': camId, '累積報名次數': newCnt });
-            existCrm['累積報名次數'] = newCnt;
+            existCrm['累積報名次數'] = newCnt; // 更新 in-memory cache
             crmUpdated++;
           } else {
             crmId = govopsId_('CRM');
             var crmObj = { 'CRM_ID': crmId, '姓名': rName, '電話': rPhone, 'Email': rEmail, '服務單位': rUnit, '身分別': rIdent, '標籤': '', '最近參與活動': camId, '累積報名次數': 1, '累積出席次數': 0, '累積完訓次數': 0, '是否回流學員': '否', '行銷同意': '', '備註': '', '建立時間': govopsNow_(), '更新時間': govopsNow_() };
             govopsAppend_('學員CRM', CRM_HEADERS, crmObj);
-            crmObj._row = govopsRows_('學員CRM', CRM_HEADERS).length + 1;
-            crmCache.push(crmObj);
+            // 修正：移除 govopsRows_ 重複讀取（原本在迴圈內讀整張 sheet，造成 O(n²) 效能問題）
+            crmCache.push(crmObj); // 只更新 in-memory cache
             crmCreated++;
           }
         } catch(crmErr) { crmId = ''; }
         var regNote = rNote ? ('表單：' + rNote) : '';
         var regObj = { '報名ID': govopsId_('REG'), '招生活動ID': camId, '活動ID': '', '姓名': rName, '電話': rPhone, 'Email': rEmail, '身分別': rIdent, '服務單位': rUnit, '用餐習慣': rMeal, '報名狀態': '待審查', '審核狀態': '待審查', '出席狀態': '', '完訓狀態': '', '報名來源': '線上報名匯入', '報名時間': govopsNow_(), '通知狀態': '', '備註': regNote, 'CRM_ID': crmId, '建立時間': govopsNow_(), '更新時間': govopsNow_() };
         govopsAppend_('報名資料庫', REG_HEADERS, regObj);
-        existingPhones[rPhone] = true; // 即時更新去重表，避免同批次重複
+        existingPhones[rPhone] = true;
         imported++;
       }
       return { success: true, message: '同步完成！新增 '+imported+' 筆，略過重複 '+duplicate+' 筆，略過空白 '+skipped+' 筆。CRM 新增 '+crmCreated+' 人、更新 '+crmUpdated+' 人。工作表：'+srcSh.getName(), data: { imported: imported, duplicate: duplicate, skipped: skipped, crmCreated: crmCreated, crmUpdated: crmUpdated } };
