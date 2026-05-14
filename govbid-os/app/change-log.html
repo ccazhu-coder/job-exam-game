@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜場次變更紀錄</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:.78rem;font-weight:600;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:top}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.72rem;font-weight:700}
+.b-yes{background:#fee2e2;color:#991b1b}.b-no{background:#f1f5f9;color:#64748b}
+.b-done{background:#dcfce7;color:#166534}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter-row select{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid)}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fr{display:grid;gap:9px;margin-bottom:9px}.fr.c2{grid-template-columns:1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:60px;resize:vertical}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">場次變更紀錄</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>場次變更紀錄</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">記錄所有場次變更，追蹤受影響的文件、通知與財務項目</p></div>
+    <div class="btns"><button class="gold" onclick="openModal()">＋ 登錄變更</button></div>
+  </div>
+  <div class="filter-row">
+    <select id="caseSelect" onchange="onCaseChange()" style="min-width:200px"><option value="">載入案件…</option></select>
+    <select id="sessionSelect" onchange="loadLogs()" style="min-width:160px"><option value="">全部場次</option></select>
+  </div>
+  <div class="table-wrap">
+    <table class="erp-table" style="min-width:900px">
+      <thead><tr><th>變更時間</th><th>場次</th><th>變更類型</th><th>變更欄位</th><th>變更前</th><th>變更後</th><th>影響通知</th><th>影響文件</th><th>已通知</th><th>已重產文件</th><th>操作</th></tr></thead>
+      <tbody id="tableBody"><tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">請先選擇案件</td></tr></tbody>
+    </table>
+  </div>
+</main>
+<div class="modal-overlay" id="logModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2>登錄場次變更</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fr c2">
+        <div class="fi"><label>場次</label><select id="m_ses"><option value="">— 請選擇 —</option></select></div>
+        <div class="fi"><label>變更類型</label>
+          <select id="m_type"><option>改日期</option><option>改時間</option><option>改地點</option><option>改講師</option><option>改課程主題</option><option>改人數</option><option>改報名截止日</option><option>改工作人員</option><option>改便當數量</option><option>其他</option></select>
+        </div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>變更欄位</label><input id="m_field" placeholder="例：活動日期"></div>
+        <div class="fi"><label>變更原因</label><input id="m_reason" placeholder="例：場地臨時更換"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>變更前內容</label><input id="m_old" placeholder="原來的值"></div>
+        <div class="fi"><label>變更後內容</label><input id="m_new" placeholder="新的值"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>是否影響通知</label><select id="m_aNotify"><option>是</option><option>否</option></select></div>
+        <div class="fi"><label>是否影響文件</label><select id="m_aDoc"><option>是</option><option>否</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fi"><label>備註</label><textarea id="m_remark" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" onclick="saveLog()">儲存變更記錄</button>
+    </div>
+  </div>
+</div>
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDT(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/,'$1/$2/$3');}
+var _caseId='',_sessions=[],_logs=[];
+function init(){
+  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);loadCases(sp.get('caseId')||'');
+}
+async function loadCases(pre){
+  var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
+  if(!r.success)return;sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  (r.data&&r.data.rows||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+  if(pre){sel.value=pre;await onCaseChange();}
+}
+async function onCaseChange(){
+  _caseId=document.getElementById('caseSelect').value;if(!_caseId)return;
+  var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
+  _sessions=r.success&&r.data&&r.data.rows||[];
+  var ss=document.getElementById('sessionSelect');ss.innerHTML='<option value="">全部場次</option>';
+  var ms=document.getElementById('m_ses');ms.innerHTML='<option value="">— 請選擇 —</option>';
+  _sessions.forEach(function(s){
+    var o1=document.createElement('option');o1.value=s['活動ID']||'';o1.textContent=s['活動名稱']||'';ss.appendChild(o1);
+    var o2=o1.cloneNode(true);ms.appendChild(o2);
+  });
+  await loadLogs();
+}
+async function loadLogs(){
+  if(!_caseId)return;var sid=document.getElementById('sessionSelect').value;
+  var p={action:'getChangeLogs',caseId:_caseId};if(sid)p.sessionId=sid;
+  var r=await ERPALIGNED.api(p);if(!r.success)return;
+  _logs=r.data&&r.data.rows||[];renderTable();
+  document.getElementById('pageSubtitle').textContent='共 '+_logs.length+' 筆變更記錄';
+}
+function renderTable(){
+  var tbody=document.getElementById('tableBody');
+  if(!_logs.length){tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">無變更記錄</td></tr>';return;}
+  var html='';
+  _logs.forEach(function(r){
+    var lid=esc(r['變更ID']||'');
+    var sesName=(_sessions.find(function(s){return s['活動ID']===r['場次ID'];})||{})['活動名稱']||r['場次ID']||'—';
+    html+='<tr>'
+      +'<td style="font-size:.75rem;color:var(--gray-500)">'+shortDT(r['變更時間'])+'</td>'
+      +'<td style="font-size:.78rem">'+esc(sesName)+'</td>'
+      +'<td>'+esc(r['變更類型']||'')+'</td>'
+      +'<td style="font-size:.78rem">'+esc(r['變更欄位']||'')+'</td>'
+      +'<td style="font-size:.75rem;color:var(--danger)">'+esc(r['變更前內容']||'')+'</td>'
+      +'<td style="font-size:.75rem;color:#166534">'+esc(r['變更後內容']||'')+'</td>'
+      +'<td><span class="badge '+(r['是否影響通知']==='是'?'b-yes':'b-no')+'">'+esc(r['是否影響通知']||'')+'</span></td>'
+      +'<td><span class="badge '+(r['是否影響文件']==='是'?'b-yes':'b-no')+'">'+esc(r['是否影響文件']||'')+'</span></td>'
+      +'<td><span class="badge '+(r['是否已通知']==='是'?'b-done':'b-no')+'">'+esc(r['是否已通知']||'否')+'</span></td>'
+      +'<td><span class="badge '+(r['是否已重產文件']==='是'?'b-done':'b-no')+'">'+esc(r['是否已重產文件']||'否')+'</span></td>'
+      +'<td>'+(r['是否已通知']!=='是'?'<button class="row-btn" onclick="markNotified(\''+lid+'\')">標記已通知</button>':'')+'</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=html;
+}
+function openModal(){document.getElementById('logModal').style.display='flex';}
+function closeModal(){document.getElementById('logModal').style.display='none';}
+async function markNotified(lid){
+  var r=await ERPALIGNED.api({action:'markNotified',changeId:lid});
+  if(r.success)loadLogs();
+}
+async function saveLog(){
+  var sesId=document.getElementById('m_ses').value;if(!sesId){alert('請選擇場次');return;}
+  var r=await ERPALIGNED.api({action:'createChangeLog',caseId:_caseId,sessionId:sesId,
+    changeType:document.getElementById('m_type').value,changedField:document.getElementById('m_field').value,
+    oldValue:document.getElementById('m_old').value,newValue:document.getElementById('m_new').value,
+    reason:document.getElementById('m_reason').value,
+    affectNotify:document.getElementById('m_aNotify').value,affectDoc:document.getElementById('m_aDoc').value,
+    remark:document.getElementById('m_remark').value});
+  if(r.success){closeModal();loadLogs();}else alert('儲存失敗：'+r.message);
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
