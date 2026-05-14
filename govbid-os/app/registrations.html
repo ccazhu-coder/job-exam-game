@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜報名管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+/* 審查狀態徽章 */
+.rev-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:11px;font-size:.74rem;font-weight:700;white-space:nowrap}
+.rv-待審查{background:#e8f0fe;color:#1a56db}
+.rv-符合資格{background:#dcfce7;color:#16a34a}
+.rv-不符合資格{background:#fef2f2;color:#b91c1c}
+.rv-需補件{background:#fff7ed;color:#ea580c}
+.rv-已錄取{background:#f0fdf4;color:#15803d;font-weight:800}
+.rv-備取{background:#fef9c3;color:#ca8a04}
+.rv-未錄取{background:#f3f4f6;color:#6b7280}
+.rv-取消報名{background:#fef2f2;color:#9ca3af}
+
+/* 篩選列 */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filter-tab{padding:5px 13px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.filter-tab .n{display:inline-block;font-size:.72rem;background:rgba(255,255,255,.25);border-radius:8px;padding:0 5px;margin-left:3px}
+.filter-tab:not(.active) .n{background:var(--gray-100);color:var(--gray-400)}
+
+/* 搜尋列 */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.search-row input{flex:1;min-width:160px;padding:8px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font)}
+.search-row input:focus{outline:none;border-color:var(--navy-mid)}
+.search-row select{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;background:var(--white);font-family:var(--font)}
+
+/* Context bar */
+.ctx-bar{background:var(--gold-pale);border:1.5px solid var(--gold);border-radius:8px;padding:9px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.85rem}
+.ctx-bar .label{font-size:.73rem;font-weight:700;color:var(--gold);text-transform:uppercase}
+.ctx-bar .name{font-weight:700;color:var(--navy)}
+.ctx-bar a{font-size:.76rem;color:var(--navy-mid);text-decoration:none;margin-left:auto}
+
+/* KPI */
+.reg-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
+.rkpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:11px 12px}
+.rkpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.rkpi .label{font-size:.71rem;color:var(--gray-500);margin-top:1px}
+.rkpi.ok .num{color:#16a34a}
+.rkpi.warn .num{color:var(--gold)}
+.rkpi.alert .num{color:var(--danger)}
+
+/* 批次操作列 */
+.batch-bar{background:var(--navy);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:12px;flex-wrap:wrap}
+.batch-bar.show{display:flex}
+.batch-bar .cnt{color:rgba(255,255,255,.9);font-size:.85rem;font-weight:600}
+.batch-bar select{padding:6px 9px;border-radius:5px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:var(--white);font-size:.82rem;font-family:var(--font)}
+.batch-bar select option{background:var(--navy);color:var(--white)}
+
+/* 表格操作按鈕 */
+.row-actions{display:flex;gap:3px}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s;white-space:nowrap}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.warn:hover{background:var(--gold);border-color:var(--gold)}
+.row-btn.reject:hover{background:var(--danger);border-color:var(--danger)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+
+/* 表單 */
+.fs{margin-bottom:14px}
+.fs-title{font-size:.74rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:3px;border-bottom:1px solid var(--gold-pale)}
+.fr{display:grid;gap:9px;margin-bottom:9px}
+.fr.c2{grid-template-columns:1fr 1fr}
+.fr.c3{grid-template-columns:1fr 1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi label .req{color:var(--danger)}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+
+/* 快速審查 panel */
+.review-panel{background:var(--gray-100);border-radius:8px;padding:14px;margin-bottom:14px}
+.review-panel h3{font-size:.82rem;font-weight:700;color:var(--navy);margin:0 0 10px}
+.review-actions{display:flex;gap:8px;flex-wrap:wrap}
+.rev-btn{padding:8px 16px;border-radius:6px;border:none;font-size:.82rem;font-weight:700;cursor:pointer;transition:.12s}
+.rev-btn.approve{background:#dcfce7;color:#15803d}
+.rev-btn.approve:hover{background:#16a34a;color:var(--white)}
+.rev-btn.admit{background:#f0fdf4;color:#15803d;border:1.5px solid #16a34a}
+.rev-btn.admit:hover{background:#15803d;color:var(--white)}
+.rev-btn.standby{background:#fef9c3;color:#ca8a04}
+.rev-btn.standby:hover{background:#ca8a04;color:var(--white)}
+.rev-btn.reject{background:#fef2f2;color:#b91c1c}
+.rev-btn.reject:hover{background:#b91c1c;color:var(--white)}
+.rev-btn.supplement{background:#fff7ed;color:#ea580c}
+.rev-btn.supplement:hover{background:#ea580c;color:var(--white)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">報名管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <!-- Context bar -->
+  <div class="ctx-bar" id="ctxBar" style="display:none">
+    <span class="label">場次</span>
+    <span class="name" id="ctxName">—</span>
+    <a href="./sessions.html" id="ctxBack">← 回場次管理</a>
+  </div>
+
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>報名管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openAddModal()">＋ 新增報名</button>
+      <button class="secondary" onclick="loadRegs()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="reg-kpis" id="regKpis">
+    <div class="rkpi"><div class="num">—</div><div class="label">全部</div></div>
+    <div class="rkpi warn"><div class="num">—</div><div class="label">待審查</div></div>
+    <div class="rkpi ok"><div class="num">—</div><div class="label">已錄取</div></div>
+    <div class="rkpi alert"><div class="num">—</div><div class="label">需補件</div></div>
+  </div>
+
+  <section class="card">
+    <!-- 快速篩選 -->
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" onclick="setFilter(this,'')">全部</button>
+      <button class="filter-tab" onclick="setFilter(this,'待審查')">待審查</button>
+      <button class="filter-tab" onclick="setFilter(this,'符合資格')">符合資格</button>
+      <button class="filter-tab" onclick="setFilter(this,'已錄取')">已錄取</button>
+      <button class="filter-tab" onclick="setFilter(this,'備取')">備取</button>
+      <button class="filter-tab" onclick="setFilter(this,'不符合資格')">不符合資格</button>
+      <button class="filter-tab" onclick="setFilter(this,'需補件')">需補件</button>
+    </div>
+
+    <!-- 搜尋 -->
+    <div class="search-row">
+      <input id="kwInput" type="search" placeholder="搜尋姓名、電話、Email、服務單位…" oninput="debouncedSearch()">
+      <select id="sessionFilter" onchange="loadRegs()">
+        <option value="">所有場次</option>
+      </select>
+    </div>
+
+    <!-- 批次操作列 -->
+    <div class="batch-bar" id="batchBar">
+      <span class="cnt" id="batchCnt">已選 0 筆</span>
+      <select id="batchStatusField">
+        <option value="資格審查狀態">審查狀態</option>
+        <option value="錄取狀態">錄取狀態</option>
+        <option value="審核狀態">報名狀態</option>
+      </select>
+      <select id="batchStatus">
+        <option value="符合資格">符合資格</option>
+        <option value="已錄取">已錄取</option>
+        <option value="備取">備取</option>
+        <option value="未錄取">未錄取</option>
+        <option value="不符合資格">不符合資格</option>
+        <option value="需補件">需補件</option>
+        <option value="待審查">待審查</option>
+      </select>
+      <button class="gold" style="padding:6px 14px;font-size:.82rem" onclick="doBatchUpdate()">批次更新</button>
+      <button class="secondary" style="padding:6px 12px;font-size:.82rem" onclick="clearSelection()">取消選取</button>
+    </div>
+
+    <div id="regMsg" class="msg" style="display:none"></div>
+    <div id="regTable"></div>
+  </section>
+</main>
+
+<!-- ── 新增報名 Modal ── -->
+<div class="modal-overlay" id="addModal" style="display:none" onclick="closeBg(event,'addModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>新增報名</h2>
+      <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fs">
+        <div class="fs-title">基本資料</div>
+        <div class="fr c2"><div class="fi"><label>姓名 <span class="req">*</span></label><input id="a_name"></div><div class="fi"><label>性別</label><select id="a_gender"><option value="">未填</option><option>男</option><option>女</option><option>其他</option></select></div></div>
+        <div class="fr c3"><div class="fi"><label>電話 <span class="req">*</span></label><input id="a_phone" type="tel"></div><div class="fi"><label>Email</label><input id="a_email" type="email"></div><div class="fi"><label>身分別</label><select id="a_idtype"><option value="">未填</option><option>在職勞工</option><option>失業者</option><option>應屆畢業生</option><option>學生</option><option>自營作業者</option><option>其他</option></select></div></div>
+        <div class="fr c2"><div class="fi"><label>服務單位</label><input id="a_org" placeholder="公司/機構名稱"></div><div class="fi"><label>職稱</label><input id="a_title" placeholder="職位名稱"></div></div>
+        <div class="fr c2"><div class="fi"><label>出生日期</label><input id="a_birth" type="date"></div><div class="fi"><label>用餐習慣</label><select id="a_meal"><option value="">未填</option><option>葷食</option><option>素食</option><option>不需要</option></select></div></div>
+        <div class="fr"><div class="fi"><label>地址</label><input id="a_addr" placeholder="通訊地址"></div></div>
+      </div>
+      <div class="fs">
+        <div class="fs-title">報名資訊</div>
+        <div class="fr c2">
+          <div class="fi"><label>場次</label><select id="a_session"><option value="">請選擇場次（可空白）</option></select></div>
+          <div class="fi"><label>報名來源</label><select id="a_source"><option value="手動新增">手動新增</option><option value="現場補報名">現場補報名</option><option value="電話報名">電話報名</option><option value="其他">其他</option></select></div>
+        </div>
+        <div class="fr"><div class="fi"><label>備註</label><input id="a_note" placeholder="特殊需求或注意事項"></div></div>
+      </div>
+      <div id="addErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:9px 12px;font-size:.82rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal('addModal')">取消</button>
+      <button class="gold" id="addSubmitBtn" onclick="submitAdd()">新增報名</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 審查 Modal ── -->
+<div class="modal-overlay" id="reviewModal" style="display:none" onclick="closeBg(event,'reviewModal')">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="reviewModalTitle">報名審查</h2>
+      <button class="modal-close" onclick="closeModal('reviewModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="rv_regId">
+      <!-- 快速審查 -->
+      <div class="review-panel">
+        <h3>審查決定</h3>
+        <div class="review-actions">
+          <button class="rev-btn approve" onclick="quickReview('符合資格')">✓ 符合資格</button>
+          <button class="rev-btn admit" onclick="quickReview('已錄取')">★ 錄取</button>
+          <button class="rev-btn standby" onclick="quickReview('備取')">○ 備取</button>
+          <button class="rev-btn reject" onclick="quickReview('不符合資格')">✗ 不符合資格</button>
+          <button class="rev-btn supplement" onclick="quickReview('需補件')">！需補件</button>
+        </div>
+      </div>
+      <!-- 詳細設定 -->
+      <div class="fr c2">
+        <div class="fi"><label>資格審查狀態</label><select id="rv_reviewStatus"><option>待審查</option><option>符合資格</option><option>不符合資格</option><option>需補件</option><option>已錄取</option><option>備取</option><option>未錄取</option><option>取消報名</option></select></div>
+        <div class="fi"><label>錄取狀態</label><select id="rv_admitStatus"><option value="">—</option><option>已錄取</option><option>備取</option><option>未錄取</option></select></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>補件項目</label><input id="rv_supplement" placeholder="需要補充的文件或資料"></div>
+        <div class="fi"><label>補件期限</label><input id="rv_supDeadline" type="date"></div>
+      </div>
+      <div class="fr"><div class="fi"><label>審查結果說明</label><input id="rv_note" placeholder="審查備註或說明"></div></div>
+      <div id="reviewErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:9px 12px;font-size:.82rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal('reviewModal')">取消</button>
+      <button class="gold" id="reviewSubmitBtn" onclick="submitReview()">儲存審查結果</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _reviewFilter = '';
+var _selectedIds = new Set();
+var _searchTimer = null;
+var _currentCaseId = '';
+var _currentSessionId = '';
+var _allSessions = [];
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp = new URLSearchParams(location.search);
+  _currentCaseId = sp.get('caseId') || '';
+  _currentSessionId = sp.get('sessionId') || '';
+  var ctxName = sp.get('sessionName') || sp.get('caseName') || '';
+  if (ctxName) {
+    document.getElementById('ctxBar').style.display = 'flex';
+    document.getElementById('ctxName').textContent = decodeURIComponent(ctxName);
+    if (_currentCaseId) document.getElementById('ctxBack').href = './sessions.html?caseId=' + _currentCaseId;
+  }
+  loadSessionList();
+  loadStats();
+  loadRegs();
+}
+
+function safeJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e) { return null; } }
+
+// ── 載入場次清單（用於篩選下拉） ──────────────────────────
+async function loadSessionList() {
+  var params = { action: 'getSessions' };
+  if (_currentCaseId) params.caseId = _currentCaseId;
+  var r = await ERPALIGNED.api(params);
+  _allSessions = (r.data || []);
+  var sel1 = document.getElementById('sessionFilter');
+  var sel2 = document.getElementById('a_session');
+  var opts = _allSessions.map(function(s){ return '<option value="' + ERPALIGNED.esc(s['活動ID']) + '">' + ERPALIGNED.esc(s['活動名稱'] + ' ' + (s['活動日期']||'')) + '</option>'; }).join('');
+  sel1.innerHTML = '<option value="">所有場次</option>' + opts;
+  sel2.innerHTML = '<option value="">不指定場次</option>' + opts;
+  if (_currentSessionId) sel1.value = _currentSessionId;
+}
+
+// ── 統計 ─────────────────────────────────────────────────
+async function loadStats() {
+  var params = { action: 'getRegistrationStats' };
+  if (_currentCaseId) params.caseId = _currentCaseId;
+  if (_currentSessionId) params.sessionId = _currentSessionId;
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) return;
+  var d = r.data || {};
+  var bs = d.byReviewStatus || {};
+  document.getElementById('regKpis').innerHTML =
+    rkpi('全部', d.total || 0, '') +
+    rkpi('待審查', (bs['待審查'] || 0) + (bs['需補件'] || 0), 'warn') +
+    rkpi('已錄取', bs['已錄取'] || 0, 'ok') +
+    rkpi('需補件', bs['需補件'] || 0, 'alert');
+  // tab badges
+  var tabMap = { '待審查': bs['待審查'] || 0, '符合資格': bs['符合資格'] || 0, '已錄取': bs['已錄取'] || 0, '備取': bs['備取'] || 0, '不符合資格': bs['不符合資格'] || 0, '需補件': bs['需補件'] || 0 };
+  document.querySelectorAll('.filter-tab[data-rv]').forEach(function(btn){
+    var key = btn.dataset.rv;
+    var n = tabMap[key] || 0;
+    var span = btn.querySelector('.n');
+    if (span) span.textContent = n;
+  });
+}
+
+function rkpi(label, num, cls) {
+  return '<div class="rkpi' + (cls ? ' ' + cls : '') + '"><div class="num">' + num + '</div><div class="label">' + label + '</div></div>';
+}
+
+// ── 查詢報名 ─────────────────────────────────────────────
+async function loadRegs() {
+  var msg = document.getElementById('regMsg');
+  var tbl = document.getElementById('regTable');
+  msg.style.display = ''; msg.textContent = '查詢中…';
+  tbl.innerHTML = ''; clearSelection();
+
+  var params = { action: 'getRegistrations' };
+  if (_currentCaseId) params.caseId = _currentCaseId;
+  var sesF = document.getElementById('sessionFilter').value;
+  if (sesF || _currentSessionId) params.sessionId = sesF || _currentSessionId;
+  var kw = document.getElementById('kwInput').value.trim();
+  if (kw) params.keyword = kw;
+  if (_reviewFilter) params.reviewStatus = _reviewFilter;
+
+  var r = await ERPALIGNED.api(params);
+  msg.style.display = 'none';
+  if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ ' + (r.message || '查詢失敗'); return; }
+  var rows = r.data || [];
+  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆報名';
+  if (!rows.length) { tbl.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--gray-400)"><div style="font-size:2rem">📝</div><p>目前沒有報名資料</p></div>'; return; }
+  renderTable(rows, tbl);
+}
+
+function renderTable(rows, el) {
+  var html = '<div style="overflow-x:auto"><table class="erp-table" style="min-width:820px">';
+  html += '<thead><tr><th style="width:32px"><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th><th>姓名</th><th>電話</th><th>服務單位</th><th>身分別</th><th>場次</th><th>審查狀態</th><th>報名時間</th><th>操作</th></tr></thead><tbody>';
+  rows.forEach(function(r) {
+    var id = ERPALIGNED.esc(r['報名ID'] || '');
+    var ses = findSession(r['活動ID']);
+    var sesName = ses ? ses['活動名稱'] : (r['活動ID'] ? r['活動ID'] : '—');
+    html += '<tr>';
+    html += '<td><input type="checkbox" class="row-check" value="' + id + '" onchange="onCheck(this)"></td>';
+    html += '<td><strong>' + ERPALIGNED.esc(r['姓名'] || '—') + '</strong></td>';
+    html += '<td>' + ERPALIGNED.esc(r['電話'] || '—') + '</td>';
+    html += '<td>' + ERPALIGNED.esc(r['服務單位'] || '—') + '</td>';
+    html += '<td style="font-size:.8rem">' + ERPALIGNED.esc(r['身分別'] || '—') + '</td>';
+    html += '<td style="font-size:.79rem;color:var(--gray-500)">' + ERPALIGNED.esc(sesName) + '</td>';
+    html += '<td>' + revBadge(r['資格審查狀態'] || r['審核狀態'] || '待審查') + '</td>';
+    html += '<td style="font-size:.77rem;color:var(--gray-500)">' + ERPALIGNED.esc(shortDT(r['報名時間'])) + '</td>';
+    html += '<td><div class="row-actions">';
+    html += '<button class="row-btn ok" onclick="openReview(\'' + id + '\',\'' + ERPALIGNED.esc(r['姓名']) + '\')">審查</button>';
+    html += '<button class="row-btn" onclick="openReview(\'' + id + '\',\'' + ERPALIGNED.esc(r['姓名']) + '\')">詳情</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function revBadge(s) { return '<span class="rev-badge rv-' + ERPALIGNED.esc(s) + '">' + ERPALIGNED.esc(s) + '</span>'; }
+function findSession(id) { return _allSessions.find(function(s){ return s['活動ID'] === id; }); }
+function shortDT(v) { return v ? String(v).substring(0,16) : '—'; }
+
+// ── 篩選 ─────────────────────────────────────────────────
+function setFilter(btn, status) {
+  _reviewFilter = status;
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadRegs();
+}
+
+function debouncedSearch() { clearTimeout(_searchTimer); _searchTimer = setTimeout(loadRegs, 350); }
+
+// ── 選取 & 批次 ───────────────────────────────────────────
+function onCheck(cb) {
+  if (cb.checked) _selectedIds.add(cb.value); else _selectedIds.delete(cb.value);
+  updateBatchBar();
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.row-check').forEach(function(c){ c.checked = cb.checked; if (cb.checked) _selectedIds.add(c.value); else _selectedIds.delete(c.value); });
+  updateBatchBar();
+}
+
+function clearSelection() {
+  _selectedIds.clear();
+  document.querySelectorAll('.row-check, #checkAll').forEach(function(c){ c.checked = false; });
+  updateBatchBar();
+}
+
+function updateBatchBar() {
+  var bar = document.getElementById('batchBar');
+  var cnt = _selectedIds.size;
+  document.getElementById('batchCnt').textContent = '已選 ' + cnt + ' 筆';
+  bar.classList.toggle('show', cnt > 0);
+}
+
+async function doBatchUpdate() {
+  if (!_selectedIds.size) return;
+  var field = document.getElementById('batchStatusField').value;
+  var status = document.getElementById('batchStatus').value;
+  var btn = document.querySelector('.batch-bar .gold');
+  btn.disabled = true; btn.textContent = '更新中…';
+  var r = await ERPALIGNED.api({ action: 'batchUpdateStatus', regIds: Array.from(_selectedIds).join(','), statusField: field, status: status });
+  btn.disabled = false; btn.textContent = '批次更新';
+  clearSelection();
+  if (r.success) { loadStats(); loadRegs(); }
+  else alert('批次更新失敗：' + (r.message || ''));
+}
+
+// ── 審查 Modal ────────────────────────────────────────────
+function openReview(regId, name) {
+  document.getElementById('rv_regId').value = regId;
+  document.getElementById('reviewModalTitle').textContent = '審查：' + name;
+  document.getElementById('rv_reviewStatus').value = '待審查';
+  document.getElementById('rv_admitStatus').value = '';
+  document.getElementById('rv_supplement').value = '';
+  document.getElementById('rv_supDeadline').value = '';
+  document.getElementById('rv_note').value = '';
+  document.getElementById('reviewErr').style.display = 'none';
+  document.getElementById('reviewModal').style.display = 'flex';
+}
+
+function quickReview(status) {
+  document.getElementById('rv_reviewStatus').value = status;
+  if (status === '已錄取') document.getElementById('rv_admitStatus').value = '已錄取';
+  else if (status === '備取') document.getElementById('rv_admitStatus').value = '備取';
+  submitReview();
+}
+
+async function submitReview() {
+  var regId = document.getElementById('rv_regId').value;
+  var btn = document.getElementById('reviewSubmitBtn');
+  btn.disabled = true; btn.textContent = '儲存中…';
+  var r = await ERPALIGNED.api({
+    action: 'updateRegistrationStatus',
+    regId: regId,
+    '資格審查狀態': document.getElementById('rv_reviewStatus').value,
+    '錄取狀態': document.getElementById('rv_admitStatus').value,
+    '補件項目': document.getElementById('rv_supplement').value,
+    '補件期限': document.getElementById('rv_supDeadline').value,
+    '審查結果': document.getElementById('rv_note').value
+  });
+  btn.disabled = false; btn.textContent = '儲存審查結果';
+  if (!r.success) { document.getElementById('reviewErr').textContent = r.message || '更新失敗'; document.getElementById('reviewErr').style.display = ''; return; }
+  closeModal('reviewModal'); loadStats(); loadRegs();
+}
+
+// ── 新增報名 ─────────────────────────────────────────────
+function openAddModal() {
+  ['a_name','a_phone','a_email','a_org','a_title','a_addr','a_note','a_birth'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('a_gender').value = '';
+  document.getElementById('a_idtype').value = '';
+  document.getElementById('a_meal').value = '';
+  document.getElementById('a_source').value = '手動新增';
+  if (_currentSessionId) document.getElementById('a_session').value = _currentSessionId;
+  document.getElementById('addErr').style.display = 'none';
+  document.getElementById('addModal').style.display = 'flex';
+}
+
+async function submitAdd() {
+  var name = document.getElementById('a_name').value.trim();
+  var phone = document.getElementById('a_phone').value.trim();
+  if (!name) { showAddErr('姓名為必填'); return; }
+  if (!phone) { showAddErr('電話為必填'); return; }
+  var btn = document.getElementById('addSubmitBtn');
+  btn.disabled = true; btn.textContent = '新增中…';
+  var sesId = document.getElementById('a_session').value;
+  var r = await ERPALIGNED.api({
+    action: 'createRegistration',
+    caseId: _currentCaseId,
+    sessionId: sesId,
+    '姓名': name, '電話': phone, 'Email': document.getElementById('a_email').value,
+    '性別': document.getElementById('a_gender').value, '身分別': document.getElementById('a_idtype').value,
+    '服務單位': document.getElementById('a_org').value, '職稱': document.getElementById('a_title').value,
+    '出生日期': document.getElementById('a_birth').value, '地址': document.getElementById('a_addr').value,
+    '用餐習慣': document.getElementById('a_meal').value, '備註': document.getElementById('a_note').value,
+    '報名來源': document.getElementById('a_source').value
+  });
+  btn.disabled = false; btn.textContent = '新增報名';
+  if (!r.success) { showAddErr(r.message || '新增失敗'); return; }
+  closeModal('addModal'); loadStats(); loadRegs();
+}
+
+function showAddErr(msg) { var el = document.getElementById('addErr'); el.textContent = msg; el.style.display = ''; }
+
+// ── 輔助 ─────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function closeBg(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+init();
+</script>
+</body>
+</html>
