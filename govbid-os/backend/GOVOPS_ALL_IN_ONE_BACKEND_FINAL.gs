@@ -155,6 +155,19 @@ function govopsUpdate_(sheetName, headers, rowNumber, patch) {
   hs.forEach(function(h, i){ if (patch[h] !== undefined) sh.getRange(rowNumber, i + 1).setValue(patch[h]); });
 }
 
+function govopsDeleteRow_(sheetName, rowNumber) {
+  var sh = govopsSS_().getSheetByName(sheetName);
+  if (sh && rowNumber >= 2) sh.deleteRow(rowNumber);
+}
+
+function govopsClearSheet_(sheetName) {
+  var sh = govopsSS_().getSheetByName(sheetName);
+  if (!sh) return 0;
+  var last = sh.getLastRow();
+  if (last >= 2) { sh.deleteRows(2, last - 1); return last - 1; }
+  return 0;
+}
+
 function govopsFilter_(rows, params) {
   params = params || {};
   var kw = String(params.keyword || params.q || params['關鍵字'] || '').trim();
@@ -521,6 +534,19 @@ function govopsEnrollmentRoute_(params, action) {
   if (action === '新增招生活動' || action === '招生設定') {
     var title = params['課程名稱'] || params.courseName || params['活動名稱'];
     if (!title) return { success: false, message: '請填寫課程名稱' };
+    // 去重檢查：同一 課程名稱 + 活動ID（或專案ID）不允許重複建立
+    var existList = govopsRows_('招生活動管理', CAMPAIGN_HEADERS);
+    var actIdChk = String(params['活動ID'] || '').trim();
+    var projIdChk = String(params['專案ID'] || '').trim();
+    var dup = null;
+    for (var di = 0; di < existList.length; di++) {
+      var e = existList[di];
+      var titleMatch = String(e['課程名稱']).trim() === title.trim();
+      var actMatch = actIdChk ? String(e['活動ID']).trim() === actIdChk : true;
+      var projMatch = projIdChk ? String(e['專案ID']).trim() === projIdChk : true;
+      if (titleMatch && actMatch && projMatch) { dup = e; break; }
+    }
+    if (dup) return { success: false, message: '此招生活動已存在，請勿重複建立', data: { 招生活動ID: dup['招生活動ID'], existing: dup } };
     var obj = {'招生活動ID': params['招生活動ID'] || govopsId_('ENR'),'專案ID': params['專案ID'] || '','活動ID': params['活動ID'] || '','課程名稱': title,'招生狀態': params['招生狀態'] || '招生中','報名開始日': params['報名開始日'] || '','報名截止日': params['報名截止日'] || '','開課日期': params['開課日期'] || '','招生名額': params['招生名額'] || '','候補名額': params['候補名額'] || '','報名連結': params['報名連結'] || '','招生渠道': params['招生渠道'] || '','主辦單位': params['主辦單位'] || '','聯絡人': params['聯絡人'] || '','聯絡電話': params['聯絡電話'] || '','備註': params['備註'] || '','建立時間': govopsNow_(),'更新時間': govopsNow_()};
     govopsAppend_('招生活動管理', CAMPAIGN_HEADERS, obj);
     return { success: true, message: '招生活動已新增', data: { 招生活動ID: obj['招生活動ID'], row: obj } };
@@ -597,6 +623,76 @@ function govopsEnrollmentRoute_(params, action) {
     });
     return { success: true, message: '簽到表產出完成，新增 ' + created + ' 筆', data: { created: created, total: approvedRegs.length } };
   }
+
+  // ── 刪除與清空 Actions ────────────────────────────────────
+  // 刪除單筆招生活動
+  if (action === '刪除招生活動' || action === 'deleteCampaign') {
+    var id = params['招生活動ID'] || params.campaignId;
+    if (!id) return { success: false, message: '缺少招生活動ID', timestamp: govopsNow_() };
+    var rows = govopsRows_('招生活動管理', CAMPAIGN_HEADERS);
+    var found = rows.find(function(r){ return r['招生活動ID'] === id; });
+    if (!found) return { success: false, message: '找不到招生活動：' + id, timestamp: govopsNow_() };
+    govopsDeleteRow_('招生活動管理', found._row);
+    return { success: true, message: '招生活動已刪除', data: { 招生活動ID: id }, timestamp: govopsNow_() };
+  }
+
+  // 刪除單筆報名資料
+  if (action === '刪除報名' || action === 'deleteRegistration') {
+    var id = params['報名ID'] || params.regId;
+    if (!id) return { success: false, message: '缺少報名ID', timestamp: govopsNow_() };
+    var rows = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var found = rows.find(function(r){ return r['報名ID'] === id; });
+    if (!found) return { success: false, message: '找不到報名資料：' + id, timestamp: govopsNow_() };
+    govopsDeleteRow_('報名資料庫', found._row);
+    return { success: true, message: '報名資料已刪除', data: { 報名ID: id }, timestamp: govopsNow_() };
+  }
+
+  // 刪除單筆學員 CRM
+  if (action === '刪除學員' || action === 'deleteCrm') {
+    var id = params['CRM_ID'] || params.crmId;
+    if (!id) return { success: false, message: '缺少CRM_ID', timestamp: govopsNow_() };
+    var rows = govopsRows_('學員CRM', CRM_HEADERS);
+    var found = rows.find(function(r){ return r['CRM_ID'] === id; });
+    if (!found) return { success: false, message: '找不到學員：' + id, timestamp: govopsNow_() };
+    govopsDeleteRow_('學員CRM', found._row);
+    return { success: true, message: '學員已刪除', data: { CRM_ID: id }, timestamp: govopsNow_() };
+  }
+
+  // 清空指定 sheet（保留表頭）
+  if (action === 'clearSheetData') {
+    var allowed = ['招生活動管理','報名資料庫','學員CRM','財務收支','結案檢核','簽到表','簽到表紀錄'];
+    var sheetName = params.sheetName || params['表格名稱'];
+    if (!sheetName || allowed.indexOf(sheetName) < 0) return { success: false, message: '不允許清空：' + (sheetName||'(未指定)'), timestamp: govopsNow_() };
+    var cleared = govopsClearSheet_(sheetName);
+    return { success: true, message: sheetName + ' 已清空，共刪除 ' + cleared + ' 列', data: { sheet: sheetName, clearedRows: cleared }, timestamp: govopsNow_() };
+  }
+
+  // 清空全部報名相關資料（招生活動 + 報名資料庫 + 學員CRM）
+  if (action === 'clearAllEnrollmentData') {
+    var results = {};
+    ['招生活動管理','報名資料庫','學員CRM','簽到表','簽到表紀錄'].forEach(function(s){ results[s] = govopsClearSheet_(s); });
+    return { success: true, message: '全部報名相關資料已清空', data: results, timestamp: govopsNow_() };
+  }
+
+  // 去重工具：找出並刪除招生活動重複列（保留最早一筆）
+  if (action === 'deduplicateCampaigns') {
+    var rows = govopsRows_('招生活動管理', CAMPAIGN_HEADERS);
+    var seen = {};
+    var deleted = 0;
+    // 從最後一列往前刪（避免 row number 偏移）
+    for (var i = rows.length - 1; i >= 0; i--) {
+      var r = rows[i];
+      var key = String(r['課程名稱']).trim() + '|' + String(r['活動ID']).trim() + '|' + String(r['專案ID']).trim();
+      if (seen[key]) {
+        govopsDeleteRow_('招生活動管理', r._row);
+        deleted++;
+      } else {
+        seen[key] = true;
+      }
+    }
+    return { success: true, message: '去重完成，刪除 ' + deleted + ' 筆重複招生活動', data: { deleted: deleted }, timestamp: govopsNow_() };
+  }
+  // ── End 刪除與清空 ─────────────────────────────────────────
 
   // ── Registration API v0.1 ─────────────────────────────────
   // getRegistrations: 多條件查詢報名資料
@@ -1519,15 +1615,14 @@ function govopsModifyRoute_(params, action) {
     return { success: true, message: '廠商資料已更新', data: { 廠商編號: id } };
   }
   if (action === '修改學員CRM' || action === '修改學員') {
-    var CRM_H = ['CRM_ID','姓名','電話','Email','身分別','服務單位','來源渠道','活動ID','備註','標籤','建立時間','更新時間'];
     var id = params['CRM_ID'] || params['crmPersonId'];
     if (!id) return { success: false, message: 'CRM_ID 必填' };
-    var rows = govopsRows_('04_學員CRM', CRM_H);
+    var rows = govopsRows_('學員CRM', CRM_HEADERS); // 修正：使用正確的 sheet 名稱和 headers
     var found = rows.find(function(r){ return r['CRM_ID'] === id; });
     if (!found) return { success: false, message: '找不到學員：' + id };
     var patch = { '更新時間': govopsNow_() };
-    ['姓名','電話','Email','身分別','服務單位','來源渠道','備註','標籤'].forEach(function(k){ if (params[k] !== undefined && params[k] !== '') patch[k] = params[k]; });
-    govopsUpdate_('04_學員CRM', CRM_H, found._row, patch);
+    ['姓名','電話','Email','身分別','服務單位','標籤','備註','行銷同意'].forEach(function(k){ if (params[k] !== undefined && params[k] !== '') patch[k] = params[k]; });
+    govopsUpdate_('學員CRM', CRM_HEADERS, found._row, patch);
     return { success: true, message: '學員CRM 已更新', data: { CRM_ID: id } };
   }
   return null;
