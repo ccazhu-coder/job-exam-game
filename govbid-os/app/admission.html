@@ -132,7 +132,7 @@ async function loadCases(preCid,preSid){
   var r=await ERPALIGNED.api({action:'getCases'});
   var sel=document.getElementById('caseSelect');
   if(!r.success)return;
-  var cases=r.data&&r.data.rows||[];
+  var cases=r.data||[];
   sel.innerHTML='<option value="">— 請選擇案件 —</option>';
   cases.forEach(function(c){
     var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'未命名';sel.appendChild(o);
@@ -149,7 +149,7 @@ async function onCaseChange(){
   sesSel.innerHTML='<option value="">全部場次</option>';
   if(!_caseId)return;
   var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
-  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){
+  if(r.success)(r.data||[]).forEach(function(s){
     var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sesSel.appendChild(o);
   });
   await loadAdmission();
@@ -163,7 +163,7 @@ async function loadAdmission(){
   var r=await ERPALIGNED.api(p);
   if(!r.success)return;
   // Filter to admitted/waitlisted/rejected only
-  _regs=(r.data&&r.data.rows||[]).filter(function(row){
+  _regs=(r.data||[]).filter(function(row){
     var ls=row['錄取狀態']||row['審核狀態']||row['資格審查狀態']||'';
     return ['已錄取','備取','未錄取'].indexOf(ls)>=0 || ['已錄取','備取','符合資格'].indexOf(row['資格審查狀態']||'')>=0;
   });
