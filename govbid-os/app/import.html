@@ -255,7 +255,33 @@ async function confirmExcelImport(rows){
   loadBatches();
 }
 async function doGFormSync(){
-  alert('Google 表單同步需要後端 OAuth 授權。\n\n目前流程：\n1. 手動到 Google 試算表複製資料\n2. 使用「Excel/CSV 貼上」功能匯入\n\n後續版本將支援直接 API 同步。');
+  _caseId=document.getElementById('caseSelect').value;
+  _sessionId=document.getElementById('sessionSelect').value;
+  if(!_caseId){alert('請選擇案件');return;}
+  var sheetId=document.getElementById('gSheetId').value.trim();
+  var sheetTab=document.getElementById('gSheetTab').value.trim()||'表單回覆 1';
+  if(!sheetId){alert('請輸入 Google 試算表 ID');return;}
+  var rawMap=document.getElementById('gFieldMap').value.trim();
+  var fieldMap={};
+  rawMap.split('\n').forEach(function(line){
+    var parts=line.split('=');
+    if(parts.length>=2){fieldMap[parts[0].trim()]=parts.slice(1).join('=').trim();}
+  });
+  var el=document.getElementById('importResult');
+  el.innerHTML='<div style="color:var(--gray-400);font-size:.84rem">同步中，請稍候…</div>';
+  await ERPALIGNED.api({action:'saveFormConfig',caseId:_caseId,sessionId:_sessionId,
+    formType:_type,sheetId:sheetId,sheetTab:sheetTab,fieldMap:JSON.stringify(fieldMap)});
+  var r=await ERPALIGNED.api({action:'syncFormRegistrations',caseId:_caseId,sessionId:_sessionId,
+    sheetId:sheetId,sheetTab:sheetTab,fieldMap:JSON.stringify(fieldMap)});
+  if(r.success){
+    var d=r.data||{};
+    el.innerHTML='<div style="color:#166534;font-size:.84rem">✅ 同步完成：新增 '+(d.imported||0)+' 筆，重複跳過 '+(d.skipped||0)+' 筆</div>';
+    await ERPALIGNED.api({action:'createImportBatch',caseId:_caseId,importType:(typeConfig[_type]||{}).title||_type,
+      source:'Google表單',total:(d.imported||0)+(d.skipped||0),success:d.imported||0,failed:0,duplicate:d.skipped||0});
+    loadBatches();
+  } else {
+    el.innerHTML='<div style="color:var(--danger);font-size:.84rem">❌ 同步失敗：'+esc(r.message||r.error||'未知錯誤')+'</div>';
+  }
 }
 window.addEventListener('DOMContentLoaded',init);
 </script>
