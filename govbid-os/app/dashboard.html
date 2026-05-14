@@ -116,7 +116,6 @@
           <button class="secondary" onclick="location.href='./sessions.html'">場次管理</button>
           <button class="secondary" onclick="location.href='./registrations.html'">報名管理</button>
           <button class="secondary" onclick="location.href='./documents.html'">文件產生</button>
-          <button class="secondary" onclick="location.href='./tasks.html'">任務管理</button>
           <button class="secondary" onclick="location.href='./calendar.html'">日曆管理</button>
           <button class="secondary" onclick="location.href='./finance.html'">財務收支</button>
           <button class="secondary" onclick="location.href='./closing.html'">結案管理</button>
@@ -237,17 +236,6 @@ async function loadDashboard(){
   loadCaseStats();
   loadFinanceSummary();
   loadSchedule();
-  loadTaskKpi();
-}
-
-async function loadTaskKpi(){
-  const r=await ERPALIGNED.api({action:'getTaskStats'});
-  if(!r.success)return;
-  const d=r.data||{};
-  if(d.overdue>0){
-    const sub=document.getElementById('pageSubtitle');
-    if(sub)sub.textContent+='　⚠ 逾期任務：'+d.overdue+'筆';
-  }
 }
 
 async function loadCaseStats(){
