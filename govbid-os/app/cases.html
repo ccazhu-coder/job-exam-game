@@ -454,10 +454,9 @@ async function openEditModal(caseId) {
   document.getElementById('editCaseId').value = caseId;
   document.getElementById('caseModal').style.display = 'flex';
 
-  // 從表格 DOM 讀取（若已存在），否則 fetch
-  var r = await ERPALIGNED.api({ action: 'getCases', keyword: caseId });
-  var rows = (r.data || []).filter(function(x){ return x['專案ID'] === caseId; });
-  if (!rows.length) { showModalErr('找不到案件資料'); return; }
+  var r = await ERPALIGNED.api({ action: 'getCase', caseId: caseId });
+  if (!r.success || !r.data) { showModalErr('找不到案件資料'); return; }
+  var rows = [r.data];
   fillModalForm(rows[0]);
 }
 
