@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜錄取名單</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter-row select,.filter-row input{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.filter-row input{flex:1;min-width:150px}
+.filter-row select:focus,.filter-row input:focus{outline:none;border-color:var(--navy-mid)}
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:.78rem;font-weight:600;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-已錄取{background:#dcfce7;color:#166534}
+.s-備取{background:#e0f2fe;color:#0369a1}
+.s-未錄取{background:#fee2e2;color:#991b1b}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s;white-space:nowrap}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.warn:hover{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kn{background:var(--white);border:1.5px solid var(--gray-100);border-radius:8px;padding:10px 12px;cursor:pointer}
+.kn .v{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.kn .l{font-size:.72rem;color:var(--gray-500);margin-top:2px}
+.kn.ok .v{color:#16a34a}.kn.warn .v{color:var(--gold)}.kn.alert .v{color:var(--danger)}
+.notify-section{background:var(--offwhite);border:1.5px solid var(--gray-200);border-radius:8px;padding:14px 18px;margin-bottom:14px}
+.notify-section h3{font-size:.85rem;font-weight:700;color:var(--navy);margin-bottom:10px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">錄取名單</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>錄取名單</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">管理審查後的錄取、備取與未錄取名單</p></div>
+    <div class="btns">
+      <button class="secondary" onclick="goToReview()">← 資格審查</button>
+      <button class="secondary" onclick="goToDocuments()">行政文件產生 →</button>
+    </div>
+  </div>
+
+  <!-- 重要提醒 -->
+  <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:.82rem;color:#166534;line-height:1.6">
+    ✅ <strong>文件產生前置條件：</strong>簽到表、保險名冊、便當統計等文件以「錄取名單」為資料來源，不是原始報名名單。請確認錄取狀態正確後再前往文件產生。
+  </div>
+
+  <!-- 選擇器 -->
+  <div class="filter-row" style="margin-bottom:10px">
+    <select id="caseSelect" onchange="onCaseChange()" style="min-width:220px"><option value="">載入案件…</option></select>
+    <select id="sessionSelect" onchange="loadAdmission()" style="min-width:180px"><option value="">全部場次</option></select>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kn ok" onclick="setFilter('已錄取')"><div class="v" id="k_admit">0</div><div class="l">已錄取</div></div>
+    <div class="kn warn" onclick="setFilter('備取')"><div class="v" id="k_wait">0</div><div class="l">備取</div></div>
+    <div class="kn alert" onclick="setFilter('未錄取')"><div class="v" id="k_reject">0</div><div class="l">未錄取</div></div>
+    <div class="kn" onclick="setFilter('')"><div class="v" id="k_total">0</div><div class="l">全部</div></div>
+  </div>
+
+  <!-- 通知追蹤 -->
+  <div class="notify-section">
+    <h3>📬 通知追蹤</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.82rem;color:var(--navy-mid)">已錄取通知：<strong id="notifyCount">0 / 0</strong></span>
+      <button class="secondary" style="font-size:.78rem" onclick="batchMarkNotified()">批次標記已通知</button>
+      <span style="font-size:.78rem;color:var(--gray-400)">（勾選人員後操作）</span>
+    </div>
+  </div>
+
+  <!-- 搜尋篩選 -->
+  <div class="filter-row">
+    <input id="searchInput" type="text" placeholder="搜尋姓名、服務單位…" oninput="renderTable()">
+    <select id="statusFilter" onchange="renderTable()">
+      <option value="">全部錄取狀態</option>
+      <option value="已錄取">已錄取</option>
+      <option value="備取">備取</option>
+      <option value="未錄取">未錄取</option>
+    </select>
+    <button class="secondary" onclick="loadAdmission()">重新整理</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="erp-table" style="min-width:860px">
+      <thead><tr>
+        <th><input type="checkbox" id="chkAll" onchange="toggleAll(this)" style="accent-color:var(--gold)"></th>
+        <th>序號</th><th>姓名</th><th>性別</th><th>服務單位</th><th>身分別</th><th>電話</th><th>Email</th>
+        <th>用餐</th><th>錄取狀態</th><th>是否已通知</th><th>通知日期</th><th>操作</th>
+      </tr></thead>
+      <tbody id="tableBody"><tr><td colspan="13" style="text-align:center;padding:24px;color:var(--gray-400)">請先選擇案件</td></tr></tbody>
+    </table>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px">
+    <div style="font-size:.8rem;color:var(--gray-400)" id="tableCount"></div>
+    <div class="btns">
+      <button class="secondary" onclick="exportList()">匯出名單（複製）</button>
+      <button class="gold" onclick="goToDocuments()">產生簽到表 / 文件 →</button>
+    </div>
+  </div>
+</main>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+var _caseId='',_sessionId='',_regs=[],_selected=new Set(),_statusFilter='';
+
+function init(){
+  var p=safeJSON('govops_profile');
+  if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);
+  var cid=sp.get('caseId')||'',sid=sp.get('sessionId')||'';
+  loadCases(cid,sid);
+}
+
+async function loadCases(preCid,preSid){
+  var r=await ERPALIGNED.api({action:'getCases'});
+  var sel=document.getElementById('caseSelect');
+  if(!r.success)return;
+  var cases=r.data&&r.data.rows||[];
+  sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  cases.forEach(function(c){
+    var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'未命名';sel.appendChild(o);
+  });
+  if(preCid){sel.value=preCid;await onCaseChange();
+    if(preSid){document.getElementById('sessionSelect').value=preSid;await loadAdmission();}}
+  else if(preCid) await loadAdmission();
+}
+
+async function onCaseChange(){
+  _caseId=document.getElementById('caseSelect').value;
+  _sessionId='';
+  var sesSel=document.getElementById('sessionSelect');
+  sesSel.innerHTML='<option value="">全部場次</option>';
+  if(!_caseId)return;
+  var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
+  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){
+    var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sesSel.appendChild(o);
+  });
+  await loadAdmission();
+}
+
+async function loadAdmission(){
+  _sessionId=document.getElementById('sessionSelect').value;
+  if(!_caseId)return;
+  var p={action:'getRegistrations',caseId:_caseId};
+  if(_sessionId)p.sessionId=_sessionId;
+  var r=await ERPALIGNED.api(p);
+  if(!r.success)return;
+  // Filter to admitted/waitlisted/rejected only
+  _regs=(r.data&&r.data.rows||[]).filter(function(row){
+    var ls=row['錄取狀態']||row['審核狀態']||row['資格審查狀態']||'';
+    return ['已錄取','備取','未錄取'].indexOf(ls)>=0 || ['已錄取','備取','符合資格'].indexOf(row['資格審查狀態']||'')>=0;
+  });
+  updateKpi();
+  renderTable();
+  document.getElementById('pageSubtitle').textContent='共 '+_regs.length+' 筆（已審查）';
+}
+
+function updateKpi(){
+  var admit=0,wait=0,reject=0,notified=0;
+  _regs.forEach(function(r){
+    var ls=r['錄取狀態']||r['資格審查狀態']||'';
+    if(ls==='已錄取')admit++;
+    else if(ls==='備取')wait++;
+    else if(ls==='未錄取')reject++;
+    if(r['通知日期'])notified++;
+  });
+  document.getElementById('k_admit').textContent=admit;
+  document.getElementById('k_wait').textContent=wait;
+  document.getElementById('k_reject').textContent=reject;
+  document.getElementById('k_total').textContent=_regs.length;
+  document.getElementById('notifyCount').textContent=notified+' / '+(admit+wait);
+}
+
+function setFilter(s){_statusFilter=s;document.getElementById('statusFilter').value=s;renderTable();}
+
+function renderTable(){
+  var kw=(document.getElementById('searchInput').value||'').toLowerCase();
+  var sf=document.getElementById('statusFilter').value||_statusFilter;
+  var rows=_regs.filter(function(r){
+    var ls=r['錄取狀態']||r['資格審查狀態']||'';
+    if(sf&&ls!==sf)return false;
+    if(kw&&(r['姓名']||'').indexOf(kw)<0&&(r['服務單位']||'').indexOf(kw)<0)return false;
+    return true;
+  });
+  document.getElementById('tableCount').textContent='顯示 '+rows.length+' / '+_regs.length+' 筆';
+  var tbody=document.getElementById('tableBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:28px;color:var(--gray-400)">尚無錄取資料。請先完成資格審查。</td></tr>';return;}
+  var html='';
+  var num=0;
+  rows.forEach(function(r){
+    num++;
+    var rid=esc(r['報名ID']||'');
+    var ls=r['錄取狀態']||r['資格審查狀態']||'';
+    var sc='s-'+(ls.replace(/\s/g,'')||'');
+    var chk=_selected.has(r['報名ID'])?'checked':'';
+    html+='<tr><td><input type="checkbox" '+chk+' onchange="toggleChk(\''+rid+'\',this)" style="accent-color:var(--gold)"></td>';
+    html+='<td style="color:var(--gray-400);font-size:.78rem">'+num+'</td>';
+    html+='<td><strong>'+esc(r['姓名']||'—')+'</strong></td>';
+    html+='<td>'+esc(r['性別']||'')+'</td>';
+    html+='<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r['服務單位']||'—')+'</td>';
+    html+='<td>'+esc(r['身分別']||'')+'</td>';
+    html+='<td>'+esc(r['電話']||'—')+'</td>';
+    html+='<td style="font-size:.75rem">'+esc(r['Email']||'—')+'</td>';
+    html+='<td style="font-size:.75rem">'+esc(r['用餐習慣']||'—')+'</td>';
+    html+='<td><span class="badge '+sc+'">'+esc(ls||'—')+'</span></td>';
+    html+='<td style="font-size:.75rem">'+(r['通知日期']?'✅ '+shortDate(r['通知日期']):'—')+'</td>';
+    html+='<td>'+shortDate(r['通知日期'])+'</td>';
+    html+='<td style="display:flex;gap:3px;flex-wrap:wrap">';
+    if(ls!=='已錄取')html+='<button class="row-btn ok" onclick="setStatus(\''+rid+'\',\'已錄取\')">錄取</button>';
+    if(ls!=='備取')html+='<button class="row-btn warn" onclick="setStatus(\''+rid+'\',\'備取\')">備取</button>';
+    html+='</td></tr>';
+  });
+  tbody.innerHTML=html;
+  updateBatchBar();
+}
+
+function toggleChk(id,el){if(el.checked)_selected.add(id);else _selected.delete(id);updateBatchBar();}
+function toggleAll(el){_regs.forEach(function(r){if(el.checked)_selected.add(r['報名ID']);else _selected.delete(r['報名ID']);});renderTable();}
+function updateBatchBar(){} // simple
+
+async function setStatus(rid, status){
+  var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:rid,'錄取狀態':status,'資格審查狀態':status});
+  if(r.success)loadAdmission();else alert('失敗：'+r.message);
+}
+
+async function batchMarkNotified(){
+  if(!_selected.size){alert('請先勾選人員');return;}
+  var today=new Date().toISOString().substring(0,10);
+  var ids=[..._selected];var ok=0;
+  for(var i=0;i<ids.length;i++){
+    var r=await ERPALIGNED.api({action:'updateRegistrationStatus',registrationId:ids[i],'通知日期':today});
+    if(r.success)ok++;
+  }
+  _selected.clear();alert('已標記 '+ok+' 人通知完成');loadAdmission();
+}
+
+function goToReview(){location.href='./review.html'+(_caseId?'?caseId='+_caseId:'');}
+function goToDocuments(){location.href='./documents.html'+(_caseId?'?caseId='+_caseId:'');}
+
+function exportList(){
+  var rows=_regs.filter(function(r){var ls=r['錄取狀態']||r['資格審查狀態']||'';return ls==='已錄取';});
+  if(!rows.length){alert('無已錄取名單');return;}
+  var text='姓名\t服務單位\t電話\tEmail\t用餐\t錄取別\n';
+  text+=rows.map(function(r,i){
+    return [i+1,r['姓名'],r['服務單位'],r['電話'],r['Email'],r['用餐習慣'],r['錄取狀態']||r['資格審查狀態']].join('\t');
+  }).join('\n');
+  var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  alert('已複製 '+rows.length+' 筆錄取名單到剪貼簿（可貼到 Excel）');
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
