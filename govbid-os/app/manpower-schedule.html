@@ -115,7 +115,7 @@ function init(){
 }
 async function loadCases(pre){
   var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
-  if(!r.success)return;var cases=r.data&&r.data.rows||[];
+  if(!r.success)return;var cases=r.data||[];
   sel.innerHTML='<option value="">— 請選擇案件 —</option>';
   cases.forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
   if(pre){sel.value=pre;await onCaseChange();}
