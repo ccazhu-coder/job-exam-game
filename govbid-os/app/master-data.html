@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜基本資料</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab-bar .tab{padding:6px 16px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.tab-bar .tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.tab-bar .tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:.78rem;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter-row input{flex:1;min-width:160px;padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.filter-row input:focus{outline:none;border-color:var(--navy-mid)}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fi{margin-bottom:10px}.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:55px;resize:vertical}
+.fr.c2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fr.c3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">基本資料</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>基本資料中心</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">管理講師、廠商、場地、工作人員基本資料</p></div>
+    <div class="btns"><button class="gold" id="addBtn" onclick="openModal()">＋ 新增</button></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('lecturer',this)">講師資料</button>
+    <button class="tab" onclick="switchTab('vendor',this)">廠商與場地</button>
+    <button class="tab" onclick="switchTab('staff',this)">工作人員資料</button>
+  </div>
+  <div class="filter-row">
+    <input id="searchInput" type="text" placeholder="搜尋姓名、Email、電話…" oninput="renderTable()">
+    <button class="secondary" onclick="loadData()">重新整理</button>
+  </div>
+  <div class="table-wrap"><table class="erp-table"><thead id="tableHead"></thead><tbody id="tableBody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">載入中…</td></tr></tbody></table></div>
+</main>
+<div class="modal-overlay" id="dataModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="mTitle">新增</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-footer"><button class="secondary" onclick="closeModal()">取消</button><button class="gold" onclick="saveData()">儲存</button></div>
+  </div>
+</div>
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+var _tab='lecturer',_data=[],_editId=null;
+var TAB_CONFIG={
+  lecturer:{label:'講師',action:{get:'查詢講師',save:'儲存講師'},sheetName:'18_講師資料',
+    headers:['講師ID','姓名','電話','Email','服務單位','專業領域','費率','銀行','帳號','戶名','身分證字號','備註'],
+    fields:[['姓名','text'],['電話','text'],['Email','email'],['服務單位','text'],['專業領域','text'],['費率','text'],['銀行','text'],['帳號','text'],['戶名','text'],['身分證字號','text'],['備註','textarea']]},
+  vendor:{label:'廠商',action:{get:'查詢合作廠商',save:'儲存合作廠商'},sheetName:'23_合作廠商主檔',
+    headers:['廠商編號','名稱','類型','聯絡人','電話','Email','地址','備註'],
+    fields:[['名稱','text'],['類型','text'],['聯絡人','text'],['電話','text'],['Email','email'],['地址','text'],['備註','textarea']]},
+  staff:{label:'工作人員',action:{get:'查詢工作人員',save:'儲存工作人員'},sheetName:'19_工作人員資料',
+    headers:['人員ID','姓名','電話','Email','身分別','身分證字號','銀行','帳號','戶名','備註'],
+    fields:[['姓名','text'],['電話','text'],['Email','email'],['身分別','text'],['身分證字號','text'],['銀行','text'],['帳號','text'],['戶名','text'],['備註','textarea']]}
+};
+function init(){
+  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+  loadData();
+}
+async function loadData(){
+  var cfg=TAB_CONFIG[_tab];if(!cfg)return;
+  var r;
+  if(_tab==='lecturer'){r=await ERPALIGNED.api({action:'查詢講師'});}
+  else if(_tab==='vendor'){r=await ERPALIGNED.api({action:'查詢合作廠商'});}
+  else{r=await ERPALIGNED.api({action:'查詢工作人員'});}
+  if(r.success){_data=r.data&&(r.data.rows||r.data.講師||r.data.廠商||r.data.工作人員)||[];renderTable();}
+  else{_data=[];renderTable();}
+}
+function renderTable(){
+  var kw=(document.getElementById('searchInput').value||'').toLowerCase();
+  var rows=kw?_data.filter(function(r){return JSON.stringify(r).toLowerCase().indexOf(kw)>=0;}):_data;
+  var cfg=TAB_CONFIG[_tab];
+  var ths=cfg.headers.slice(0,8).map(function(h){return '<th>'+esc(h)+'</th>';}).join('')+'<th>操作</th>';
+  document.getElementById('tableHead').innerHTML='<tr>'+ths+'</tr>';
+  if(!rows.length){document.getElementById('tableBody').innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">無資料</td></tr>';return;}
+  var idField=cfg.headers[0];
+  var html='';
+  rows.forEach(function(r){
+    var rid=esc(r[idField]||'');
+    html+='<tr>'+cfg.headers.slice(0,8).map(function(h){return '<td>'+esc(String(r[h]||''))+'</td>';}).join('')
+      +'<td style="display:flex;gap:3px"><button class="row-btn" onclick="openModal(\''+rid+'\')">編輯</button></td></tr>';
+  });
+  document.getElementById('tableBody').innerHTML=html;
+  document.getElementById('pageSubtitle').textContent='共 '+_data.length+' 筆'+TAB_CONFIG[_tab].label+'資料';
+}
+function switchTab(tab,btn){
+  _tab=tab;
+  document.querySelectorAll('.tab-bar .tab').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  document.getElementById('searchInput').value='';
+  loadData();
+}
+function openModal(id){
+  _editId=id||null;var cfg=TAB_CONFIG[_tab];
+  document.getElementById('mTitle').textContent=(id?'編輯':'新增')+cfg.label;
+  var record=id?(_data.find(function(r){return r[cfg.headers[0]]===id;})||{}):null;
+  var html='';
+  html+='<input type="hidden" id="m_id" value="'+(record&&record[cfg.headers[0]]?esc(record[cfg.headers[0]]):'')+'"">';
+  cfg.fields.forEach(function(f){
+    var val=record&&record[f[0]]?esc(String(record[f[0]])):'';
+    if(f[1]==='textarea')html+='<div class="fi"><label>'+esc(f[0])+'</label><textarea id="mf_'+f[0].replace(/\//g,'_')+'">'+val+'</textarea></div>';
+    else html+='<div class="fi"><label>'+esc(f[0])+'</label><input id="mf_'+f[0].replace(/\//g,'_')+'" type="'+f[1]+'" value="'+val+'"></div>';
+  });
+  document.getElementById('mBody').innerHTML=html;
+  document.getElementById('dataModal').style.display='flex';
+}
+function closeModal(){document.getElementById('dataModal').style.display='none';}
+async function saveData(){
+  var cfg=TAB_CONFIG[_tab];
+  var action=_tab==='lecturer'?'儲存講師':_tab==='vendor'?'儲存合作廠商':'儲存工作人員';
+  var p={action:action};
+  p[cfg.headers[0]]=document.getElementById('m_id').value||'';
+  cfg.fields.forEach(function(f){var el=document.getElementById('mf_'+f[0].replace(/\//g,'_'));if(el)p[f[0]]=el.value;});
+  var r=await ERPALIGNED.api(p);if(r.success){closeModal();loadData();}else alert('儲存失敗：'+r.message);
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
