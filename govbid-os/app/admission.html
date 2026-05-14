@@ -73,9 +73,11 @@
     <h3>📬 通知追蹤</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <span style="font-size:.82rem;color:var(--navy-mid)">已錄取通知：<strong id="notifyCount">0 / 0</strong></span>
+      <button class="gold" style="font-size:.8rem" onclick="sendAdmissionNotices()">發送錄取通知 Email（全自動）</button>
       <button class="secondary" style="font-size:.78rem" onclick="batchMarkNotified()">批次標記已通知</button>
       <span style="font-size:.78rem;color:var(--gray-400)">（勾選人員後操作）</span>
     </div>
+    <div id="notifyResult" style="margin-top:8px;font-size:.82rem"></div>
   </div>
 
   <!-- 搜尋篩選 -->
@@ -261,6 +263,19 @@ function exportList(){
   }).join('\n');
   var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
   alert('已複製 '+rows.length+' 筆錄取名單到剪貼簿（可貼到 Excel）');
+}
+
+async function sendAdmissionNotices(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  if(!confirm('確定要發送錄取通知 Email？\n系統將自動發送給所有已錄取/備取且尚未通知的學員。'))return;
+  var el=document.getElementById('notifyResult');
+  el.innerHTML='<span style="color:var(--gray-400)">發送中…</span>';
+  var r=await ERPALIGNED.api({action:'sendAdmissionNotices',caseId:_caseId,sessionId:_sessionId||''});
+  if(r.success){
+    var d=r.data||{};
+    el.innerHTML='<span style="color:#166534">✅ 通知已發送：'+(d.sent||0)+' 封，跳過 '+(d.skipped||0)+' 封（已通知或無 Email）</span>';
+    loadAdmission();
+  } else el.innerHTML='<span style="color:var(--danger)">❌ 發送失敗：'+esc(r.message||r.error||'未知錯誤')+'</span>';
 }
 
 window.addEventListener('DOMContentLoaded', init);
