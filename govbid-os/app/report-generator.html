@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜成果／結案報告產生</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.step-bar{display:flex;gap:0;margin-bottom:22px;overflow-x:auto}
+.step{display:flex;align-items:center;flex-shrink:0}
+.step .s-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--gray-300);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:700;color:var(--gray-400);flex-shrink:0}
+.step .s-label{font-size:.76rem;color:var(--gray-400);margin:0 8px;white-space:nowrap}
+.step .s-line{width:32px;height:2px;background:var(--gray-200)}
+.step.done .s-dot{background:var(--navy);border-color:var(--navy);color:#fff}
+.step.done .s-label{color:var(--navy);font-weight:600}
+.step.done .s-line{background:var(--navy)}
+.step.active .s-dot{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.step.active .s-label{color:var(--navy);font-weight:700}
+/* report sections */
+.report-section{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.rs-head{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;cursor:pointer;transition:.12s}
+.rs-head:hover{background:var(--offwhite)}
+.rs-title{font-size:.88rem;font-weight:700;color:var(--navy);display:flex;align-items:center;gap:8px}
+.rs-status{font-size:.75rem;padding:2px 8px;border-radius:10px}
+.rs-ok{background:#dcfce7;color:#166534}
+.rs-warn{background:#fef3c7;color:#92400e}
+.rs-missing{background:#fee2e2;color:#991b1b}
+.rs-body{padding:14px 18px;border-top:1.5px solid var(--gray-100);display:none}
+.rs-body.open{display:block}
+.data-preview{font-size:.8rem;color:var(--navy-mid);background:var(--offwhite);border-radius:6px;padding:10px 12px;line-height:1.7}
+.data-item{display:flex;gap:8px;margin-bottom:3px}
+.data-item .dk{color:var(--gray-500);min-width:100px;flex-shrink:0}
+.data-item .dv{color:var(--navy);font-weight:500}
+/* fi */
+.fi{margin-bottom:10px}.fi label{display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi textarea,.fi input{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi textarea{min-height:80px;resize:vertical}
+.fi textarea:focus,.fi input:focus{outline:none;border-color:var(--navy-mid)}
+/* acceptance checklist */
+.accept-check{padding:8px 12px;border:1.5px solid var(--gray-100);border-radius:6px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.accept-check.done{border-color:#86efac;background:#f0fdf4}
+.accept-check.pending{border-color:#fcd34d;background:#fffbeb}
+/* print */
+@media print{body>*:not(#printReport){display:none!important}#printReport{display:block!important;padding:20px}}
+#printReport{display:none}
+.print-section{margin-bottom:28px;font-family:'標楷體',serif}
+.print-section h2{font-size:13pt;font-weight:bold;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:10px}
+.print-section p,.print-section td{font-size:10.5pt;line-height:1.8}
+.print-section table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.print-section th,.print-section td{border:1px solid #000;padding:4px 8px;font-size:10pt}
+.print-section th{background:#ddd;font-weight:bold;text-align:center}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">成果／結案報告產生</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>成果／結案報告產生</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">選擇案件，系統彙整所有執行資料，依驗收條件產出結案報告</p></div>
+    <div class="btns" id="printBtns" style="display:none">
+      <button class="secondary" onclick="window.print()">🖨 列印報告</button>
+    </div>
+  </div>
+
+  <!-- 步驟列 -->
+  <div class="step-bar">
+    <div class="step active" id="step1"><span class="s-dot">1</span><span class="s-label">選擇案件</span><span class="s-line"></span></div>
+    <div class="step" id="step2"><span class="s-dot">2</span><span class="s-label">資料彙整</span><span class="s-line"></span></div>
+    <div class="step" id="step3"><span class="s-dot">3</span><span class="s-label">驗收對照</span><span class="s-line"></span></div>
+    <div class="step" id="step4"><span class="s-dot">4</span><span class="s-label">補充內容</span><span class="s-line"></span></div>
+    <div class="step" id="step5"><span class="s-dot">5</span><span class="s-dot" style="display:none"></span><span class="s-label">產生報告</span></div>
+  </div>
+
+  <!-- Step 1: 選案件 -->
+  <div id="s1">
+    <div class="card">
+      <h2 style="margin-bottom:12px">選擇要產生結案報告的案件</h2>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select id="caseSelect" style="flex:1;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font)">
+          <option value="">載入中…</option>
+        </select>
+        <button class="gold" onclick="loadReportData()">載入資料</button>
+      </div>
+      <p style="font-size:.78rem;color:var(--gray-400);margin-top:8px">系統將自動彙整：案件資料、場次執行、報名統計、財務收支、驗收條件達成狀態</p>
+    </div>
+  </div>
+
+  <!-- Step 2~5: 報告建置 -->
+  <div id="s2345" style="display:none">
+
+    <!-- 案件 Banner -->
+    <div style="background:linear-gradient(135deg,var(--navy),var(--navy-mid));color:#fff;border-radius:12px;padding:16px 22px;margin-bottom:18px">
+      <div style="font-size:.75rem;color:rgba(255,255,255,.6);margin-bottom:4px">結案報告</div>
+      <div style="font-size:1.1rem;font-weight:800" id="rpCaseName">—</div>
+      <div style="font-size:.8rem;color:rgba(255,255,255,.7);margin-top:4px" id="rpCaseMeta">—</div>
+    </div>
+
+    <!-- ── 資料彙整總覽 ── -->
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:10px">資料彙整狀態</h3>
+    <div id="dataSections"></div>
+
+    <!-- ── 驗收條件對照 ── -->
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--navy);margin:18px 0 10px">驗收條件對照</h3>
+    <div id="acceptanceChecklist">
+      <div style="background:var(--offwhite);border-radius:8px;padding:12px 16px;font-size:.82rem;color:var(--gray-500)">
+        ℹ️ 驗收條件需先在「案件需求摘要」中建立，系統才能自動對照執行成果。
+        <button class="secondary" style="margin-left:10px;font-size:.78rem" onclick="goToReqPage()">前往建立驗收條件</button>
+      </div>
+    </div>
+
+    <!-- ── 報告補充內容（手動填寫） ── -->
+    <h3 style="font-size:.9rem;font-weight:700;color:var(--navy);margin:18px 0 10px">報告補充內容（手動填寫）</h3>
+    <div class="card">
+      <div class="fi"><label>壹、前言</label><textarea id="rp_intro" placeholder="說明本計畫辦理緣起、背景、目的…"></textarea></div>
+      <div class="fi"><label>貳、計畫摘要</label><textarea id="rp_summary" placeholder="從計畫書摘要本計畫的核心目標與執行方向…"></textarea></div>
+      <div class="fi"><label>肆、實施效益與分析</label><textarea id="rp_benefit" placeholder="說明本計畫執行後的實際效益、量化指標達成情形…"></textarea></div>
+      <div class="fi"><label>伍、執行檢討與後續建議 <span style="color:var(--danger)">（必填）</span></label></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="fi"><label>執行過程觀察</label><textarea id="rp_obs" placeholder="觀察執行過程中的重要情形…" style="min-height:70px"></textarea></div>
+        <div class="fi"><label>執行中遇到的問題</label><textarea id="rp_prob" placeholder="說明執行中遭遇的困難…" style="min-height:70px"></textarea></div>
+        <div class="fi"><label>行政作業檢討</label><textarea id="rp_admin" placeholder="報名流程、文件作業、通知效率等…" style="min-height:70px"></textarea></div>
+        <div class="fi"><label>場次安排檢討</label><textarea id="rp_session" placeholder="場次日期、地點、時間安排的檢討…" style="min-height:70px"></textarea></div>
+        <div class="fi"><label>招生／參與情形檢討</label><textarea id="rp_recruit" placeholder="招生成效、報到率、未到率分析…" style="min-height:70px"></textarea></div>
+        <div class="fi"><label>未來改善建議</label><textarea id="rp_suggest" placeholder="對下次辦理的具體建議…" style="min-height:70px"></textarea></div>
+      </div>
+    </div>
+
+    <div class="btns" style="margin-top:16px;justify-content:flex-end">
+      <button class="secondary" onclick="previewReport()">預覽報告</button>
+      <button class="gold" onclick="generateReport()">產生完整報告</button>
+    </div>
+
+    <!-- 報告預覽 -->
+    <div id="reportPreview" style="display:none;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 style="font-size:.9rem;font-weight:700;color:var(--navy)">報告預覽</h3>
+        <button class="gold" onclick="window.print()">🖨 列印 / 存 PDF</button>
+      </div>
+      <div style="border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;max-height:700px;overflow-y:auto" id="reportContent"></div>
+    </div>
+  </div>
+
+</main>
+
+<div id="printReport"></div>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+var _caseId='', _reportData={};
+
+function init(){
+  var p=safeJSON('govops_profile');
+  if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);
+  var cid=sp.get('caseId')||'';
+  loadCases(cid);
+}
+
+async function loadCases(preCid){
+  var r=await ERPALIGNED.api({action:'getCases'});
+  var sel=document.getElementById('caseSelect');
+  if(!r.success){sel.innerHTML='<option>載入失敗</option>';return;}
+  var cases=r.data&&r.data.rows||[];
+  sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  cases.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c['專案ID']||'';
+    o.textContent=(c['專案計畫名稱']||'未命名')+' ('+esc(c['狀態']||'')+')';
+    sel.appendChild(o);
+  });
+  if(preCid){sel.value=preCid;await loadReportData();}
+}
+
+async function loadReportData(){
+  _caseId=document.getElementById('caseSelect').value;
+  if(!_caseId){alert('請選擇案件');return;}
+  setStep(2);
+  var r=await ERPALIGNED.api({action:'getReportData',caseId:_caseId});
+  if(!r.success){alert('資料載入失敗：'+r.message);return;}
+  _reportData=r.data||{};
+  document.getElementById('s1').style.display='none';
+  document.getElementById('s2345').style.display='';
+  var ci=_reportData.caseInfo||{};
+  document.getElementById('rpCaseName').textContent=ci['專案計畫名稱']||_caseId;
+  document.getElementById('rpCaseMeta').textContent=(ci['主辦單位']||'')+(ci['開始日期']?' ｜ '+shortDate(ci['開始日期'])+' ~ '+shortDate(ci['結束日期']):'')+(ci['狀態']?' ｜ '+ci['狀態']:'');
+  document.getElementById('pageSubtitle').textContent='案件：'+(ci['專案計畫名稱']||_caseId);
+  // Pre-fill from requirements
+  var req=_reportData.requirements||{};
+  if(req['計畫緣起與背景']&&!document.getElementById('rp_intro').value) document.getElementById('rp_intro').value=req['計畫緣起與背景'];
+  if(req['計畫目標']&&!document.getElementById('rp_summary').value) document.getElementById('rp_summary').value=req['計畫目標'];
+  if(req['預期效益']&&!document.getElementById('rp_benefit').value) document.getElementById('rp_benefit').value=req['預期效益'];
+  renderDataSections();
+  renderAcceptanceChecklist();
+  setStep(3);
+}
+
+function renderDataSections(){
+  var d=_reportData;
+  var ci=d.caseInfo||{}, req=d.requirements||{}, rs=d.regStats||{};
+  var sessions=d.sessions||[], tasks=d.tasks||[], fin=d.finance||{}, budget=d.budget||[];
+  var closing=d.closingChecks||[], accepts=d.acceptanceItems||[];
+  var sections=[
+    { title:'一、案件基本資料', status: ci['專案計畫名稱']?'ok':'warn',
+      content: buildDataItems([['案件名稱',ci['專案計畫名稱']||'—'],['主辦單位',ci['主辦單位']||'—'],['執行期間',shortDate(ci['開始日期'])+' ~ '+shortDate(ci['結束日期'])],['案件狀態',ci['狀態']||'—'],['承辦窗口',ci['承辦窗口']||'—']]) },
+    { title:'二、案件需求摘要', status: req['計畫目標']?'ok':'warn',
+      content: buildDataItems([['計畫目標',req['計畫目標']||'⚠️ 尚未填寫'],['服務對象',req['服務對象']||'—'],['預期場次',req['預期場次數']||'—'],['預期人次',req['預期參與人次']||'—'],['驗收條件',accepts.length+'項']]) },
+    { title:'三、場次執行紀錄', status: sessions.length>0?'ok':'warn',
+      content: sessions.length?buildSessionTable(sessions):'<div style="color:var(--gold)">⚠️ 尚無場次資料</div>' },
+    { title:'四、報名與出席統計', status: rs.total>0?'ok':'warn',
+      content: buildDataItems([['報名總數',rs.total||0],['符合資格/已錄取',rs.admitted||0],['未錄取',rs.rejected||0]]) },
+    { title:'五、財務收支摘要', status: (fin.income||fin.expense)?'ok':'warn',
+      content: buildDataItems([['收入合計','NT$'+Math.round(fin.income||0).toLocaleString()],['支出合計','NT$'+Math.round(fin.expense||0).toLocaleString()],['損益','NT$'+Math.round((fin.income||0)-(fin.expense||0)).toLocaleString()]]) },
+    { title:'六、核銷預算對照', status: budget.length>0?'ok':'warn',
+      content: budget.length?buildBudgetTable(budget):'<div style="color:var(--gold)">⚠️ 尚未建立預算明細（請前往案件需求摘要→核銷與財務）</div>' },
+    { title:'七、結案檢核', status: closing.length>0?'ok':'warn',
+      content: closing.length?'完成 '+closing.filter(function(c){return c['完成狀態']==='已完成';}).length+' / '+closing.length+' 項':'<div style="color:var(--gold)">⚠️ 尚未初始化結案檢核清單</div>' }
+  ];
+  var html='';
+  sections.forEach(function(s){
+    var sc=s.status==='ok'?'rs-ok':s.status==='warn'?'rs-warn':'rs-missing';
+    var label=s.status==='ok'?'資料完整':s.status==='warn'?'需補充':'資料缺失';
+    html+='<div class="report-section">'
+      +'<div class="rs-head" onclick="toggleSection(this)">'
+      +'<span class="rs-title">'+s.title+'</span>'
+      +'<span class="rs-status '+sc+'">'+label+'</span>'
+      +'</div>'
+      +'<div class="rs-body">'+s.content+'</div>'
+      +'</div>';
+  });
+  document.getElementById('dataSections').innerHTML=html;
+}
+
+function toggleSection(head){
+  var body=head.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function buildDataItems(items){
+  var h='<div class="data-preview">';
+  items.forEach(function(item){h+='<div class="data-item"><span class="dk">'+esc(item[0])+'</span><span class="dv">'+esc(String(item[1]||'—'))+'</span></div>';});
+  return h+'</div>';
+}
+
+function buildSessionTable(sessions){
+  var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem">'
+    +'<thead><tr style="background:var(--navy);color:#fff"><th style="padding:6px 8px;text-align:left">場次名稱</th><th>日期</th><th>地點</th><th>講師</th><th>狀態</th></tr></thead><tbody>';
+  sessions.forEach(function(s){
+    h+='<tr style="border-bottom:1px solid var(--gray-100)">'
+      +'<td style="padding:6px 8px">'+esc(s['活動名稱']||'—')+'</td>'
+      +'<td style="padding:6px 8px">'+shortDate(s['活動日期'])+'</td>'
+      +'<td style="padding:6px 8px">'+esc(s['活動地點']||'—')+'</td>'
+      +'<td style="padding:6px 8px">'+esc(s['講師']||'—')+'</td>'
+      +'<td style="padding:6px 8px">'+esc(s['狀態']||'—')+'</td></tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+
+function buildBudgetTable(budget){
+  var h='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem">'
+    +'<thead><tr style="background:var(--navy);color:#fff"><th style="padding:6px 8px;text-align:left">#</th><th>支出項目</th><th>單位</th><th>預算金額</th><th>核銷狀態</th></tr></thead><tbody>';
+  budget.forEach(function(b,i){
+    h+='<tr style="border-bottom:1px solid var(--gray-100)">'
+      +'<td style="padding:6px 8px">'+(i+1)+'</td>'
+      +'<td style="padding:6px 8px">'+esc(b['支出項目']||'')+'</td>'
+      +'<td style="padding:6px 8px">'+esc(b['單位']||'')+'</td>'
+      +'<td style="padding:6px 8px">NT$'+Math.round(parseFloat(b['預算金額'])||0).toLocaleString()+'</td>'
+      +'<td style="padding:6px 8px">'+esc(b['核銷狀態']||'未核銷')+'</td></tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+
+function renderAcceptanceChecklist(){
+  var accepts=_reportData.acceptanceItems||[];
+  if(!accepts.length){
+    document.getElementById('acceptanceChecklist').innerHTML='<div style="background:var(--offwhite);border-radius:8px;padding:12px 16px;font-size:.82rem;color:var(--gray-500)">ℹ️ 尚無驗收條件。<button class="secondary" style="margin-left:10px;font-size:.78rem" onclick="goToReqPage()">前往案件需求摘要建立驗收條件</button></div>';
+    return;
+  }
+  var done=accepts.filter(function(a){return a['完成狀態']==='已完成';}).length;
+  var html='<div style="font-size:.82rem;color:var(--navy-mid);margin-bottom:8px">完成進度：<strong>'+done+' / '+accepts.length+' 項</strong></div>';
+  accepts.forEach(function(a,i){
+    var isDone=a['完成狀態']==='已完成';
+    html+='<div class="accept-check '+(isDone?'done':'pending')+'">'
+      +'<span style="font-size:1.1rem">'+(isDone?'✅':'⚠️')+'</span>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:.85rem;font-weight:600;color:var(--navy)">'+(i+1)+'. '+esc(a['驗收項目名稱']||'')+'</div>'
+      +(a['驗收要求說明']?'<div style="font-size:.76rem;color:var(--gray-500)">'+esc(a['驗收要求說明'])+'</div>':'')
+      +(a['繳交數量']?'<div style="font-size:.74rem;color:var(--gray-400)">繳交：'+esc(a['繳交數量'])+(a['繳交格式']?'（'+esc(a['繳交格式'])+'）':'')+'</div>':'')
+      +'</div>'
+      +'<span style="font-size:.75rem;padding:2px 8px;border-radius:10px;'+(isDone?'background:#dcfce7;color:#166534':'background:#fef3c7;color:#92400e')+'">'+esc(a['完成狀態']||'未完成')+'</span>'
+      +'</div>';
+  });
+  document.getElementById('acceptanceChecklist').innerHTML=html;
+}
+
+function setStep(n){
+  for(var i=1;i<=5;i++){
+    var el=document.getElementById('step'+i);
+    if(!el)continue;
+    if(i<n)el.className='step done';
+    else if(i===n)el.className='step active';
+    else el.className='step';
+  }
+}
+
+function previewReport(){
+  setStep(5);
+  var ci=_reportData.caseInfo||{}, sessions=_reportData.sessions||[], rs=_reportData.regStats||{}, fin=_reportData.finance||{}, budget=_reportData.budget||[], accepts=_reportData.acceptanceItems||[];
+  var rocYear=new Date().getFullYear()-1911;
+  var html='<div class="print-section" style="padding:20px">';
+  // Cover
+  html+='<div style="text-align:center;padding:30px 0;border-bottom:2px solid #000;margin-bottom:20px">'
+    +'<h1 style="font-size:18pt;font-weight:bold;margin-bottom:8px">'+esc(ci['專案計畫名稱']||'___')+'</h1>'
+    +'<h2 style="font-size:14pt;font-weight:bold;margin-bottom:16px">成果暨結案報告</h2>'
+    +'<div style="font-size:11pt">主辦單位：'+esc(ci['主辦單位']||'___')+'</div>'
+    +'<div style="font-size:11pt">承辦單位：'+esc(safeJSON('govops_profile')&&safeJSON('govops_profile').orgName||'___')+'</div>'
+    +'<div style="font-size:11pt">執行期間：'+shortDate(ci['開始日期'])+' 至 '+shortDate(ci['結束日期'])+'</div>'
+    +'<div style="font-size:10pt;margin-top:12px">中華民國 '+rocYear+' 年</div>'
+    +'</div>';
+  // 壹 前言
+  html+='<h2>壹、前言</h2><p>'+esc(document.getElementById('rp_intro').value||'（請填寫前言）')+'</p>';
+  // 貳 計畫摘要
+  html+='<h2>貳、計畫摘要</h2><p>'+esc(document.getElementById('rp_summary').value||'（請填寫計畫摘要）')+'</p>';
+  // 參 實施內容
+  html+='<h2>參、實施內容</h2>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:10px 0 6px">一、辦理場次規劃</h3>';
+  if(sessions.length){
+    html+='<table><thead><tr><th>場次</th><th>日期</th><th>時間</th><th>地點</th><th>主題</th><th>講師</th><th>人數</th></tr></thead><tbody>';
+    sessions.forEach(function(s,i){
+      html+='<tr><td style="text-align:center">第'+(i+1)+'場</td><td>'+shortDate(s['活動日期'])+'</td>'
+        +'<td>'+(s['開始時間']||'')+(s['結束時間']?' ~ '+s['結束時間']:'')+'</td>'
+        +'<td>'+esc(s['活動地點']||'—')+'</td><td>'+esc(s['活動名稱']||'—')+'</td>'
+        +'<td>'+esc(s['講師']||'—')+'</td><td>'+esc(s['預計人數']||'—')+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  } else html+='<p>（尚無場次資料）</p>';
+  // 報名統計
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:10px 0 6px">二、報名與出席統計</h3>';
+  html+='<table><tr><td>報名總數</td><td>'+esc(String(rs.total||0))+'人</td></tr>'
+    +'<tr><td>審查通過／錄取</td><td>'+esc(String(rs.admitted||0))+'人</td></tr></table>';
+  // 驗收條件對照
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:10px 0 6px">三、驗收條件達成</h3>';
+  if(accepts.length){
+    html+='<table><thead><tr><th>#</th><th>驗收項目</th><th>要求</th><th>狀態</th></tr></thead><tbody>';
+    accepts.forEach(function(a,i){
+      html+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(a['驗收項目名稱']||'')+'</td>'
+        +'<td>'+esc(a['驗收要求說明']||'')+'</td><td>'+esc(a['完成狀態']||'未完成')+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  } else html+='<p>（請先在案件需求摘要中建立驗收條件）</p>';
+  // 肆 效益
+  html+='<h2>肆、實施效益與分析</h2><p>'+esc(document.getElementById('rp_benefit').value||'（請填寫效益分析）')+'</p>';
+  // 財務
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:10px 0 6px">財務收支摘要</h3>';
+  html+='<table><tr><td>收入合計</td><td>NT$ '+Math.round(fin.income||0).toLocaleString()+'</td></tr>'
+    +'<tr><td>支出合計</td><td>NT$ '+Math.round(fin.expense||0).toLocaleString()+'</td></tr>'
+    +'<tr><td>損益</td><td>NT$ '+Math.round((fin.income||0)-(fin.expense||0)).toLocaleString()+'</td></tr></table>';
+  // 伍 檢討
+  html+='<h2>伍、執行檢討與後續建議</h2>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">一、執行過程觀察</h3><p>'+esc(document.getElementById('rp_obs').value||'—')+'</p>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">二、執行中遇到的問題</h3><p>'+esc(document.getElementById('rp_prob').value||'—')+'</p>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">三、行政作業檢討</h3><p>'+esc(document.getElementById('rp_admin').value||'—')+'</p>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">四、場次安排檢討</h3><p>'+esc(document.getElementById('rp_session').value||'—')+'</p>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">五、招生／參與情形檢討</h3><p>'+esc(document.getElementById('rp_recruit').value||'—')+'</p>';
+  html+='<h3 style="font-size:11pt;font-weight:bold;margin:8px 0 4px">六、未來改善建議</h3><p>'+esc(document.getElementById('rp_suggest').value||'—')+'</p>';
+  html+='</div>';
+  document.getElementById('reportContent').innerHTML=html;
+  document.getElementById('printReport').innerHTML=html;
+  document.getElementById('reportPreview').style.display='';
+  document.getElementById('printBtns').style.display='flex';
+  document.getElementById('reportPreview').scrollIntoView({behavior:'smooth'});
+}
+
+function generateReport(){
+  previewReport();
+}
+
+function goToReqPage(){
+  location.href='./case-requirements.html?caseId='+_caseId;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
