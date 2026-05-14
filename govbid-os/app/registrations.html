@@ -276,9 +276,11 @@ function init() {
     document.getElementById('ctxName').textContent = decodeURIComponent(ctxName);
     if (_currentCaseId) document.getElementById('ctxBack').href = './sessions.html?caseId=' + _currentCaseId;
   }
-  loadSessionList();
-  loadStats();
-  loadRegs();
+  // 依序：先載入場次清單（設定篩選值），再載入統計和資料
+  loadSessionList().then(function() {
+    loadStats();
+    loadRegs();
+  });
 }
 
 function safeJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e) { return null; } }
