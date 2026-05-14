@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜行政文件產生</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+/* 文件卡片 */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px}
+.doc-card{background:var(--white);border:1.5px solid var(--gray-100);border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:.15s;cursor:pointer}
+.doc-card:hover{border-color:var(--navy-mid);box-shadow:0 4px 16px rgba(13,35,64,.1)}
+.doc-card.disabled{opacity:.5;cursor:not-allowed}
+.doc-card .ico{font-size:1.8rem;margin-bottom:8px}
+.doc-card h3{font-size:.9rem;font-weight:700;color:var(--navy);margin:0 0 4px}
+.doc-card p{font-size:.78rem;color:var(--gray-500);margin:0 0 12px;line-height:1.5}
+.doc-card .meta{font-size:.73rem;color:var(--gold);font-weight:600}
+.doc-card .actions{display:flex;gap:6px;margin-top:12px}
+
+/* 選擇器 */
+.selector-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:540px){.selector-row{grid-template-columns:1fr}}
+.selector-row select{padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font);background:var(--white);width:100%}
+.selector-row select:focus{outline:none;border-color:var(--navy-mid)}
+
+/* 資料摘要卡 */
+.data-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.ds-item{background:var(--gold-pale);border:1px solid var(--gold);border-radius:8px;padding:8px 14px;font-size:.82rem}
+.ds-item .num{font-weight:800;color:var(--navy);font-size:1.1rem}
+.ds-item .lbl{color:var(--gray-500);font-size:.73rem}
+
+/* 預覽表格 */
+.preview-box{background:var(--gray-100);border-radius:8px;padding:14px;margin-top:12px}
+.preview-box h3{font-size:.82rem;font-weight:700;color:var(--navy);margin:0 0 10px}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">行政文件產生</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>行政文件產生</h1>
+      <p style="color:var(--gray-500);font-size:.84rem;margin:0">選擇案件與場次後，一鍵產生各類行政文件</p>
+    </div>
+  </div>
+
+  <!-- 案件/場次選擇器 -->
+  <section class="card" style="margin-bottom:16px">
+    <h2 style="margin-bottom:12px">選擇案件與場次</h2>
+    <div class="selector-row">
+      <div>
+        <label style="display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:4px">案件</label>
+        <select id="caseSelect" onchange="onCaseChange()">
+          <option value="">載入中…</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:4px">場次</label>
+        <select id="sessionSelect" onchange="onSessionChange()">
+          <option value="">請先選擇案件</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 資料摘要 -->
+    <div class="data-summary" id="dataSummary" style="display:none">
+      <div class="ds-item"><div class="num" id="ds_total">0</div><div class="lbl">全部報名</div></div>
+      <div class="ds-item"><div class="num" id="ds_admitted">0</div><div class="lbl">已錄取</div></div>
+      <div class="ds-item"><div class="num" id="ds_meal">0</div><div class="lbl">需便當</div></div>
+      <div class="ds-item"><div class="num" id="ds_addr">0</div><div class="lbl">有地址</div></div>
+    </div>
+    <div id="summaryMsg" class="msg" style="display:none"></div>
+  </section>
+
+  <!-- 文件卡片 -->
+  <h2 style="margin-bottom:12px;color:var(--navy)">可產生文件</h2>
+  <div class="doc-grid">
+    <div class="doc-card" id="card_attendance" onclick="genDoc('attendance')">
+      <div class="ico">📋</div>
+      <h3>簽到表</h3>
+      <p>依錄取名單產生課程簽到用表格，含姓名、服務單位、簽到欄</p>
+      <div class="meta" id="meta_attendance">—</div>
+      <div class="actions">
+        <button class="gold" style="font-size:.8rem;padding:6px 14px" onclick="genDoc('attendance');event.stopPropagation()">產生預覽</button>
+      </div>
+    </div>
+
+    <div class="doc-card" id="card_admission" onclick="genDoc('admission')">
+      <div class="ico">🏆</div>
+      <h3>錄取名冊</h3>
+      <p>含正取、備取名單，可匯出作為正式通知依據</p>
+      <div class="meta" id="meta_admission">—</div>
+      <div class="actions">
+        <button class="gold" style="font-size:.8rem;padding:6px 14px" onclick="genDoc('admission');event.stopPropagation()">產生預覽</button>
+      </div>
+    </div>
+
+    <div class="doc-card" id="card_meal" onclick="genDoc('meal')">
+      <div class="ico">🍱</div>
+      <h3>便當統計表</h3>
+      <p>統計葷素及各口味數量，方便向廠商訂餐</p>
+      <div class="meta" id="meta_meal">—</div>
+      <div class="actions">
+        <button class="gold" style="font-size:.8rem;padding:6px 14px" onclick="genDoc('meal');event.stopPropagation()">產生統計</button>
+      </div>
+    </div>
+
+    <div class="doc-card" id="card_address" onclick="genDoc('address')">
+      <div class="ico">📬</div>
+      <h3>地址標籤</h3>
+      <p>彙整有填寫地址的學員資料，可用於寄發通知信函</p>
+      <div class="meta" id="meta_address">—</div>
+      <div class="actions">
+        <button class="gold" style="font-size:.8rem;padding:6px 14px" onclick="genDoc('address');event.stopPropagation()">產生清單</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="previewSection" style="display:none">
+    <div class="preview-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <h3 id="previewTitle">文件預覽</h3>
+        <div class="btns">
+          <button class="secondary" style="font-size:.78rem;padding:6px 12px" onclick="copyTable()">複製表格</button>
+          <button class="ghost" style="font-size:.78rem;padding:6px 12px" onclick="closePreview()">關閉</button>
+        </div>
+      </div>
+      <div id="previewTable"></div>
+    </div>
+  </div>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _cases = [];
+var _sessions = [];
+var _currentCaseId = '';
+var _currentSessionId = '';
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  loadCases();
+}
+
+function safeJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e) { return null; } }
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases' });
+  _cases = r.data || [];
+  var sel = document.getElementById('caseSelect');
+  sel.innerHTML = '<option value="">— 選擇案件 —</option>' + _cases.map(function(c){
+    return '<option value="' + ERPALIGNED.esc(c['專案ID']) + '">' + ERPALIGNED.esc(c['專案計畫名稱']) + '</option>';
+  }).join('');
+}
+
+async function onCaseChange() {
+  _currentCaseId = document.getElementById('caseSelect').value;
+  _currentSessionId = '';
+  document.getElementById('sessionSelect').innerHTML = '<option value="">載入場次中…</option>';
+  document.getElementById('dataSummary').style.display = 'none';
+  closePreview();
+  if (!_currentCaseId) { document.getElementById('sessionSelect').innerHTML = '<option value="">請先選擇案件</option>'; return; }
+  var r = await ERPALIGNED.api({ action: 'getSessions', caseId: _currentCaseId });
+  _sessions = r.data || [];
+  var sel = document.getElementById('sessionSelect');
+  sel.innerHTML = '<option value="">— 全案件（不限場次）—</option>' + _sessions.map(function(s){
+    return '<option value="' + ERPALIGNED.esc(s['活動ID']) + '">' + ERPALIGNED.esc(s['活動名稱'] + ' ' + (s['活動日期']||'')) + '</option>';
+  }).join('');
+  loadSummary();
+}
+
+async function onSessionChange() {
+  _currentSessionId = document.getElementById('sessionSelect').value;
+  closePreview();
+  loadSummary();
+}
+
+async function loadSummary() {
+  if (!_currentCaseId) return;
+  var msg = document.getElementById('summaryMsg');
+  msg.style.display = ''; msg.textContent = '讀取報名資料…';
+  var params = { action: 'getDocumentableData', caseId: _currentCaseId };
+  if (_currentSessionId) params.sessionId = _currentSessionId;
+  var r = await ERPALIGNED.api(params);
+  msg.style.display = 'none';
+  if (!r.success) return;
+  var d = r.data || {};
+  document.getElementById('ds_total').textContent = d.total || 0;
+  document.getElementById('ds_admitted').textContent = d.admitted || 0;
+  document.getElementById('ds_meal').textContent = d.needMeal || 0;
+  document.getElementById('ds_addr').textContent = d.withAddress || 0;
+  document.getElementById('dataSummary').style.display = 'flex';
+  // 更新卡片 meta
+  document.getElementById('meta_attendance').textContent = (d.admitted || 0) + ' 人可簽到';
+  document.getElementById('meta_admission').textContent = (d.admitted || 0) + ' 人錄取';
+  document.getElementById('meta_meal').textContent = (d.needMeal || 0) + ' 份便當';
+  document.getElementById('meta_address').textContent = (d.withAddress || 0) + ' 筆地址';
+}
+
+async function genDoc(type) {
+  if (!_currentCaseId) { alert('請先選擇案件'); return; }
+  closePreview();
+  var params = { caseId: _currentCaseId };
+  if (_currentSessionId) params.sessionId = _currentSessionId;
+  var actionMap = { attendance: 'generateAttendanceList', admission: 'generateAdmissionList', meal: 'generateMealCount', address: 'generateAddressLabels' };
+  var titleMap = { attendance: '簽到表', admission: '錄取名冊', meal: '便當統計表', address: '地址標籤清單' };
+  params.action = actionMap[type];
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) { alert('產生失敗：' + (r.message || '')); return; }
+  document.getElementById('previewTitle').textContent = titleMap[type] + '（預覽）';
+  var d = r.data || {};
+  var list = d.list || [];
+  if (type === 'meal') {
+    // 便當統計特殊渲染
+    list = Object.keys(d.summary || {}).map(function(k){ return { 用餐習慣: k, 人數: d.summary[k] }; });
+    list.push({ 用餐習慣: '合計', 人數: d.total || 0 });
+  }
+  renderPreview(list);
+  document.getElementById('previewSection').style.display = '';
+  document.getElementById('previewSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderPreview(list) {
+  if (!list.length) { document.getElementById('previewTable').innerHTML = '<div style="color:var(--gray-400);padding:20px;text-align:center">查無資料</div>'; return; }
+  var keys = Object.keys(list[0]);
+  var html = '<div style="overflow-x:auto"><table class="erp-table"><thead><tr>' + keys.map(function(k){ return '<th>' + ERPALIGNED.esc(k) + '</th>'; }).join('') + '</tr></thead><tbody>';
+  list.forEach(function(row){ html += '<tr>' + keys.map(function(k){ return '<td>' + ERPALIGNED.esc(row[k] || '') + '</td>'; }).join('') + '</tr>'; });
+  html += '</tbody></table></div><div style="margin-top:8px;font-size:.76rem;color:var(--gray-400)">共 ' + list.length + ' 筆</div>';
+  document.getElementById('previewTable').innerHTML = html;
+}
+
+function copyTable() {
+  var tbl = document.querySelector('#previewTable table');
+  if (!tbl) return;
+  var rows = Array.from(tbl.querySelectorAll('tr')).map(function(tr){ return Array.from(tr.querySelectorAll('th,td')).map(function(td){ return td.textContent; }).join('\t'); });
+  navigator.clipboard.writeText(rows.join('\n')).then(function(){ alert('已複製到剪貼簿，可貼到 Excel'); });
+}
+
+function closePreview() { document.getElementById('previewSection').style.display = 'none'; }
+
+init();
+</script>
+</body>
+</html>
