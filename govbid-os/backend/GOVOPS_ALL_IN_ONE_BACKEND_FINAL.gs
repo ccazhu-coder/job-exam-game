@@ -351,6 +351,30 @@ function govopsProjectActivityRoute_(params, action) {
       timestamp: govopsNow_()
     };
   }
+  // getCase: 取得單筆案件（by ID，供 edit modal 使用）
+  if (action === 'getCase') {
+    var caseId = params.caseId || params['專案ID'];
+    if (!caseId) return { success: false, error: 'MISSING_ID', message: '缺少 caseId', timestamp: govopsNow_() };
+    var rows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['專案ID'] === caseId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到案件：' + caseId, timestamp: govopsNow_() };
+    var clean = {}; Object.keys(found).forEach(function(k){ if (k !== '_row') clean[k] = found[k]; });
+    return { success: true, data: clean, message: '案件查詢完成', timestamp: govopsNow_() };
+  }
+
+  // getSession: 取得單筆場次（by ID）
+  if (action === 'getSession') {
+    var sesId = params.sessionId || params['活動ID'];
+    if (!sesId) return { success: false, error: 'MISSING_ID', message: '缺少 sessionId', timestamp: govopsNow_() };
+    var rows = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['活動ID'] === sesId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到場次：' + sesId, timestamp: govopsNow_() };
+    var clean = {}; Object.keys(found).forEach(function(k){ if (k !== '_row') clean[k] = found[k]; });
+    return { success: true, data: clean, message: '場次查詢完成', timestamp: govopsNow_() };
+  }
+
   // ── End Case API v0.1 ─────────────────────────────────────
 
   // ── Session API v0.1 ──────────────────────────────────────
@@ -1255,7 +1279,23 @@ function govopsSimpleFallbackRoute_(params, action) {
     return { success: true, message: '核銷缺件查詢完成', data: { rows: rows, count: rows.length } };
   }
   if (action === '取得ERP儀表板' || action === 'ERP專案總覽' || action === 'ERP風險報告') {
-    return { success: true, message: action + '完成', data: { rows: [], count: 0 } };
+    // v0.1：改回傳真實案件數據
+    try {
+      var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+      var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+      var urgentStatuses = ['待請款','待收款','待結案'];
+      var activeStatuses = ['執行中','已簽約','洽談中','提案中'];
+      var urgent = caseRows.filter(function(r){ return urgentStatuses.indexOf(String(r['狀態'])) >= 0; });
+      var active = caseRows.filter(function(r){ return activeStatuses.indexOf(String(r['狀態'])) >= 0; });
+      var rows = urgent.slice(0,10).map(function(c){ return { '案件名稱': c['專案計畫名稱'], '客戶': c['主辦單位']||'—', '狀態': c['狀態'], '預估收入': c['契約金額']||'—' }; });
+      return { success: true, message: action + '完成', data: {
+        '專案總數': caseRows.length, '活動總數': sesRows.length,
+        '今日待辦': urgent.length, '未收款金額': 0, '已收收入': 0, '支出總額': 0, '損益': 0, '核銷缺件': 0,
+        rows: rows, count: rows.length
+      }};
+    } catch(e) {
+      return { success: true, message: action + '完成', data: { rows: [], count: 0 } };
+    }
   }
   return null;
 }
