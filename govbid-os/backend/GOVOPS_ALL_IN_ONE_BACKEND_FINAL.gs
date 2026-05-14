@@ -130,7 +130,7 @@ function govopsEnsureSheet_(sheetName, headers) {
     sh.setFrozenRows(1);
   } else {
     var missing = headers.filter(function(h){ return first.indexOf(h) === -1; });
-    if (missing.length) sh.getRange(1, first.filter(Boolean).length + 1, 1, missing.length).setValues([missing]);
+    if (missing.length) sh.getRange(1, sh.getLastColumn() + 1, 1, missing.length).setValues([missing]);
   }
   return sh;
 }
@@ -161,7 +161,9 @@ function govopsAppend_(sheetName, headers, obj) {
 function govopsUpdate_(sheetName, headers, rowNumber, patch) {
   var sh = govopsEnsureSheet_(sheetName, headers);
   var hs = govopsHeaders_(sh);
-  hs.forEach(function(h, i){ if (patch[h] !== undefined) sh.getRange(rowNumber, i + 1).setValue(patch[h]); });
+  var row = sh.getRange(rowNumber, 1, 1, hs.length).getValues()[0];
+  hs.forEach(function(h, i){ if (patch[h] !== undefined) row[i] = patch[h]; });
+  sh.getRange(rowNumber, 1, 1, hs.length).setValues([row]);
 }
 
 function govopsDeleteRow_(sheetName, rowNumber) {
@@ -1593,6 +1595,22 @@ function govopsTaskRoute_(params, action) {
     var sesDate = params.sessionDate || params['活動日期'] || '';
     var sesName = params.sessionName || params['場次名稱'] || params['活動名稱'] || '場次';
     if (!sesId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    // 若未傳入日期，從 Sheets 查詢場次資料
+    if (!sesDate || !sesName || sesName === '場次') {
+      var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+      var sesRec = null;
+      for (var si = 0; si < sesRows.length; si++) { if (sesRows[si]['活動ID'] === sesId) { sesRec = sesRows[si]; break; } }
+      if (sesRec) {
+        if (!sesDate) {
+          var rawDate = sesRec['活動日期'];
+          // Handle Sheets Date object (ISO string) or yyyy/MM/dd string
+          if (rawDate instanceof Date) sesDate = Utilities.formatDate(rawDate, 'Asia/Taipei', 'yyyy-MM-dd');
+          else sesDate = String(rawDate).replace(/\//g,'-').substring(0,10);
+        }
+        if (!sesName || sesName === '場次') sesName = sesRec['活動名稱'] || sesId;
+        if (!caseId) caseId = sesRec['專案ID'] || '';
+      }
+    }
     // 計算各任務截止日（相對於場次日期）
     function addDays(baseDate, days) {
       if (!baseDate) return '';
