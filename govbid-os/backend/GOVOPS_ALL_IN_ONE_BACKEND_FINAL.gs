@@ -89,6 +89,9 @@ function govopsMainRouter_(params) {
   result = govopsOfficialDocRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsManpowerRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsTaskRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -1650,6 +1653,136 @@ function govopsTaskRoute_(params, action) {
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到任務：'+taskId, timestamp: govopsNow_() };
     govopsDeleteRow_('案件任務清單', found._row);
     return { success: true, data: { taskId: taskId }, message: '任務已刪除', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ── Manpower Route ────────────────────────────────────────
+var VACANCY_HEADERS = ['職缺ID','案件ID','職缺名稱','職務類型','需求人數','薪資範圍','工作地點','開始日期','結束日期','職缺說明','任職資格','狀態','建立時間','更新時間'];
+var APPLICANT_HEADERS = ['應徵者ID','職缺ID','案件ID','姓名','電話','Email','履歷連結','應徵日期','審查狀態','面試日期','面試地點','面試備註','薪資期望','備註','建立時間','更新時間'];
+
+function govopsManpowerRoute_(params, action) {
+
+  // ── 職缺 ─────────────────────────────────────────────────
+  if (action === 'getVacancies') {
+    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
+    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return r['案件ID'] === params.caseId; });
+    if (params.status) rows = rows.filter(function(r){ return r['狀態'] === params.status; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '職缺查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createVacancy') {
+    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
+    var now = govopsNow_();
+    var obj = {
+      '職缺ID': 'VAC-' + now.replace(/[^0-9]/g,'').substring(0,14) + '-' + Math.floor(Math.random()*9000+1000),
+      '案件ID': params.caseId || '',
+      '職缺名稱': params.vacancyName || '',
+      '職務類型': params.jobType || '正職',
+      '需求人數': params.headcount || 1,
+      '薪資範圍': params.salaryRange || '',
+      '工作地點': params.location || '',
+      '開始日期': params.startDate || '',
+      '結束日期': params.endDate || '',
+      '職缺說明': params.description || '',
+      '任職資格': params.requirements || '',
+      '狀態': '招募中',
+      '建立時間': now,
+      '更新時間': now
+    };
+    govopsAppend_('人力職缺', VACANCY_HEADERS, obj);
+    return { success: true, data: obj, message: '職缺已建立', timestamp: now };
+  }
+
+  if (action === 'updateVacancy') {
+    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
+    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
+    var found = rows.filter(function(r){ return r['職缺ID'] === params.vacancyId; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到職缺', timestamp: govopsNow_() };
+    var patch = {};
+    ['職缺名稱','職務類型','需求人數','薪資範圍','工作地點','開始日期','結束日期','職缺說明','任職資格','狀態'].forEach(function(k){
+      if (params[k] !== undefined) patch[k] = params[k];
+    });
+    patch['更新時間'] = govopsNow_();
+    govopsUpdate_('人力職缺', VACANCY_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '職缺已更新', timestamp: patch['更新時間'] };
+  }
+
+  if (action === 'getVacancyStats') {
+    govopsEnsureSheet_('人力職缺', VACANCY_HEADERS);
+    var rows = govopsRows_('人力職缺', VACANCY_HEADERS);
+    var stats = { total: rows.length, recruiting: 0, paused: 0, closed: 0 };
+    rows.forEach(function(r){
+      if (r['狀態'] === '招募中') stats.recruiting++;
+      else if (r['狀態'] === '暫停') stats.paused++;
+      else if (r['狀態'] === '已關閉') stats.closed++;
+    });
+    return { success: true, data: stats, message: '職缺統計完成', timestamp: govopsNow_() };
+  }
+
+  // ── 應徵者 ───────────────────────────────────────────────
+  if (action === 'getApplicants') {
+    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
+    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
+    if (params.vacancyId) rows = rows.filter(function(r){ return r['職缺ID'] === params.vacancyId; });
+    if (params.caseId) rows = rows.filter(function(r){ return r['案件ID'] === params.caseId; });
+    if (params.status) rows = rows.filter(function(r){ return r['審查狀態'] === params.status; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '應徵者查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'createApplicant') {
+    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
+    var now = govopsNow_();
+    var obj = {
+      '應徵者ID': 'APP-' + now.replace(/[^0-9]/g,'').substring(0,14) + '-' + Math.floor(Math.random()*9000+1000),
+      '職缺ID': params.vacancyId || '',
+      '案件ID': params.caseId || '',
+      '姓名': params.name || '',
+      '電話': params.phone || '',
+      'Email': params.email || '',
+      '履歷連結': params.resumeLink || '',
+      '應徵日期': params.applyDate || now.substring(0,10),
+      '審查狀態': '待審',
+      '面試日期': '',
+      '面試地點': '',
+      '面試備註': '',
+      '薪資期望': params.salaryExpect || '',
+      '備註': params.remark || '',
+      '建立時間': now,
+      '更新時間': now
+    };
+    govopsAppend_('應徵者資料', APPLICANT_HEADERS, obj);
+    return { success: true, data: obj, message: '應徵者已建立', timestamp: now };
+  }
+
+  if (action === 'updateApplicant') {
+    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
+    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
+    var found = rows.filter(function(r){ return r['應徵者ID'] === params.applicantId; })[0];
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到應徵者', timestamp: govopsNow_() };
+    var patch = {};
+    ['姓名','電話','Email','履歷連結','應徵日期','審查狀態','面試日期','面試地點','面試備註','薪資期望','備註'].forEach(function(k){
+      if (params[k] !== undefined) patch[k] = params[k];
+    });
+    patch['更新時間'] = govopsNow_();
+    govopsUpdate_('應徵者資料', APPLICANT_HEADERS, found._row, patch);
+    return { success: true, data: patch, message: '應徵者資料已更新', timestamp: patch['更新時間'] };
+  }
+
+  if (action === 'getApplicantStats') {
+    govopsEnsureSheet_('應徵者資料', APPLICANT_HEADERS);
+    var rows = govopsRows_('應徵者資料', APPLICANT_HEADERS);
+    var stats = { total: rows.length, pending: 0, interview: 0, hired: 0, rejected: 0 };
+    rows.forEach(function(r){
+      var s = r['審查狀態'];
+      if (s === '待審') stats.pending++;
+      else if (s === '通知面試' || s === '面試完成') stats.interview++;
+      else if (s === '錄取') stats.hired++;
+      else if (s === '未錄取') stats.rejected++;
+    });
+    return { success: true, data: stats, message: '應徵者統計完成', timestamp: govopsNow_() };
   }
 
   return null;
