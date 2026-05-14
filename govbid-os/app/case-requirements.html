@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜案件需求摘要</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.tab-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.tab-bar .tab{padding:6px 18px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.tab-bar .tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.tab-bar .tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.case-bar{background:var(--gold-pale);border:1.5px solid var(--gold);border-radius:8px;padding:10px 16px;margin-bottom:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.case-bar .cb-name{font-size:.96rem;font-weight:700;color:var(--navy)}
+.case-bar .cb-meta{font-size:.78rem;color:var(--gray-500)}
+.section-title{font-size:.78rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin:0 0 10px;padding-bottom:5px;border-bottom:1px solid var(--gold-pale)}
+.fi{margin-bottom:12px}
+.fi label{display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.06)}
+.fi textarea{min-height:90px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.grid2,.grid3{grid-template-columns:1fr}}
+.save-bar{position:sticky;bottom:0;background:var(--white);border-top:1.5px solid var(--gray-100);padding:12px 0;display:flex;gap:8px;align-items:center;z-index:10}
+.save-bar .save-msg{font-size:.8rem;color:var(--gray-400);margin-left:auto}
+/* 驗收條件 */
+.accept-card{background:var(--white);border:1.5px solid var(--gray-100);border-radius:8px;padding:12px 16px;margin-bottom:8px;transition:.15s}
+.accept-card:hover{border-color:var(--navy-mid)}
+.accept-card .ah{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.accept-card .a-num{font-size:.72rem;background:var(--navy);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.accept-card .a-name{font-size:.9rem;font-weight:700;color:var(--navy)}
+.accept-card .a-meta{font-size:.77rem;color:var(--gray-500);display:flex;gap:10px;flex-wrap:wrap}
+.status-pill{padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-done{background:#dcfce7;color:#166534}
+.s-pending{background:#fef3c7;color:#92400e}
+.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.75rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px}
+.modal-close:hover{background:var(--gray-100);border-radius:4px}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+/* 快速匯入 */
+.import-hint{font-size:.78rem;color:var(--gray-500);background:var(--offwhite);border-radius:6px;padding:8px 12px;margin-bottom:8px;line-height:1.6}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">案件需求摘要</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>案件需求摘要</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="secondary" onclick="location.href='./cases.html'">← 回案件列表</button>
+    </div>
+  </div>
+
+  <!-- 案件選擇 bar -->
+  <div id="caseBar" style="display:none" class="case-bar">
+    <div>
+      <div class="cb-name" id="cbName">—</div>
+      <div class="cb-meta" id="cbMeta">—</div>
+    </div>
+    <a href="./cases.html" style="margin-left:auto;font-size:.78rem;color:var(--navy-mid)">切換案件</a>
+  </div>
+
+  <!-- 案件選擇器（無 URL param 時顯示） -->
+  <div id="casePicker" class="card" style="margin-bottom:16px">
+    <h2 style="margin-bottom:12px">選擇要建立需求摘要的案件</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <select id="caseSelect" style="flex:1;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font)">
+        <option value="">載入中…</option>
+      </select>
+      <button class="gold" onclick="loadFromSelect()">選擇</button>
+    </div>
+  </div>
+
+  <!-- Tab 切換 -->
+  <div class="tab-bar" id="tabBar" style="display:none">
+    <button class="tab active" onclick="switchTab('plan',this)">計畫基本要求</button>
+    <button class="tab" onclick="switchTab('acceptance',this)">驗收條件清單</button>
+    <button class="tab" onclick="switchTab('budget',this)">核銷與財務</button>
+    <button class="tab" onclick="switchTab('outcome',this)">預期成果與效益</button>
+  </div>
+
+  <!-- ① 計畫基本要求 -->
+  <div id="tab-plan" style="display:none">
+    <div class="card">
+      <div class="section-title">計畫目標與背景</div>
+      <div class="fi"><label>計畫緣起與背景 <span style="font-size:.72rem;color:var(--gray-400)">（來自需求說明書）</span></label>
+        <textarea id="f_background" placeholder="請說明本計畫緣起、背景脈絡、主辦機關需求…"></textarea>
+      </div>
+      <div class="fi"><label>計畫目標</label>
+        <textarea id="f_goal" placeholder="請說明本計畫的目標、預期達成事項…"></textarea>
+      </div>
+      <div class="grid2">
+        <div class="fi"><label>服務對象</label><input id="f_target" placeholder="例：本縣新住民、身心障礙者、特定對象"></div>
+        <div class="fi"><label>原訂執行方式</label><input id="f_method" placeholder="例：辦理就業講座4場次、企業參訪1場"></div>
+      </div>
+      <div class="grid3">
+        <div class="fi"><label>預期場次數</label><input id="f_sessions" type="number" min="0" placeholder="0"></div>
+        <div class="fi"><label>預期參與人次</label><input id="f_persons" type="number" min="0" placeholder="0"></div>
+        <div class="fi"><label>服務對象人數</label><input id="f_targetCount" type="number" min="0" placeholder="0"></div>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="gold" onclick="savePlan()">儲存計畫基本要求</button>
+      <span class="save-msg" id="planSaveMsg"></span>
+    </div>
+  </div>
+
+  <!-- ② 驗收條件清單 -->
+  <div id="tab-acceptance" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="section-title" style="margin-bottom:0">驗收條件清單 <span style="font-size:.72rem;color:var(--gray-400)">（來自契約驗收條款）</span></div>
+        <button class="gold" onclick="openAcceptModal()">＋ 新增驗收條件</button>
+      </div>
+      <div style="font-size:.78rem;color:var(--gray-500);background:var(--offwhite);border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.6">
+        ℹ️ 請依照契約書中的「驗收條款」逐條建立。這些條件將在結案報告中逐條對照實際執行成果。
+      </div>
+      <div id="acceptanceList"><div style="text-align:center;padding:30px;color:var(--gray-400)">載入中…</div></div>
+      <div id="acceptProgress" style="margin-top:12px;font-size:.82rem;color:var(--navy-mid)"></div>
+    </div>
+  </div>
+
+  <!-- ③ 核銷與財務 -->
+  <div id="tab-budget" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-title">成果報告繳交規格</div>
+      <div class="grid2">
+        <div class="fi"><label>成果報告繳交份數</label><input id="f_reportCount" type="number" min="0" placeholder="例：2"></div>
+        <div class="fi"><label>電子檔繳交格式</label><input id="f_reportFormat" placeholder="例：美編原始檔+PDF+照片（含原始檔）"></div>
+      </div>
+      <div class="fi"><label>特殊核銷要求 <span style="font-size:.72rem;color:var(--gray-400)">（來自契約）</span></label>
+        <textarea id="f_specialReimb" placeholder="例：附上廠商聲明書、需有機關驗收章、需附身份證影本…" style="min-height:70px"></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="section-title" style="margin-bottom:0">預算明細（標價清單快速匯入）</div>
+        <button class="secondary" onclick="location.href='./documents.html?caseId='+_caseId+'#budget'" style="font-size:.78rem">前往預算明細管理</button>
+      </div>
+      <div class="import-hint">
+        💡 貼上從契約標價清單複製的文字，系統會嘗試解析成預算項目。<br>
+        格式：每行一項，例如「工作人員費 3人 190元/時 8小時 5場 22,800元」<br>
+        或直接前往「行政文件→案件預算明細」逐項手動建立。
+      </div>
+      <div class="fi">
+        <label>貼上標價清單文字（一次解析匯入）</label>
+        <textarea id="f_budgetText" placeholder="1 工作人員費 3人 190元 5場 22,800&#10;2 場地費 1式 8,500元 5場 42,500&#10;3 講師費 1小時 1,000元 5場 5,000&#10;…" style="min-height:120px;font-family:monospace;font-size:.83rem"></textarea>
+      </div>
+      <button class="secondary" onclick="parseBudget()">解析並建立預算項目</button>
+      <div id="budgetParseResult" style="margin-top:8px;font-size:.8rem;color:var(--navy-mid)"></div>
+    </div>
+    <div class="save-bar">
+      <button class="gold" onclick="saveBudgetSection()">儲存核銷規格</button>
+      <span class="save-msg" id="budgetSaveMsg"></span>
+    </div>
+  </div>
+
+  <!-- ④ 預期成果與效益 -->
+  <div id="tab-outcome" style="display:none">
+    <div class="card">
+      <div class="section-title">預期成果與效益</div>
+      <div class="fi"><label>整體預期效益</label>
+        <textarea id="f_benefit" placeholder="請說明本計畫預期達成的整體效益…"></textarea>
+      </div>
+      <div class="fi"><label>對主辦單位效益</label>
+        <textarea id="f_benefitHost" placeholder="對主辦機關/委辦單位的具體效益…" style="min-height:70px"></textarea>
+      </div>
+      <div class="fi"><label>對參與者效益</label>
+        <textarea id="f_benefitPart" placeholder="對參與學員/服務對象的具體效益…" style="min-height:70px"></textarea>
+      </div>
+      <div class="fi"><label>後續延伸效益</label>
+        <textarea id="f_benefitFuture" placeholder="本計畫對後續推動的延伸效益…" style="min-height:70px"></textarea>
+      </div>
+    </div>
+    <div class="save-bar">
+      <button class="gold" onclick="saveOutcome()">儲存預期成果</button>
+      <span class="save-msg" id="outcomeSaveMsg"></span>
+    </div>
+  </div>
+
+</main>
+
+<!-- 驗收條件 Modal -->
+<div class="modal-overlay" id="acceptModal" style="display:none" onclick="if(event.target===this)closeAcceptModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="acceptModalTitle">新增驗收條件</h2><button class="modal-close" onclick="closeAcceptModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="a_id">
+      <div class="fi"><label>驗收項目名稱 <span style="color:var(--danger)">*</span></label>
+        <input id="a_name" placeholder="例：成果報告書1式2份"></div>
+      <div class="fi"><label>驗收要求說明</label>
+        <textarea id="a_desc" placeholder="例：含電子檔，規格為A4，需包含所有場次執行紀錄、成果照片、問卷統計" style="min-height:70px"></textarea>
+      </div>
+      <div class="grid3">
+        <div class="fi"><label>繳交數量</label><input id="a_qty" placeholder="例：1式2份"></div>
+        <div class="fi"><label>繳交格式</label><input id="a_fmt" placeholder="例：Word+PDF"></div>
+        <div class="fi"><label>繳交期限</label><input id="a_deadline" type="date"></div>
+      </div>
+      <div class="fi"><label>完成狀態</label>
+        <select id="a_status"><option value="未完成">未完成</option><option value="進行中">進行中</option><option value="已完成">已完成</option></select>
+      </div>
+      <div class="fi"><label>備註</label><input id="a_remark" placeholder="其他說明…"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeAcceptModal()">取消</button>
+      <button class="gold" onclick="saveAcceptItem()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+var _caseId='', _caseInfo={}, _reqData={}, _accepts=[], _currentTab='plan';
+
+function init(){
+  var p=safeJSON('govops_profile');
+  if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);
+  var cid=sp.get('caseId')||'';
+  loadCases(cid);
+}
+
+async function loadCases(preCaseId){
+  var r=await ERPALIGNED.api({action:'getCases'});
+  var sel=document.getElementById('caseSelect');
+  if(!r.success){sel.innerHTML='<option>載入失敗</option>';return;}
+  var cases=r.data&&r.data.rows||[];
+  sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  cases.forEach(function(c){
+    var o=document.createElement('option');
+    o.value=c['專案ID']||'';
+    o.textContent=(c['專案計畫名稱']||'未命名');
+    sel.appendChild(o);
+  });
+  if(preCaseId){
+    sel.value=preCaseId;
+    var info=cases.find(function(c){return c['專案ID']===preCaseId;})||{};
+    loadCase(preCaseId, info);
+  }
+}
+
+function loadFromSelect(){
+  var sel=document.getElementById('caseSelect');
+  if(!sel.value){alert('請選擇案件');return;}
+  // Find case info from select text
+  var caseInfo={};
+  loadCase(sel.value, caseInfo);
+}
+
+async function loadCase(caseId, info){
+  _caseId=caseId;
+  _caseInfo=info||{};
+  document.getElementById('casePicker').style.display='none';
+  document.getElementById('caseBar').style.display='flex';
+  document.getElementById('tabBar').style.display='flex';
+  // Fetch full case
+  var cr=await ERPALIGNED.api({action:'getCases',keyword:caseId});
+  if(cr.success&&cr.data&&cr.data.rows){
+    var found=cr.data.rows.find(function(c){return c['專案ID']===caseId;});
+    if(found) _caseInfo=found;
+  }
+  document.getElementById('cbName').textContent=_caseInfo['專案計畫名稱']||caseId;
+  document.getElementById('cbMeta').textContent=(_caseInfo['案件類型']||'')+' ｜ '+(_caseInfo['主辦單位']||'')+' ｜ '+shortDate(_caseInfo['開始日期'])+' ~ '+shortDate(_caseInfo['結束日期']);
+  document.getElementById('pageSubtitle').textContent='案件：'+(_caseInfo['專案計畫名稱']||caseId);
+  var rr=await ERPALIGNED.api({action:'getCaseRequirements',caseId:caseId});
+  if(rr.success){
+    _reqData=rr.data.requirements||{};
+    _accepts=rr.data.acceptanceItems||[];
+    fillForm();
+  }
+  // Show first tab
+  switchTab('plan', document.querySelector('.tab-bar .tab'));
+}
+
+function fillForm(){
+  var d=_reqData;
+  setValue('f_background',d['計畫緣起與背景']);
+  setValue('f_goal',d['計畫目標']);
+  setValue('f_target',d['服務對象']);
+  setValue('f_method',d['原訂執行方式']||'');
+  setValue('f_sessions',d['預期場次數']);
+  setValue('f_persons',d['預期參與人次']);
+  setValue('f_targetCount',d['服務對象人數']||'');
+  setValue('f_reportCount',d['成果報告繳交份數']);
+  setValue('f_reportFormat',d['成果報告電子檔格式']);
+  setValue('f_specialReimb',d['特殊核銷要求']);
+  setValue('f_benefit',d['預期效益']);
+  setValue('f_benefitHost',d['對主辦單位效益']);
+  setValue('f_benefitPart',d['對參與者效益']);
+  setValue('f_benefitFuture',d['後續延伸效益']);
+  renderAcceptance();
+}
+function setValue(id,v){var el=document.getElementById(id);if(el&&v!==undefined&&v!==null)el.value=v;}
+function val(id){return document.getElementById(id)&&document.getElementById(id).value||'';}
+
+function switchTab(tab, btn){
+  _currentTab=tab;
+  ['plan','acceptance','budget','outcome'].forEach(function(t){
+    var el=document.getElementById('tab-'+t);if(el)el.style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.tab-bar .tab').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+}
+
+// ── 儲存 ──────────────────────────────────────────────
+async function savePlan(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  var r=await ERPALIGNED.api({action:'saveCaseRequirements',caseId:_caseId,
+    '計畫緣起與背景':val('f_background'),'計畫目標':val('f_goal'),
+    '服務對象':val('f_target'),'原訂執行方式':val('f_method'),
+    '預期場次數':val('f_sessions'),'預期參與人次':val('f_persons'),'服務對象人數':val('f_targetCount')});
+  showSave('planSaveMsg', r.success?'✅ 已儲存':'❌ 儲存失敗：'+r.message);
+}
+async function saveBudgetSection(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  var r=await ERPALIGNED.api({action:'saveCaseRequirements',caseId:_caseId,
+    '成果報告繳交份數':val('f_reportCount'),'成果報告電子檔格式':val('f_reportFormat'),
+    '特殊核銷要求':val('f_specialReimb')});
+  showSave('budgetSaveMsg', r.success?'✅ 已儲存':'❌ 儲存失敗：'+r.message);
+}
+async function saveOutcome(){
+  if(!_caseId){alert('請先選擇案件');return;}
+  var r=await ERPALIGNED.api({action:'saveCaseRequirements',caseId:_caseId,
+    '預期效益':val('f_benefit'),'對主辦單位效益':val('f_benefitHost'),
+    '對參與者效益':val('f_benefitPart'),'後續延伸效益':val('f_benefitFuture')});
+  showSave('outcomeSaveMsg', r.success?'✅ 已儲存':'❌ 儲存失敗：'+r.message);
+}
+function showSave(id, msg){
+  var el=document.getElementById(id);if(!el)return;
+  el.textContent=msg;
+  setTimeout(function(){el.textContent='';},4000);
+}
+
+// ── 驗收條件 ──────────────────────────────────────────
+function renderAcceptance(){
+  var el=document.getElementById('acceptanceList');
+  if(!_accepts.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--gray-400)">尚無驗收條件，請依照契約驗收條款新增</div>';
+    document.getElementById('acceptProgress').textContent='';return;}
+  var done=_accepts.filter(function(a){return a['完成狀態']==='已完成';}).length;
+  document.getElementById('acceptProgress').textContent='完成進度：'+done+' / '+_accepts.length+' 項';
+  var html='';
+  _accepts.forEach(function(a){
+    var aid=esc(a['驗收ID']||'');
+    var sc=a['完成狀態']==='已完成'?'s-done':'s-pending';
+    html+='<div class="accept-card">';
+    html+='<div class="ah"><span class="a-num">'+esc(a['項目編號']||'?')+'</span>'
+      +'<span class="a-name">'+esc(a['驗收項目名稱']||'未命名')+'</span>'
+      +'<span class="status-pill '+sc+'">'+esc(a['完成狀態']||'未完成')+'</span>'
+      +'<div style="margin-left:auto;display:flex;gap:5px">'
+      +'<button class="row-btn ok" onclick="quickDone(\''+aid+'\')">完成</button>'
+      +'<button class="row-btn" onclick="openAcceptModal(\''+aid+'\')">編輯</button>'
+      +'<button class="row-btn danger" onclick="deleteAccept(\''+aid+'\')">刪除</button>'
+      +'</div></div>';
+    html+='<div class="a-meta">';
+    if(a['驗收要求說明'])html+='<span>'+esc(a['驗收要求說明'])+'</span>';
+    if(a['繳交數量'])html+='<span>數量：'+esc(a['繳交數量'])+'</span>';
+    if(a['繳交格式'])html+='<span>格式：'+esc(a['繳交格式'])+'</span>';
+    if(a['繳交期限'])html+='<span>期限：'+shortDate(a['繳交期限'])+'</span>';
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+
+function openAcceptModal(aid){
+  document.getElementById('acceptModalTitle').textContent=aid?'編輯驗收條件':'新增驗收條件';
+  ['a_id','a_name','a_desc','a_qty','a_fmt','a_remark'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('a_deadline').value='';
+  document.getElementById('a_status').value='未完成';
+  if(aid){
+    var r=_accepts.find(function(a){return a['驗收ID']===aid;});
+    if(r){
+      document.getElementById('a_id').value=r['驗收ID']||'';
+      document.getElementById('a_name').value=r['驗收項目名稱']||'';
+      document.getElementById('a_desc').value=r['驗收要求說明']||'';
+      document.getElementById('a_qty').value=r['繳交數量']||'';
+      document.getElementById('a_fmt').value=r['繳交格式']||'';
+      document.getElementById('a_deadline').value=String(r['繳交期限']||'').substring(0,10);
+      document.getElementById('a_status').value=r['完成狀態']||'未完成';
+      document.getElementById('a_remark').value=r['備註']||'';
+    }
+  }
+  document.getElementById('acceptModal').style.display='flex';
+}
+function closeAcceptModal(){document.getElementById('acceptModal').style.display='none';}
+async function saveAcceptItem(){
+  var name=document.getElementById('a_name').value.trim();
+  if(!name){alert('請填寫驗收項目名稱');return;}
+  var aid=document.getElementById('a_id').value;
+  var p={action:'saveAcceptanceItem',caseId:_caseId,
+    '驗收項目名稱':name,'驗收要求說明':document.getElementById('a_desc').value,
+    '繳交數量':document.getElementById('a_qty').value,'繳交格式':document.getElementById('a_fmt').value,
+    '繳交期限':document.getElementById('a_deadline').value,'完成狀態':document.getElementById('a_status').value,
+    '備註':document.getElementById('a_remark').value};
+  if(aid)p.acceptanceId=aid;
+  var r=await ERPALIGNED.api(p);
+  if(r.success){closeAcceptModal();await reloadAccepts();}
+  else alert('儲存失敗：'+r.message);
+}
+async function quickDone(aid){
+  var r=await ERPALIGNED.api({action:'saveAcceptanceItem',caseId:_caseId,acceptanceId:aid,'完成狀態':'已完成','完成日期':new Date().toISOString().substring(0,10)});
+  if(r.success) await reloadAccepts();
+}
+async function deleteAccept(aid){
+  if(!confirm('確定刪除此驗收條件？'))return;
+  var r=await ERPALIGNED.api({action:'deleteAcceptanceItem',acceptanceId:aid});
+  if(r.success) await reloadAccepts();
+  else alert('刪除失敗：'+r.message);
+}
+async function reloadAccepts(){
+  var rr=await ERPALIGNED.api({action:'getCaseRequirements',caseId:_caseId});
+  if(rr.success){_accepts=rr.data.acceptanceItems||[];renderAcceptance();}
+}
+
+// ── 標價清單解析 ──────────────────────────────────────
+async function parseBudget(){
+  var text=document.getElementById('f_budgetText').value.trim();
+  if(!text){alert('請先貼上標價清單文字');return;}
+  var lines=text.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  var created=0, failed=0;
+  for(var i=0;i<lines.length;i++){
+    var line=lines[i];
+    // Try to extract: item name, amount
+    // Remove leading number
+    var clean=line.replace(/^\d+[\.\s]+/,'').trim();
+    // Try to find amount at end (number with comma or plain)
+    var amtMatch=clean.match(/[\d,]+(?:\s*元)?$/);
+    var amount=amtMatch?parseInt(amtMatch[0].replace(/[,元\s]/g,''))||0:0;
+    // Item name is everything before the numbers
+    var nameMatch=clean.match(/^([^\d]+)/);
+    var name=nameMatch?nameMatch[1].trim():clean;
+    if(!name)continue;
+    var r=await ERPALIGNED.api({action:'createBudgetItem',caseId:_caseId,itemName:name,unit:'式',quantity:1,unitPrice:amount,sessions:1});
+    if(r.success)created++;else failed++;
+  }
+  document.getElementById('budgetParseResult').textContent='✅ 已建立 '+created+' 項'+(failed?' ｜ 失敗 '+failed+' 項':'');
+  if(created>0)document.getElementById('f_budgetText').value='';
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
