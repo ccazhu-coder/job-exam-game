@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜資料上傳與檔案管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.file-type-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ft{padding:5px 13px;border-radius:14px;border:1.5px solid var(--gray-200);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.12s}
+.ft:hover{border-color:var(--navy-mid);color:var(--navy)}
+.ft.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.erp-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.erp-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:.77rem;white-space:nowrap}
+.erp-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.7rem;font-weight:700}
+.b-yes{background:#dcfce7;color:#166534}.b-no{background:#f1f5f9;color:#64748b}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter-row select{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fi{margin-bottom:10px}.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:55px;resize:vertical}
+.fr.c2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fr.c3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">資料上傳與檔案管理</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>資料上傳與檔案管理</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">登錄各案件的 Google Drive 檔案連結，追蹤哪些可用於結案、核銷、請款</p></div>
+    <div class="btns"><button class="gold" onclick="openModal()">＋ 新增檔案記錄</button></div>
+  </div>
+
+  <div style="background:#e0f2fe;border:1.5px solid #7dd3fc;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:.8rem;color:#0369a1;line-height:1.6">
+    ℹ️ 本中心不做實際檔案上傳（需透過 Google Drive）。請先將檔案上傳到對應案件的 Google Drive 資料夾，再在此登錄連結，方便系統追蹤哪些文件已歸檔。
+  </div>
+
+  <div class="filter-row">
+    <select id="caseSelect" onchange="onCaseChange()" style="min-width:200px"><option value="">載入案件…</option></select>
+    <select id="sessionSelect" onchange="loadFiles()" style="min-width:160px"><option value="">全部場次</option></select>
+  </div>
+
+  <!-- 檔案類型快速篩選 -->
+  <div class="file-type-tabs" id="typeTabs">
+    <button class="ft active" onclick="setTypeFilter('',this)">全部</button>
+    <button class="ft" onclick="setTypeFilter('契約與公文',this)">契約與公文</button>
+    <button class="ft" onclick="setTypeFilter('簽到表',this)">簽到表</button>
+    <button class="ft" onclick="setTypeFilter('成果照片',this)">成果照片</button>
+    <button class="ft" onclick="setTypeFilter('問卷',this)">問卷</button>
+    <button class="ft" onclick="setTypeFilter('講師領據',this)">講師領據</button>
+    <button class="ft" onclick="setTypeFilter('工作人員簽收',this)">工作人員簽收</button>
+    <button class="ft" onclick="setTypeFilter('核銷憑證',this)">核銷憑證</button>
+    <button class="ft" onclick="setTypeFilter('報告',this)">報告</button>
+    <button class="ft" onclick="setTypeFilter('其他',this)">其他</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="erp-table" style="min-width:900px">
+      <thead><tr><th>檔案名稱</th><th>類型</th><th>上傳日期</th><th>可用於結案</th><th>可用於核銷</th><th>可用於請款</th><th>可用於成果報告</th><th>Drive連結</th><th>操作</th></tr></thead>
+      <tbody id="tableBody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">請先選擇案件</td></tr></tbody>
+    </table>
+  </div>
+  <div style="margin-top:8px;font-size:.8rem;color:var(--gray-400)" id="fileCount"></div>
+</main>
+
+<div class="modal-overlay" id="fileModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="mTitle">新增檔案記錄</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="f_id">
+      <div class="fi"><label>檔案名稱 <span style="color:var(--danger)">*</span></label><input id="f_name" placeholder="例：114年就業講座_簽到表_第1場"></div>
+      <div class="fr c2">
+        <div class="fi"><label>檔案類型</label>
+          <select id="f_type">
+            <option>契約與公文</option><option>計畫與提案</option><option>報名與錄取</option>
+            <option>簽到表</option><option>成果照片</option><option>問卷</option>
+            <option>講師領據</option><option>工作人員簽收</option><option>核銷憑證</option>
+            <option>請款文件</option><option>報告</option><option>其他</option>
+          </select>
+        </div>
+        <div class="fi"><label>上傳日期</label><input id="f_date" type="date"></div>
+      </div>
+      <div class="fi"><label>Google Drive 連結 <span style="color:var(--danger)">*</span></label>
+        <input id="f_link" placeholder="https://drive.google.com/file/d/..."></div>
+      <div class="fi"><label>檔案說明</label><textarea id="f_desc" rows="2" placeholder="說明此檔案的內容、版本或備注…"></textarea></div>
+      <div class="fr c2">
+        <div class="fi"><label>連結場次（選填）</label><select id="f_ses"><option value="">— 不限場次 —</option></select></div>
+        <div class="fi"><label>上傳者</label><input id="f_uploader"></div>
+      </div>
+      <div style="background:var(--offwhite);border-radius:6px;padding:10px 12px;margin-top:8px">
+        <div style="font-size:.76rem;font-weight:700;color:var(--navy-mid);margin-bottom:6px">此檔案可用於：</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.82rem">
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="fc_closing"> 結案資料</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="fc_reimb"> 核銷</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="fc_payment"> 請款</label>
+          <label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="fc_report"> 成果報告</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" onclick="saveFile()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+var _caseId='',_files=[],_typeFilter='',_sessions=[];
+function init(){
+  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+  document.getElementById('f_date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('f_uploader').value=p.userName||p.orgName||'';
+  var sp=new URLSearchParams(location.search);loadCases(sp.get('caseId')||'');
+}
+async function loadCases(pre){
+  var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
+  if(!r.success)return;sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  (r.data&&r.data.rows||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+  if(pre){sel.value=pre;await onCaseChange();}
+}
+async function onCaseChange(){
+  _caseId=document.getElementById('caseSelect').value;if(!_caseId)return;
+  var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
+  _sessions=r.success&&r.data&&r.data.rows||[];
+  var ss=document.getElementById('sessionSelect');var sf=document.getElementById('f_ses');
+  ss.innerHTML='<option value="">全部場次</option>';sf.innerHTML='<option value="">— 不限場次 —</option>';
+  _sessions.forEach(function(s){
+    var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';
+    ss.appendChild(o);sf.appendChild(o.cloneNode(true));
+  });
+  await loadFiles();
+}
+async function loadFiles(){
+  if(!_caseId)return;var sid=document.getElementById('sessionSelect').value;
+  var p={action:'getFiles',caseId:_caseId};if(sid)p.sessionId=sid;
+  var r=await ERPALIGNED.api(p);if(!r.success)return;
+  _files=r.data&&r.data.rows||[];renderTable();
+  document.getElementById('pageSubtitle').textContent='共 '+_files.length+' 份檔案記錄';
+}
+function setTypeFilter(t,btn){
+  _typeFilter=t;
+  document.querySelectorAll('.ft').forEach(function(b){b.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  renderTable();
+}
+function renderTable(){
+  var rows=_typeFilter?_files.filter(function(f){return f['檔案類型']===_typeFilter;}):_files;
+  document.getElementById('fileCount').textContent='顯示 '+rows.length+' / '+_files.length+' 份';
+  var tbody=document.getElementById('tableBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">無檔案記錄</td></tr>';return;}
+  var html='';
+  rows.forEach(function(f){
+    var fid=esc(f['檔案ID']||'');
+    var link=f['Google Drive連結']?'<a href="'+esc(f['Google Drive連結'])+'" target="_blank" style="color:var(--navy-mid);font-size:.78rem">開啟</a>':'—';
+    html+='<tr><td><strong>'+esc(f['檔案名稱']||'—')+'</strong><div style="font-size:.73rem;color:var(--gray-400)">'+esc(f['檔案說明']||'')+'</div></td>'
+      +'<td style="font-size:.78rem">'+esc(f['檔案類型']||'')+'</td>'
+      +'<td style="font-size:.75rem">'+shortDate(f['上傳日期'])+'</td>'
+      +'<td><span class="badge '+(f['是否用於結案']==='是'?'b-yes':'b-no')+'">'+esc(f['是否用於結案']||'否')+'</span></td>'
+      +'<td><span class="badge '+(f['是否用於核銷']==='是'?'b-yes':'b-no')+'">'+esc(f['是否用於核銷']||'否')+'</span></td>'
+      +'<td><span class="badge '+(f['是否用於請款']==='是'?'b-yes':'b-no')+'">'+esc(f['是否用於請款']||'否')+'</span></td>'
+      +'<td><span class="badge '+(f['是否用於成果報告']==='是'?'b-yes':'b-no')+'">'+esc(f['是否用於成果報告']||'否')+'</span></td>'
+      +'<td>'+link+'</td>'
+      +'<td style="display:flex;gap:3px"><button class="row-btn" onclick="openModal(\''+fid+'\')">編輯</button>'
+      +'<button class="row-btn danger" onclick="deleteFile(\''+fid+'\')">刪除</button></td></tr>';
+  });
+  tbody.innerHTML=html;
+}
+function openModal(fid){
+  document.getElementById('mTitle').textContent=fid?'編輯檔案記錄':'新增檔案記錄';
+  ['f_id','f_name','f_link','f_desc','f_uploader'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f_type').value='其他';document.getElementById('f_ses').value='';
+  ['fc_closing','fc_reimb','fc_payment','fc_report'].forEach(function(id){document.getElementById(id).checked=false;});
+  document.getElementById('f_date').value=new Date().toISOString().substring(0,10);
+  if(fid){var file=_files.find(function(f){return f['檔案ID']===fid;});if(file){
+    document.getElementById('f_id').value=file['檔案ID']||'';
+    document.getElementById('f_name').value=file['檔案名稱']||'';
+    document.getElementById('f_type').value=file['檔案類型']||'其他';
+    document.getElementById('f_link').value=file['Google Drive連結']||'';
+    document.getElementById('f_desc').value=file['檔案說明']||'';
+    document.getElementById('f_date').value=String(file['上傳日期']||'').substring(0,10);
+    document.getElementById('f_uploader').value=file['上傳者']||'';
+    document.getElementById('f_ses').value=file['場次ID']||'';
+    document.getElementById('fc_closing').checked=file['是否用於結案']==='是';
+    document.getElementById('fc_reimb').checked=file['是否用於核銷']==='是';
+    document.getElementById('fc_payment').checked=file['是否用於請款']==='是';
+    document.getElementById('fc_report').checked=file['是否用於成果報告']==='是';
+  }}
+  document.getElementById('fileModal').style.display='flex';
+}
+function closeModal(){document.getElementById('fileModal').style.display='none';}
+async function saveFile(){
+  var name=document.getElementById('f_name').value.trim();var link=document.getElementById('f_link').value.trim();
+  if(!name||!link){alert('請填寫檔案名稱與 Drive 連結');return;}
+  var fid=document.getElementById('f_id').value;
+  var p={action:fid?'updateFile':'createFile',caseId:_caseId,
+    fileName:name,fileType:document.getElementById('f_type').value,
+    driveLink:link,description:document.getElementById('f_desc').value,
+    uploadDate:document.getElementById('f_date').value,uploader:document.getElementById('f_uploader').value,
+    sessionId:document.getElementById('f_ses').value,
+    forClosing:document.getElementById('fc_closing').checked?'是':'否',
+    forReimb:document.getElementById('fc_reimb').checked?'是':'否',
+    forPayment:document.getElementById('fc_payment').checked?'是':'否',
+    forReport:document.getElementById('fc_report').checked?'是':'否'};
+  if(fid)p.fileId=fid;
+  var r=await ERPALIGNED.api(p);if(r.success){closeModal();loadFiles();}else alert('儲存失敗：'+r.message);
+}
+async function deleteFile(fid){
+  if(!confirm('確定刪除此檔案記錄？'))return;
+  var r=await ERPALIGNED.api({action:'deleteFile',fileId:fid});if(r.success)loadFiles();else alert('刪除失敗');
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
