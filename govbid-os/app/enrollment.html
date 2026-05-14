@@ -306,6 +306,26 @@
       <div id="attTable" style="margin-top:8px"></div>
     </div>
   </div>
+
+  <!-- ══ 管理員工具（摺疊） ══ -->
+  <section class="card" style="margin-top:16px;border:2px dashed var(--danger);background:rgba(192,57,43,.03)">
+    <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="toggleAdminTools()">
+      <h2 style="margin:0;color:var(--danger)">⚙ 管理員工具</h2>
+      <span style="font-size:.78rem;color:var(--gray-400)">（展開）</span>
+    </div>
+    <div id="adminToolsBody" style="display:none;margin-top:14px">
+      <div class="hint" style="margin-bottom:12px;color:var(--danger)">⚠ 以下操作不可復原，請謹慎使用。</div>
+      <div class="btns" style="flex-wrap:wrap;gap:8px">
+        <button class="secondary" onclick="runDedup()" style="border-color:var(--gold)">去重招生活動（刪除重複列）</button>
+        <button class="secondary" onclick="clearSheet('招生活動管理')" style="border-color:var(--danger)">清空招生活動管理</button>
+        <button class="secondary" onclick="clearSheet('報名資料庫')" style="border-color:var(--danger)">清空報名資料庫</button>
+        <button class="secondary" onclick="clearSheet('學員CRM')" style="border-color:var(--danger)">清空學員CRM</button>
+        <button class="secondary" onclick="clearSheet('簽到表')" style="border-color:var(--danger)">清空簽到表</button>
+        <button style="background:var(--danger);color:var(--white)" onclick="clearAllEnrollment()">⚠ 全部清空（招生活動+報名+CRM）</button>
+      </div>
+      <div id="adminMsg" class="msg" style="margin-top:10px"></div>
+    </div>
+  </section>
 </main>
 
 <script src="./govops-api-client.js"></script>
@@ -367,12 +387,46 @@ document.getElementById('campaignForm').addEventListener('submit', async functio
   e.preventDefault();
   var fd=new FormData(e.target), o={action:'新增招生活動'};
   fd.forEach(function(v,k){ if(v) o[k]=v; });
-  var r=await ERPALIGNED.api(o,'campaignMsg');
-  if(r&&r.success){ e.target.reset(); queryCampaigns(); }
+  var msgEl=document.getElementById('campaignMsg');
+  msgEl.textContent='建立中…';
+  var r=await ERPALIGNED.api(o);
+  if(r&&r.success){
+    msgEl.textContent='✅ '+r.message;
+    e.target.reset(); queryCampaigns();
+  } else {
+    // 顯示錯誤（包含重複提示）
+    msgEl.textContent='❌ '+(r&&r.message||'建立失敗');
+    msgEl.style.color='var(--danger)';
+    setTimeout(function(){ msgEl.style.color=''; }, 3000);
+  }
 });
+
 async function queryCampaigns(){
   var r=await ERPALIGNED.api({action:'查詢招生活動',keyword:document.getElementById('camKw').value},'camMsg');
-  ERPALIGNED.renderTable(r,'camTable');
+  renderCampaignTable(r);
+}
+
+function renderCampaignTable(r){
+  var box=document.getElementById('camTable');
+  var arr=(r&&r.data&&(r.data.rows||r.data.資料))||[];
+  if(!arr.length){box.innerHTML='<div class="empty">查無招生活動</div>';return;}
+  var keys=['招生活動ID','課程名稱','開課日期','報名截止日','招生名額','招生狀態'];
+  var html='<div class="table-wrap"><table><thead><tr>'+keys.map(function(k){return'<th>'+k+'</th>';}).join('')+'<th>操作</th></tr></thead><tbody>';
+  arr.forEach(function(row){
+    html+='<tr>'+keys.map(function(k){return'<td>'+ERPALIGNED.esc(row[k]||'');}).join('')+'</td><td>';
+    html+='<button class="ghost" style="padding:3px 8px;font-size:.76rem;margin-right:4px" onclick="confirmDelCampaign(\''+ERPALIGNED.esc(row['招生活動ID'])+'\',\''+ERPALIGNED.esc(row['課程名稱'])+'\')">刪除</button>';
+    html+='</td></tr>';
+  });
+  html+='</tbody></table></div>';
+  box.innerHTML=html;
+}
+
+function confirmDelCampaign(id, name){
+  if(!confirm('確定刪除「'+name+'」？此操作不可復原。')) return;
+  ERPALIGNED.api({action:'刪除招生活動',招生活動ID:id},'camMsg').then(function(r){
+    if(r&&r.success) queryCampaigns();
+    else alert('刪除失敗：'+(r&&r.message||''));
+  });
 }
 
 // ── 報名表單同步 ─────────────────────────────────────
@@ -602,6 +656,36 @@ async function querySignins(){
 
 // 初始載入
 queryCampaigns();
+
+// ── 管理員工具 ──────────────────────────────────────────
+function toggleAdminTools(){
+  var body=document.getElementById('adminToolsBody');
+  body.style.display = body.style.display==='none' ? '' : 'none';
+}
+async function runDedup(){
+  if(!confirm('確定執行去重？將刪除重複的招生活動列（保留最早一筆）。')) return;
+  var r=await ERPALIGNED.api({action:'deduplicateCampaigns'},'adminMsg');
+  document.getElementById('adminMsg').textContent=(r&&r.success)?('✅ '+r.message):('❌ '+(r&&r.message||'失敗'));
+  queryCampaigns();
+}
+async function clearSheet(name){
+  if(!confirm('確定清空「'+name+'」？此操作不可復原，所有資料列將被刪除。')) return;
+  var r=await ERPALIGNED.api({action:'clearSheetData',sheetName:name},'adminMsg');
+  document.getElementById('adminMsg').textContent=(r&&r.success)?('✅ '+r.message):('❌ '+(r&&r.message||'失敗'));
+  queryCampaigns();
+}
+async function clearAllEnrollment(){
+  if(!confirm('確定全部清空？招生活動管理、報名資料庫、學員CRM、簽到表全部清空，此操作不可復原！')) return;
+  if(!confirm('再次確認：全部清空？')) return;
+  var r=await ERPALIGNED.api({action:'clearAllEnrollmentData'},'adminMsg');
+  var msg=document.getElementById('adminMsg');
+  if(r&&r.success){
+    msg.textContent='✅ 全部清空完成';
+    queryCampaigns();
+  } else {
+    msg.textContent='❌ '+(r&&r.message||'失敗');
+  }
+}
 </script>
 </body>
 </html>
