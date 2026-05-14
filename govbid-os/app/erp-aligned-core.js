@@ -167,12 +167,18 @@
   function nav(){
     const path=location.pathname.split('/').pop()||'index.html';
     const pages=[
-      ['dashboard.html','儀表板'],['cases.html','業務案件'],['sessions.html','場次管理'],['tender-pool.html','標案池'],['projects.html','專案'],['activities.html','活動'],
-      ['registrations.html','報名管理'],['enrollment.html','招生報名'],['course-sop.html','開課SOP'],['course-ops.html','課程執行'],
-      ['vendors.html','廠商'],['resource-master.html','人員主檔'],
-      ['crm.html','CRM'],['documents.html','文件產生'],['official-docs.html','公文'],['calendar.html','日曆'],['finance.html','財務'],['closing.html','結案'],['tasks.html','任務'],['manpower.html','人力招募'],['archive.html','核銷'],
-      ['finance-secretary.html','財務']
-    ];
+      ['dashboard.html','儀表板'],
+      ['cases.html','業務案件'],['case-requirements.html','需求摘要'],
+      ['sessions.html','場次管理'],['change-log.html','變更紀錄'],
+      ['registrations.html','報名管理'],['review.html','資格審查'],['admission.html','錄取名單'],
+      ['manpower.html','人力招募'],['manpower-schedule.html','人力排班'],
+      ['import.html','資料匯入'],['documents.html','行政文件'],
+      ['calendar.html','日曆'],['tasks.html','任務'],
+      ['finance.html','財務'],['official-docs.html','公文'],
+      ['file-manager.html','檔案管理'],['closing.html','結案'],['report-generator.html','結案報告'],
+      ['master-data.html','基本資料'],['settings.html','系統設定'],
+      ['tender-pool.html','標案池'],['vendors.html','廠商']
+    ]
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
   }
 
