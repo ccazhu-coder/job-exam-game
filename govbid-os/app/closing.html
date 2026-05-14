@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜結案管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.cl-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.clkpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:12px 14px}
+.clkpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.clkpi .label{font-size:.71rem;color:var(--gray-500);margin-top:1px}
+.clkpi.ok .num{color:#16a34a}
+.clkpi.warn .num{color:var(--gold)}
+.clkpi.alert .num{color:var(--danger)}
+
+/* Progress bar */
+.progress-bar{height:10px;background:var(--gray-100);border-radius:6px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--gold));border-radius:6px;transition:width .4s}
+
+/* 檢核表 */
+.check-section{margin-bottom:16px}
+.check-section-title{font-size:.8rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;padding:6px 12px;background:var(--gold-pale);border-radius:6px;margin-bottom:8px}
+.check-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;border:1.5px solid var(--gray-100);margin-bottom:6px;background:var(--white);transition:.15s}
+.check-item:hover{border-color:var(--navy-mid)}
+.check-item.done{background:#f0fdf4;border-color:#bbf7d0}
+.check-item input[type=checkbox]{accent-color:var(--navy);width:16px;height:16px;cursor:pointer}
+.check-item .name{flex:1;font-size:.86rem;color:var(--navy);font-weight:600}
+.check-item.done .name{color:#16a34a;text-decoration:line-through}
+.check-item .required{font-size:.7rem;background:#fef2f2;color:#b91c1c;padding:1px 6px;border-radius:8px;font-weight:700}
+.check-item .person{font-size:.75rem;color:var(--gray-400)}
+
+/* 案件摘要卡 */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.sum-item{background:var(--white);border:1.5px solid var(--gray-100);border-radius:8px;padding:11px 13px}
+.sum-item .lbl{font-size:.71rem;color:var(--gray-500);margin-bottom:3px}
+.sum-item .val{font-size:.9rem;font-weight:700;color:var(--navy)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">結案管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>結案管理</h1><p style="color:var(--gray-500);font-size:.84rem;margin:0">追蹤結案進度與文件完整性</p></div>
+    <div class="btns">
+      <button class="secondary" onclick="loadAll()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- 案件選擇 -->
+  <section class="card" style="margin-bottom:14px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="caseSelect" onchange="onCaseChange()" style="flex:1;min-width:200px;padding:9px 12px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font);background:var(--white)">
+        <option value="">— 選擇案件 —</option>
+      </select>
+      <button class="gold" id="initBtn" style="display:none" onclick="initChecklist()">初始化結案清單</button>
+    </div>
+  </section>
+
+  <!-- 案件摘要 -->
+  <div id="summarySection" style="display:none">
+    <section class="card" style="margin-bottom:14px">
+      <h2 style="margin-bottom:12px">案件摘要</h2>
+      <div class="summary-grid" id="summaryGrid"></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <p id="progressText" style="font-size:.78rem;color:var(--gray-500);margin:4px 0 0"></p>
+    </section>
+
+    <div class="cl-kpis" id="clKpis">
+      <div class="clkpi"><div class="num">—</div><div class="label">全部項目</div></div>
+      <div class="clkpi ok"><div class="num">—</div><div class="label">已完成</div></div>
+      <div class="clkpi alert"><div class="num">—</div><div class="label">待完成</div></div>
+    </div>
+
+    <section class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <h2 style="margin:0">結案檢核清單</h2>
+        <button class="secondary" style="font-size:.8rem;padding:6px 12px" onclick="generateSummary()">產生結案摘要</button>
+      </div>
+      <div id="checklistMsg" class="msg" style="display:none"></div>
+      <div id="checklistContent"></div>
+    </section>
+  </div>
+
+  <!-- 結案摘要輸出 -->
+  <div id="summaryOutput" style="display:none;margin-top:14px">
+    <section class="card">
+      <h2 style="margin-bottom:12px">結案摘要報告</h2>
+      <div id="summaryOutputContent"></div>
+    </section>
+  </div>
+</main>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _currentCaseId = '';
+var _checkItems = [];
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  loadCases();
+}
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases', status: '' });
+  var sel = document.getElementById('caseSelect');
+  var opts = (r.data||[]).filter(function(c){ return ['執行中','待請款','待收款','待結案','已結案'].indexOf(String(c['狀態'])) >= 0; });
+  sel.innerHTML = '<option value="">— 選擇案件 —</option>' + opts.map(function(c){ return '<option value="'+ERPALIGNED.esc(c['專案ID'])+'">'+ERPALIGNED.esc(c['專案計畫名稱'])+' ('+ERPALIGNED.esc(c['狀態'])+')</option>'; }).join('');
+}
+
+async function onCaseChange() {
+  _currentCaseId = document.getElementById('caseSelect').value;
+  document.getElementById('summarySection').style.display = _currentCaseId ? '' : 'none';
+  document.getElementById('summaryOutput').style.display = 'none';
+  if (!_currentCaseId) return;
+  loadAll();
+}
+
+async function loadAll() {
+  if (!_currentCaseId) return;
+  await Promise.all([loadSummaryData(), loadChecklist()]);
+}
+
+async function loadSummaryData() {
+  var r = await ERPALIGNED.api({ action: 'generateClosingSummary', caseId: _currentCaseId });
+  if (!r.success) return;
+  var d = r.data || {};
+  var ci = d.caseInfo || {};
+  document.getElementById('summaryGrid').innerHTML = [
+    ['案件名稱', ci['名稱']||'—'], ['類型', ci['類型']||'—'], ['客戶', ci['客戶']||'—'],
+    ['執行期間', ci['期間']||'—'], ['場次數', d.sessionCount||0], ['報名數', d.registrationCount||0],
+    ['錄取人數', d.admittedCount||0], ['收入', numFmt(d.finance&&d.finance.income)], ['支出', numFmt(d.finance&&d.finance.expense)]
+  ].map(function(item){ return '<div class="sum-item"><div class="lbl">'+ERPALIGNED.esc(item[0])+'</div><div class="val">'+ERPALIGNED.esc(String(item[1]))+'</div></div>'; }).join('');
+}
+
+async function loadChecklist() {
+  var msg = document.getElementById('checklistMsg');
+  var content = document.getElementById('checklistContent');
+  msg.style.display=''; msg.textContent='查詢中…'; content.innerHTML='';
+  var r = await ERPALIGNED.api({ action: 'getClosingChecklist', caseId: _currentCaseId });
+  msg.style.display='none';
+  if (!r.success) { msg.style.display=''; msg.textContent='⚠ '+r.message; return; }
+  var d = r.data || {};
+  _checkItems = d.list || [];
+  var total = d.total || 0, done = d.done || 0;
+  document.getElementById('progressFill').style.width = (total ? Math.round(done/total*100) : 0) + '%';
+  document.getElementById('progressText').textContent = '已完成 ' + done + ' / ' + total + ' 項 (' + (total ? Math.round(done/total*100) : 0) + '%)';
+  var kpis = document.getElementById('clKpis').querySelectorAll('.num');
+  if (kpis[0]) kpis[0].textContent = total;
+  if (kpis[1]) kpis[1].textContent = done;
+  if (kpis[2]) kpis[2].textContent = d.remaining || 0;
+
+  if (!_checkItems.length) {
+    content.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400)">尚未建立結案清單</div>';
+    document.getElementById('initBtn').style.display = '';
+    return;
+  }
+  document.getElementById('initBtn').style.display = 'none';
+  renderChecklist(_checkItems, content);
+}
+
+function renderChecklist(items, el) {
+  var byCategory = {};
+  items.forEach(function(item){ var cat = item['檢核類別']||'其他'; if(!byCategory[cat]) byCategory[cat]=[]; byCategory[cat].push(item); });
+  var html = '';
+  Object.keys(byCategory).forEach(function(cat){
+    html += '<div class="check-section"><div class="check-section-title">'+ERPALIGNED.esc(cat)+'</div>';
+    byCategory[cat].forEach(function(item, idx){
+      var done = item['完成狀態'] === '已完成';
+      html += '<div class="check-item'+(done?' done':'')+'">'+
+        '<input type="checkbox"'+(done?' checked':'')+' onchange="toggleItem(\''+ERPALIGNED.esc(item['檢核ID'])+'\',this.checked)">'+
+        '<div class="name">'+ERPALIGNED.esc(item['檢核項目'])+'</div>'+
+        (item['是否必要']==='是'?'<span class="required">必要</span>':'')+
+        '<span class="person">'+ERPALIGNED.esc(item['負責人']||'')+'</span>'+
+        (done&&item['完成日期']?'<span style="font-size:.71rem;color:var(--gray-400)">'+ERPALIGNED.esc(item['完成日期'])+'</span>':'')+
+      '</div>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function toggleItem(itemId, checked) {
+  var today = new Date().toISOString().substring(0,10);
+  await ERPALIGNED.api({ action: 'updateClosingItem', itemId: itemId, '完成狀態': checked?'已完成':'待完成', '完成日期': checked?today:'' });
+  loadChecklist();
+}
+
+async function initChecklist() {
+  if (!_currentCaseId) return;
+  var r = await ERPALIGNED.api({ action: 'initClosingChecklist', caseId: _currentCaseId });
+  if (r.success) loadChecklist();
+  else alert('初始化失敗：' + (r.message||''));
+}
+
+async function generateSummary() {
+  var r = await ERPALIGNED.api({ action: 'generateClosingSummary', caseId: _currentCaseId });
+  if (!r.success) { alert('產生失敗'); return; }
+  var d = r.data || {};
+  var ci = d.caseInfo || {};
+  var fin = d.finance || {};
+  var cl = d.closing || {};
+  var content = document.getElementById('summaryOutputContent');
+  content.innerHTML = '<div style="font-family:var(--font);line-height:1.8;color:var(--navy)">'+
+    '<h3 style="font-size:1.05rem;border-bottom:2px solid var(--gold);padding-bottom:6px;margin-bottom:12px">'+ERPALIGNED.esc(ci['名稱']||'')+'　結案摘要</h3>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:.85rem">'+
+    '<tr><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px;width:120px">案件類型</td><td style="padding:6px 10px">'+ERPALIGNED.esc(ci['類型']||'—')+'</td><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px;width:120px">主辦客戶</td><td style="padding:6px 10px">'+ERPALIGNED.esc(ci['客戶']||'—')+'</td></tr>'+
+    '<tr><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">執行期間</td><td colspan="3" style="padding:6px 10px">'+ERPALIGNED.esc(ci['期間']||'—')+'</td></tr>'+
+    '<tr><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">場次數</td><td style="padding:6px 10px">'+ERPALIGNED.esc(String(d.sessionCount||0))+'場</td><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">錄取人數</td><td style="padding:6px 10px">'+ERPALIGNED.esc(String(d.admittedCount||0))+'人</td></tr>'+
+    '<tr><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">收入</td><td style="padding:6px 10px">'+numFmt(fin.income)+'</td><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">支出</td><td style="padding:6px 10px">'+numFmt(fin.expense)+'</td></tr>'+
+    '<tr><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">損益</td><td style="padding:6px 10px;font-weight:700;color:'+(fin.profit>=0?'#16a34a':'var(--danger)')+'">'+numFmt(fin.profit)+'</td><td style="padding:6px 10px;background:var(--gray-100);font-weight:700;border-radius:4px">結案進度</td><td style="padding:6px 10px">'+cl.done+'/'+cl.total+' 項完成</td></tr>'+
+    '</table></div>';
+  document.getElementById('summaryOutput').style.display = '';
+  document.getElementById('summaryOutput').scrollIntoView({ behavior: 'smooth' });
+}
+
+function numFmt(v){ var n=parseInt(String(v||0).replace(/,/g,''),10); return isNaN(n)?'—':n.toLocaleString()+'元'; }
+
+init();
+</script>
+</body>
+</html>
