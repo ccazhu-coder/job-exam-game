@@ -155,6 +155,8 @@ var PROJECT_HEADERS = ['專案ID','專案計畫名稱','專案類型','主辦單
 // CASE_HEADERS = PROJECT_HEADERS 原有12欄 + 擴充9欄（第13~21欄），govopsEnsureSheet_會自動補欄
 var CASE_HEADERS = ['專案ID','專案計畫名稱','專案類型','主辦單位','開始日期','結束日期','契約金額','狀態','專案說明','備註','建立時間','更新時間','承辦窗口','聯絡電話','Email','結案期限','預估成本','付款狀態','結案狀態','Drive連結','Calendar連結'];
 var ACTIVITY_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間'];
+// SESSION_HEADERS = ACTIVITY_HEADERS 原有17欄 + v0.1擴充14欄，govopsEnsureSheet_自動補欄
+var SESSION_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間','報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態'];
 var CAMPAIGN_HEADERS = ['招生活動ID','專案ID','活動ID','課程名稱','招生狀態','報名開始日','報名截止日','開課日期','招生名額','候補名額','報名連結','招生渠道','主辦單位','聯絡人','聯絡電話','備註','建立時間','更新時間'];
 var REG_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間'];
 var CRM_HEADERS = ['CRM_ID','姓名','電話','Email','服務單位','身分別','標籤','最近參與活動','累積報名次數','累積出席次數','累積完訓次數','是否回流學員','行銷同意','備註','建立時間','更新時間'];
@@ -336,6 +338,131 @@ function govopsProjectActivityRoute_(params, action) {
     };
   }
   // ── End Case API v0.1 ─────────────────────────────────────
+
+  // ── Session API v0.1 ──────────────────────────────────────
+  // getSessions: 查詢場次（支援 caseId、keyword、status、日期篩選）
+  if (action === 'getSessions') {
+    var rows = govopsRows_('02_場次活動', SESSION_HEADERS);
+    // caseId 篩選（最常用）
+    var caseIdF = String(params.caseId || params['專案ID'] || '').trim();
+    if (caseIdF) rows = rows.filter(function(r){ return String(r['專案ID']) === caseIdF; });
+    // keyword
+    var kw = String(params.keyword || params.q || '').trim();
+    if (kw) rows = rows.filter(function(r){ return String(r['活動名稱']).indexOf(kw) >= 0 || String(r['活動地點']).indexOf(kw) >= 0 || String(r['講師']).indexOf(kw) >= 0; });
+    // status
+    var statusF = String(params.status || params['狀態'] || '').trim();
+    if (statusF) rows = rows.filter(function(r){ return String(r['狀態']) === statusF; });
+    // dateFrom / dateTo（活動日期）
+    var dateFrom = String(params.dateFrom || '').trim();
+    var dateTo = String(params.dateTo || '').trim();
+    if (dateFrom) rows = rows.filter(function(r){ return String(r['活動日期']) >= dateFrom; });
+    if (dateTo) rows = rows.filter(function(r){ return String(r['活動日期']) <= dateTo; });
+    // 排除封存
+    var incArch = String(params.includeArchived || '').toLowerCase() === 'true';
+    if (!incArch) rows = rows.filter(function(r){ return String(r['狀態'] || '') !== '封存'; });
+    var clean = rows.map(function(r){ var o = {}; Object.keys(r).forEach(function(k){ if (k !== '_row') o[k] = r[k]; }); return o; });
+    return { success: true, data: clean, message: '場次查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+  }
+
+  // createSession: 新增場次（寫入擴充欄位）
+  if (action === 'createSession') {
+    var sname = params['場次名稱'] || params['活動名稱'] || params.name;
+    if (!sname) return { success: false, error: 'MISSING_REQUIRED', message: '場次名稱為必填', timestamp: govopsNow_() };
+    var scaseId = params['caseId'] || params['專案ID'] || '';
+    if (!scaseId) return { success: false, error: 'MISSING_REQUIRED', message: '案件ID（caseId）為必填', timestamp: govopsNow_() };
+    // 取得案件名稱（自動帶入）
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var caseRow = null;
+    for (var i = 0; i < caseRows.length; i++) { if (caseRows[i]['專案ID'] === scaseId) { caseRow = caseRows[i]; break; } }
+    var sobj = {
+      '活動ID': govopsId_('SES'),
+      '專案ID': scaseId,
+      '專案計畫名稱': caseRow ? caseRow['專案計畫名稱'] : (params['案件名稱'] || ''),
+      '活動名稱': sname,
+      '活動日期': params['場次日期'] || params['活動日期'] || '',
+      '活動類型': params['場次類型'] || params['活動類型'] || '課程',
+      '開始時間': params['開始時間'] || '',
+      '結束時間': params['結束時間'] || '',
+      '活動地點': params['活動地點'] || params['場次地點'] || '',
+      '講師': params['講師'] || '',
+      '聯絡電話': params['聯絡電話'] || '',
+      '聯絡人': params['聯絡人'] || '',
+      '工作人員': params['工作人員'] || '',
+      '狀態': params['狀態'] || params['場次狀態'] || '規劃中',
+      '備註': params['備註'] || '',
+      '建立時間': govopsNow_(),
+      '更新時間': govopsNow_(),
+      // v0.1 擴充欄位
+      '報名截止日': params['報名截止日'] || '',
+      '預計人數': params['預計人數'] || '',
+      '實際人數': '',
+      '是否需簽到表': params['是否需簽到表'] || '',
+      '是否需簽退表': params['是否需簽退表'] || '',
+      '是否需便當': params['是否需便當'] || '',
+      '是否需保險': params['是否需保險'] || '',
+      '是否需問卷': params['是否需問卷'] || '',
+      '是否需成果照片': params['是否需成果照片'] || '',
+      '是否需講師領據': params['是否需講師領據'] || '',
+      '是否需工作人員': params['是否需工作人員'] || '',
+      'CalendarEventID': '',
+      'CalendarLink': '',
+      '已同步日曆': '否',
+      '日曆同步狀態': '',
+      '變更狀態': ''
+    };
+    govopsAppend_('02_場次活動', SESSION_HEADERS, sobj);
+    return { success: true, data: { sessionId: sobj['活動ID'], caseId: scaseId, row: sobj }, message: '場次已新增', timestamp: govopsNow_() };
+  }
+
+  // updateSession: 更新場次（接受新舊欄位名稱）
+  if (action === 'updateSession') {
+    var sesId = params['sessionId'] || params['活動ID'];
+    if (!sesId) return { success: false, error: 'MISSING_ID', message: '缺少場次ID（sessionId）', timestamp: govopsNow_() };
+    var allSes = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var foundSes = null;
+    for (var i = 0; i < allSes.length; i++) { if (allSes[i]['活動ID'] === sesId) { foundSes = allSes[i]; break; } }
+    if (!foundSes) return { success: false, error: 'NOT_FOUND', message: '找不到場次：' + sesId, timestamp: govopsNow_() };
+    var sesPatch = { '更新時間': govopsNow_() };
+    var sesAllowedOld = ['活動名稱','活動類型','活動日期','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註'];
+    var sesAllowedNew = ['報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態'];
+    sesAllowedOld.concat(sesAllowedNew).forEach(function(f){ if (params[f] !== undefined && params[f] !== '') sesPatch[f] = params[f]; });
+    // 接受新式名稱
+    if (params['場次名稱']) sesPatch['活動名稱'] = params['場次名稱'];
+    if (params['場次類型']) sesPatch['活動類型'] = params['場次類型'];
+    if (params['場次日期']) sesPatch['活動日期'] = params['場次日期'];
+    if (params['場次狀態']) sesPatch['狀態'] = params['場次狀態'];
+    if (params['場次地點']) sesPatch['活動地點'] = params['場次地點'];
+    govopsUpdate_('02_場次活動', SESSION_HEADERS, foundSes._row, sesPatch);
+    return { success: true, data: { sessionId: sesId, updated: sesPatch }, message: '場次已更新', timestamp: govopsNow_() };
+  }
+
+  // archiveSession: 封存場次
+  if (action === 'archiveSession') {
+    var sesId = params['sessionId'] || params['活動ID'];
+    if (!sesId) return { success: false, error: 'MISSING_ID', message: '缺少場次ID（sessionId）', timestamp: govopsNow_() };
+    var allSes = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var foundSes = null;
+    for (var i = 0; i < allSes.length; i++) { if (allSes[i]['活動ID'] === sesId) { foundSes = allSes[i]; break; } }
+    if (!foundSes) return { success: false, error: 'NOT_FOUND', message: '找不到場次：' + sesId, timestamp: govopsNow_() };
+    govopsUpdate_('02_場次活動', SESSION_HEADERS, foundSes._row, { '狀態': '封存', '更新時間': govopsNow_() });
+    return { success: true, data: { sessionId: sesId, status: '封存' }, message: '場次已封存', timestamp: govopsNow_() };
+  }
+
+  // getSessionStats: 場次統計（供 cases.html 顯示場次數量）
+  if (action === 'getSessionStats') {
+    var caseIdF = String(params.caseId || params['專案ID'] || '').trim();
+    var allSes = govopsRows_('02_場次活動', SESSION_HEADERS);
+    if (caseIdF) allSes = allSes.filter(function(r){ return String(r['專案ID']) === caseIdF; });
+    var sesStats = {};
+    var sesStatusList = ['規劃中','確認中','執行中','已完成','取消','封存'];
+    sesStatusList.forEach(function(s){ sesStats[s] = 0; });
+    allSes.forEach(function(r){
+      var s = String(r['狀態'] || '').trim();
+      if (sesStats[s] !== undefined) sesStats[s]++;
+    });
+    return { success: true, data: { byStatus: sesStats, total: allSes.length, caseId: caseIdF }, message: '場次統計完成', timestamp: govopsNow_() };
+  }
+  // ── End Session API v0.1 ───────────────────────────────────
 
   return null;
 }
