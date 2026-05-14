@@ -170,7 +170,7 @@ async function loadCases(preCaseId, preSessionId){
   const r=await ERPALIGNED.api({action:'getCases'});
   const sel=document.getElementById('caseSelect');
   if(!r.success){sel.innerHTML='<option value="">載入失敗</option>';return;}
-  _cases=r.data&&r.data.rows||[];
+  _cases=r.data||[];
   sel.innerHTML='<option value="">— 請選擇案件 —</option>';
   _cases.forEach(function(c){
     var o=document.createElement('option');
@@ -189,7 +189,7 @@ async function onCaseChange(preSessionId){
   if(!_caseId){document.getElementById('selStatus').textContent='請先選擇案件';return;}
   const r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
   if(r.success){
-    _sessions=r.data&&r.data.rows||[];
+    _sessions=r.data||[];
     _sessions.forEach(function(s){
       var o=document.createElement('option');
       o.value=s['活動ID']||'';
@@ -549,7 +549,7 @@ async function buildChecklist(){
 async function buildClosingList(){
   const r=await ERPALIGNED.api({action:'getClosingChecklist',caseId:_caseId});
   if(!r.success){showWorkspaceMsg('請先在結案管理中初始化檢核清單');return;}
-  const rows=r.data&&r.data.rows||[];
+  const rows=r.data&&r.data.list||[];
   var html='<table><thead><tr><th>類別</th><th>檢核項目</th><th>是否必要</th><th>完成狀態</th><th>完成日期</th><th>負責人</th></tr></thead><tbody>';
   rows.forEach(function(r){
     html+='<tr><td>'+esc(r['檢核類別']||'')+'</td><td>'+esc(r['檢核項目']||'')+'</td><td>'+esc(r['是否必要']||'')+'</td>'
