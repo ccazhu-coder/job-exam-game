@@ -24,6 +24,7 @@
       <div style="flex:1"></div>
       <input id="keyword" placeholder="姓名、電話、Email、服務單位…" style="max-width:260px;margin:0" onkeydown="if(event.key==='Enter')query()">
       <button onclick="query()">查詢</button>
+      <button class="ghost" style="color:var(--danger);border-color:var(--danger);font-size:.78rem;padding:6px 10px" onclick="clearCRM()">清空CRM</button>
     </div>
     <div id="queryMsg" class="msg">載入中…</div>
     <div id="table" style="margin-top:8px"></div>
@@ -57,10 +58,42 @@ const CRM_EDIT = [
 
 function openCreate(){ERPALIGNED.showEditModal('新增報名／同步CRM',CRM_CREATE,{},'新增報名',null,query);}
 function openEdit(row){ERPALIGNED.showEditModal('編輯學員：'+row['姓名'],CRM_EDIT,row,'修改學員CRM','CRM_ID',query);}
+
+function confirmDelCrm(id, name){
+  if(!confirm('確定刪除學員「'+name+'」？此操作不可復原。')) return;
+  ERPALIGNED.api({action:'刪除學員',CRM_ID:id}).then(function(r){
+    if(r&&r.success) query(); else alert('刪除失敗：'+(r&&r.message||''));
+  });
+}
+
 async function query(){
   const r=await ERPALIGNED.api({action:'查詢學員CRM',keyword:document.getElementById('keyword').value},'queryMsg');
-  ERPALIGNED.renderTableWithEdit(r,'table',openEdit,['CRM_ID','姓名','電話','Email','服務單位','來源渠道','建立時間']);
+  renderCrmTable(r);
 }
+
+function renderCrmTable(r){
+  var box=document.getElementById('table');
+  var d=(r&&r.data)||{};
+  var arr=d.rows||d.學員||d.資料||[];
+  if(!arr.length){box.innerHTML='<div class="empty">查無學員資料</div>';return;}
+  var keys=['CRM_ID','姓名','電話','Email','服務單位','身分別','累積報名次數','是否回流學員'];
+  box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(function(k){return'<th>'+k+'</th>';}).join('')+'<th style="width:100px;text-align:center">操作</th></tr></thead><tbody>'+
+    arr.slice(0,200).map(function(row){
+      return '<tr>'+keys.map(function(k){return'<td>'+ERPALIGNED.esc(row[k]||'')+'</td>';}).join('')+
+        '<td style="text-align:center"><button class="ghost" style="padding:3px 8px;font-size:.76rem;margin-right:3px" onclick="openEdit(window.__crmRows__['+arr.indexOf(row)+'])">編輯</button>'+
+        '<button class="ghost" style="padding:3px 8px;font-size:.76rem;color:var(--danger)" onclick="confirmDelCrm(\''+ERPALIGNED.esc(row['CRM_ID'])+'\',\''+ERPALIGNED.esc(row['姓名']||'')+'\')">刪除</button></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div style="margin-top:6px;font-size:.76rem;color:var(--gray-400)">共 '+arr.length+' 筆</div>';
+  window.__crmRows__ = arr;
+}
+
+async function clearCRM(){
+  if(!confirm('確定清空全部學員CRM資料？此操作不可復原！')) return;
+  var r=await ERPALIGNED.api({action:'clearSheetData',sheetName:'學員CRM'});
+  alert(r&&r.success ? '✅ '+r.message : '❌ '+(r&&r.message||'失敗'));
+  query();
+}
+
 query();
 </script>
 </body>
