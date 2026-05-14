@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人力招募管理 | GovOps OS</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<style>
+.tab-bar{display:flex;gap:8px;margin-bottom:20px}
+.tab-bar .tab{padding:7px 20px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);cursor:pointer;font-size:.85rem;color:var(--navy-mid);font-weight:600;transition:.15s}
+.tab-bar .tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.kpi-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;padding:18px 20px}
+.kpi-card .num{font-size:2rem;font-weight:800;color:var(--navy);line-height:1}
+.kpi-card .lbl{font-size:.78rem;color:var(--gray-400);margin-top:4px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-header h3{font-size:1.05rem;font-weight:700;color:var(--navy)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-bar select,.filter-bar input{padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:.83rem;font-family:var(--font);color:var(--navy)}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--navy-mid)}
+.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.75rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--gold-pale);border-color:var(--gold);color:var(--navy)}
+.row-btn.danger{color:#b91c1c;border-color:#fca5a5}
+.row-btn.danger:hover{background:#fef2f2}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-recruiting{background:#dcfce7;color:#166534}
+.s-paused{background:#fef9c3;color:#854d0e}
+.s-closed{background:#f1f5f9;color:#64748b}
+.s-pending{background:#dbeafe;color:#1e40af}
+.s-interview{background:#fef3c7;color:#92400e}
+.s-hired{background:#dcfce7;color:#166534}
+.s-rejected{background:#fee2e2;color:#991b1b}
+.empty-state{text-align:center;padding:48px;color:var(--gray-400)}
+.vacancy-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:10px;padding:16px 20px;margin-bottom:12px;transition:.15s}
+.vacancy-card:hover{border-color:var(--navy-mid);box-shadow:0 2px 8px rgba(13,35,64,.07)}
+.vacancy-card .vc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.vacancy-card .vc-title{font-size:1rem;font-weight:700;color:var(--navy)}
+.vacancy-card .vc-meta{font-size:.78rem;color:var(--gray-400);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.vacancy-card .vc-actions{display:flex;gap:6px}
+</style>
+</head>
+<body>
+<div id="erpNav"></div>
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">人力招募管理</h1>
+      <p class="page-subtitle" id="pageSubtitle">載入中…</p>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi-card"><div class="num" id="k_vTotal">—</div><div class="lbl">職缺總數</div></div>
+    <div class="kpi-card"><div class="num" id="k_vRecruiting">—</div><div class="lbl">招募中</div></div>
+    <div class="kpi-card"><div class="num" id="k_aTotal">—</div><div class="lbl">應徵者總數</div></div>
+    <div class="kpi-card"><div class="num" id="k_aPending">—</div><div class="lbl">待審應徵</div></div>
+  </div>
+
+  <!-- Tab -->
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('vacancies',this)">職缺管理</button>
+    <button class="tab" onclick="switchTab('applicants',this)">應徵者管理</button>
+  </div>
+
+  <!-- 職缺 Tab -->
+  <div id="tab-vacancies">
+    <div class="section-header">
+      <h3>職缺列表</h3>
+      <button class="btn-primary" onclick="openVacancyModal()">+ 新增職缺</button>
+    </div>
+    <div class="filter-bar">
+      <select id="vStatusFilter" onchange="loadVacancies()">
+        <option value="">全部狀態</option>
+        <option value="招募中">招募中</option>
+        <option value="暫停">暫停</option>
+        <option value="已關閉">已關閉</option>
+      </select>
+      <input id="vKeyword" type="text" placeholder="搜尋職缺名稱…" oninput="loadVacancies()" style="width:200px">
+    </div>
+    <div id="vacancyList"></div>
+  </div>
+
+  <!-- 應徵者 Tab -->
+  <div id="tab-applicants" style="display:none">
+    <div class="section-header">
+      <h3>應徵者列表</h3>
+      <button class="btn-primary" onclick="openApplicantModal()">+ 新增應徵者</button>
+    </div>
+    <div class="filter-bar">
+      <select id="aVacancyFilter" onchange="loadApplicants()">
+        <option value="">全部職缺</option>
+      </select>
+      <select id="aStatusFilter" onchange="loadApplicants()">
+        <option value="">全部狀態</option>
+        <option value="待審">待審</option>
+        <option value="通知面試">通知面試</option>
+        <option value="面試完成">面試完成</option>
+        <option value="錄取">錄取</option>
+        <option value="未錄取">未錄取</option>
+      </select>
+      <input id="aKeyword" type="text" placeholder="搜尋姓名、Email…" oninput="renderApplicants()" style="width:200px">
+    </div>
+    <div style="overflow-x:auto">
+      <table class="erp-table" style="min-width:800px">
+        <thead>
+          <tr><th>姓名</th><th>電話</th><th>Email</th><th>應徵職缺</th><th>應徵日期</th><th>薪資期望</th><th>狀態</th><th>面試日期</th><th>操作</th></tr>
+        </thead>
+        <tbody id="applicantBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 職缺 Modal -->
+<div class="modal-overlay" id="vacancyModal" style="display:none" onclick="if(event.target===this)closeVacancyModal()">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header"><span id="vacancyModalTitle">新增職缺</span><button class="modal-close" onclick="closeVacancyModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="v_id">
+      <div class="form-row cols2">
+        <div class="field"><label>職缺名稱 <span class="req">*</span></label><input id="v_name" placeholder="例：課務協助人員"></div>
+        <div class="field"><label>職務類型</label>
+          <select id="v_type"><option>正職</option><option>兼職</option><option>志工</option><option>外包</option><option>臨時人員</option></select>
+        </div>
+      </div>
+      <div class="form-row cols3">
+        <div class="field"><label>需求人數</label><input id="v_count" type="number" min="1" value="1"></div>
+        <div class="field"><label>薪資範圍</label><input id="v_salary" placeholder="例：月薪 30,000~35,000"></div>
+        <div class="field"><label>工作地點</label><input id="v_loc" placeholder="例：彰化縣政府"></div>
+      </div>
+      <div class="form-row cols2">
+        <div class="field"><label>開始日期</label><input id="v_start" type="date"></div>
+        <div class="field"><label>結束日期</label><input id="v_end" type="date"></div>
+      </div>
+      <div class="field"><label>職缺說明</label><textarea id="v_desc" rows="3" placeholder="工作內容說明…"></textarea></div>
+      <div class="field"><label>任職資格</label><textarea id="v_req" rows="2" placeholder="例：大專以上學歷、熟悉 Office…"></textarea></div>
+      <div class="field"><label>連結案件ID</label><input id="v_caseId" placeholder="留空表示不連結案件"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeVacancyModal()">取消</button>
+      <button class="btn-primary" onclick="saveVacancy()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 應徵者 Modal -->
+<div class="modal-overlay" id="applicantModal" style="display:none" onclick="if(event.target===this)closeApplicantModal()">
+  <div class="modal-box" style="max-width:580px">
+    <div class="modal-header"><span id="applicantModalTitle">新增應徵者</span><button class="modal-close" onclick="closeApplicantModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="a_id">
+      <div class="form-row cols2">
+        <div class="field"><label>姓名 <span class="req">*</span></label><input id="a_name" placeholder="應徵者姓名"></div>
+        <div class="field"><label>電話</label><input id="a_phone" placeholder="0912-345-678"></div>
+      </div>
+      <div class="form-row cols2">
+        <div class="field"><label>Email</label><input id="a_email" type="email" placeholder="example@email.com"></div>
+        <div class="field"><label>薪資期望</label><input id="a_salary" placeholder="例：月薪 32,000"></div>
+      </div>
+      <div class="form-row cols2">
+        <div class="field"><label>應徵職缺</label>
+          <select id="a_vacancyId"><option value="">— 請選擇 —</option></select>
+        </div>
+        <div class="field"><label>應徵日期</label><input id="a_date" type="date"></div>
+      </div>
+      <div class="field"><label>履歷連結</label><input id="a_resume" placeholder="Google Drive 或其他連結"></div>
+      <div class="form-row cols2" id="a_interviewFields">
+        <div class="field"><label>面試日期</label><input id="a_idate" type="date"></div>
+        <div class="field"><label>面試地點</label><input id="a_iloc" placeholder="面試地點"></div>
+      </div>
+      <div class="field"><label>審查狀態</label>
+        <select id="a_status">
+          <option value="待審">待審</option>
+          <option value="通知面試">通知面試</option>
+          <option value="面試完成">面試完成</option>
+          <option value="錄取">錄取</option>
+          <option value="未錄取">未錄取</option>
+        </select>
+      </div>
+      <div class="field"><label>備註</label><textarea id="a_remark" rows="2"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeApplicantModal()">取消</button>
+      <button class="btn-primary" onclick="saveApplicant()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _vacancies = [];
+var _applicants = [];
+var _currentTab = 'vacancies';
+var _editingVacancyId = null;
+var _editingApplicantId = null;
+
+async function init() {
+  await Promise.all([loadStats(), loadVacancies(), loadApplicants()]);
+  populateVacancyDropdown();
+  const urlP = new URLSearchParams(location.search);
+  if (urlP.get('caseId')) {
+    // Pre-filter by case if coming from cases.html — show all vacancies for case
+  }
+  document.getElementById('pageSubtitle').textContent = '管理職缺發布與應徵者追蹤';
+}
+
+async function loadStats() {
+  const [vr, ar] = await Promise.all([
+    ERPALIGNED.api({ action: 'getVacancyStats' }),
+    ERPALIGNED.api({ action: 'getApplicantStats' })
+  ]);
+  if (vr.success) {
+    const d = vr.data;
+    document.getElementById('k_vTotal').textContent = d.total || 0;
+    document.getElementById('k_vRecruiting').textContent = d.recruiting || 0;
+  }
+  if (ar.success) {
+    const d = ar.data;
+    document.getElementById('k_aTotal').textContent = d.total || 0;
+    document.getElementById('k_aPending').textContent = d.pending || 0;
+  }
+}
+
+async function loadVacancies() {
+  const p = { action: 'getVacancies' };
+  const s = document.getElementById('vStatusFilter').value;
+  if (s) p.status = s;
+  const r = await ERPALIGNED.api(p);
+  if (!r.success) { document.getElementById('vacancyList').innerHTML = '<p style="color:#b91c1c">載入失敗</p>'; return; }
+  _vacancies = r.data.rows || [];
+  renderVacancies();
+}
+
+function renderVacancies() {
+  const kw = (document.getElementById('vKeyword').value || '').toLowerCase();
+  let rows = _vacancies;
+  if (kw) rows = rows.filter(function(r){ return (r['職缺名稱']||'').toLowerCase().includes(kw) || (r['工作地點']||'').toLowerCase().includes(kw); });
+  const el = document.getElementById('vacancyList');
+  if (!rows.length) { el.innerHTML = '<div class="empty-state">目前沒有職缺資料</div>'; return; }
+  var html = '';
+  rows.forEach(function(r) {
+    var statusClass = r['狀態'] === '招募中' ? 's-recruiting' : r['狀態'] === '暫停' ? 's-paused' : 's-closed';
+    html += '<div class="vacancy-card">';
+    html += '<div class="vc-head">';
+    html += '<span class="vc-title">' + ERPALIGNED.esc(r['職缺名稱']||'—') + '</span>';
+    html += '<span class="status-badge ' + statusClass + '">' + (r['狀態']||'') + '</span>';
+    html += '<span style="font-size:.75rem;background:var(--gray-100);padding:2px 8px;border-radius:10px;color:var(--navy-mid)">' + (r['職務類型']||'') + '</span>';
+    html += '</div>';
+    html += '<div class="vc-meta">';
+    if (r['工作地點']) html += '<span>📍 ' + ERPALIGNED.esc(r['工作地點']) + '</span>';
+    if (r['需求人數']) html += '<span>👥 需求 ' + r['需求人數'] + ' 人</span>';
+    if (r['薪資範圍']) html += '<span>💰 ' + ERPALIGNED.esc(r['薪資範圍']) + '</span>';
+    if (r['開始日期']) html += '<span>📅 ' + shortDate(r['開始日期']) + (r['結束日期'] ? ' ~ ' + shortDate(r['結束日期']) : '') + '</span>';
+    html += '</div>';
+    if (r['職缺說明']) html += '<div style="font-size:.82rem;color:var(--navy-mid);margin-bottom:10px;white-space:pre-wrap">' + ERPALIGNED.esc(r['職缺說明']) + '</div>';
+    var vid = ERPALIGNED.esc(r['職缺ID']||'');
+    html += '<div class="vc-actions">';
+    html += '<button class="row-btn" onclick="openVacancyModal(\'' + vid + '\')">編輯</button>';
+    if (r['狀態'] === '招募中') html += '<button class="row-btn" onclick="setVacancyStatus(\'' + vid + '\',\'暫停\')">暫停</button>';
+    if (r['狀態'] === '暫停') html += '<button class="row-btn" onclick="setVacancyStatus(\'' + vid + '\',\'招募中\')">重啟招募</button>';
+    if (r['狀態'] !== '已關閉') html += '<button class="row-btn danger" onclick="setVacancyStatus(\'' + vid + '\',\'已關閉\')">關閉</button>';
+    html += '<button class="row-btn" onclick="switchTab(\'applicants\',null,\'' + vid + '\')">查看應徵(' + countApplicants(vid) + ')</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function countApplicants(vacancyId) {
+  return _applicants.filter(function(r){ return r['職缺ID'] === vacancyId; }).length;
+}
+
+async function setVacancyStatus(vacancyId, status) {
+  const r = await ERPALIGNED.api({ action: 'updateVacancy', vacancyId: vacancyId, '狀態': status });
+  if (r.success) { loadVacancies(); loadStats(); }
+  else alert('更新失敗：' + (r.error || r.message));
+}
+
+async function loadApplicants() {
+  const p = { action: 'getApplicants' };
+  const v = document.getElementById('aVacancyFilter').value;
+  const s = document.getElementById('aStatusFilter').value;
+  if (v) p.vacancyId = v;
+  if (s) p.status = s;
+  const r = await ERPALIGNED.api(p);
+  if (!r.success) return;
+  _applicants = r.data.rows || [];
+  renderApplicants();
+}
+
+function renderApplicants() {
+  const kw = (document.getElementById('aKeyword').value || '').toLowerCase();
+  let rows = _applicants;
+  if (kw) rows = rows.filter(function(r){ return (r['姓名']||'').includes(kw) || (r['Email']||'').toLowerCase().includes(kw); });
+  const tbody = document.getElementById('applicantBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--gray-400)">目前沒有應徵者資料</td></tr>'; return; }
+  var statusMap = { '待審':'s-pending','通知面試':'s-interview','面試完成':'s-interview','錄取':'s-hired','未錄取':'s-rejected' };
+  var html = '';
+  rows.forEach(function(r) {
+    var aid = ERPALIGNED.esc(r['應徵者ID']||'');
+    var vname = (_vacancies.filter(function(v){ return v['職缺ID']===r['職缺ID']; })[0] || {})['職缺名稱'] || r['職缺ID'] || '—';
+    var sc = statusMap[r['審查狀態']] || '';
+    html += '<tr>';
+    html += '<td><strong>' + ERPALIGNED.esc(r['姓名']||'—') + '</strong></td>';
+    html += '<td>' + ERPALIGNED.esc(r['電話']||'—') + '</td>';
+    html += '<td>' + ERPALIGNED.esc(r['Email']||'—') + '</td>';
+    html += '<td>' + ERPALIGNED.esc(vname) + '</td>';
+    html += '<td>' + shortDate(r['應徵日期']) + '</td>';
+    html += '<td>' + ERPALIGNED.esc(r['薪資期望']||'—') + '</td>';
+    html += '<td><span class="status-badge ' + sc + '">' + (r['審查狀態']||'—') + '</span></td>';
+    html += '<td>' + (r['面試日期'] ? shortDate(r['面試日期']) : '—') + '</td>';
+    html += '<td><button class="row-btn" onclick="openApplicantModal(\'' + aid + '\')">編輯</button></td>';
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function populateVacancyDropdown() {
+  var sel = document.getElementById('aVacancyFilter');
+  var sel2 = document.getElementById('a_vacancyId');
+  _vacancies.forEach(function(v) {
+    var o = '<option value="' + ERPALIGNED.esc(v['職缺ID']||'') + '">' + ERPALIGNED.esc(v['職缺名稱']||'') + '</option>';
+    sel.innerHTML += o;
+    sel2.innerHTML += o;
+  });
+}
+
+function switchTab(tab, btn, vacancyId) {
+  _currentTab = tab;
+  document.getElementById('tab-vacancies').style.display = tab === 'vacancies' ? '' : 'none';
+  document.getElementById('tab-applicants').style.display = tab === 'applicants' ? '' : 'none';
+  document.querySelectorAll('.tab-bar .tab').forEach(function(t){ t.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  else { var tabs = document.querySelectorAll('.tab-bar .tab'); tabs[tab==='vacancies'?0:1].classList.add('active'); }
+  if (vacancyId) {
+    document.getElementById('aVacancyFilter').value = vacancyId;
+    loadApplicants();
+  }
+}
+
+function shortDate(v) {
+  if (!v) return '—';
+  return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+}
+
+// ── 職缺 Modal ────────────────────────────────────────────
+function openVacancyModal(vacancyId) {
+  _editingVacancyId = vacancyId || null;
+  document.getElementById('vacancyModalTitle').textContent = vacancyId ? '編輯職缺' : '新增職缺';
+  document.getElementById('v_id').value = '';
+  ['v_name','v_salary','v_loc','v_desc','v_req','v_caseId'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('v_count').value = 1;
+  document.getElementById('v_type').value = '正職';
+  document.getElementById('v_start').value = '';
+  document.getElementById('v_end').value = '';
+  if (vacancyId) {
+    var r = _vacancies.filter(function(v){ return v['職缺ID']===vacancyId; })[0];
+    if (r) {
+      document.getElementById('v_id').value = r['職缺ID']||'';
+      document.getElementById('v_name').value = r['職缺名稱']||'';
+      document.getElementById('v_type').value = r['職務類型']||'正職';
+      document.getElementById('v_count').value = r['需求人數']||1;
+      document.getElementById('v_salary').value = r['薪資範圍']||'';
+      document.getElementById('v_loc').value = r['工作地點']||'';
+      document.getElementById('v_start').value = (r['開始日期']||'').substring(0,10);
+      document.getElementById('v_end').value = (r['結束日期']||'').substring(0,10);
+      document.getElementById('v_desc').value = r['職缺說明']||'';
+      document.getElementById('v_req').value = r['任職資格']||'';
+      document.getElementById('v_caseId').value = r['案件ID']||'';
+    }
+  }
+  document.getElementById('vacancyModal').style.display = 'flex';
+}
+function closeVacancyModal(){ document.getElementById('vacancyModal').style.display = 'none'; }
+
+async function saveVacancy() {
+  var name = document.getElementById('v_name').value.trim();
+  if (!name) { alert('請填寫職缺名稱'); return; }
+  var vacancyId = document.getElementById('v_id').value;
+  var p = {
+    action: vacancyId ? 'updateVacancy' : 'createVacancy',
+    vacancyName: name,
+    jobType: document.getElementById('v_type').value,
+    headcount: document.getElementById('v_count').value,
+    salaryRange: document.getElementById('v_salary').value,
+    location: document.getElementById('v_loc').value,
+    startDate: document.getElementById('v_start').value,
+    endDate: document.getElementById('v_end').value,
+    description: document.getElementById('v_desc').value,
+    requirements: document.getElementById('v_req').value,
+    caseId: document.getElementById('v_caseId').value
+  };
+  if (vacancyId) p.vacancyId = vacancyId;
+  const r = await ERPALIGNED.api(p);
+  if (r.success) { closeVacancyModal(); loadVacancies(); loadStats(); }
+  else alert('儲存失敗：' + (r.error || r.message));
+}
+
+// ── 應徵者 Modal ──────────────────────────────────────────
+function openApplicantModal(applicantId) {
+  _editingApplicantId = applicantId || null;
+  document.getElementById('applicantModalTitle').textContent = applicantId ? '編輯應徵者' : '新增應徵者';
+  document.getElementById('a_id').value = '';
+  ['a_name','a_phone','a_email','a_salary','a_resume','a_iloc','a_remark'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('a_date').value = new Date().toISOString().substring(0,10);
+  document.getElementById('a_idate').value = '';
+  document.getElementById('a_status').value = '待審';
+  document.getElementById('a_vacancyId').value = '';
+  if (applicantId) {
+    var r = _applicants.filter(function(a){ return a['應徵者ID']===applicantId; })[0];
+    if (r) {
+      document.getElementById('a_id').value = r['應徵者ID']||'';
+      document.getElementById('a_name').value = r['姓名']||'';
+      document.getElementById('a_phone').value = r['電話']||'';
+      document.getElementById('a_email').value = r['Email']||'';
+      document.getElementById('a_salary').value = r['薪資期望']||'';
+      document.getElementById('a_resume').value = r['履歷連結']||'';
+      document.getElementById('a_date').value = (r['應徵日期']||'').substring(0,10);
+      document.getElementById('a_idate').value = (r['面試日期']||'').substring(0,10);
+      document.getElementById('a_iloc').value = r['面試地點']||'';
+      document.getElementById('a_status').value = r['審查狀態']||'待審';
+      document.getElementById('a_remark').value = r['備註']||'';
+      document.getElementById('a_vacancyId').value = r['職缺ID']||'';
+    }
+  }
+  document.getElementById('applicantModal').style.display = 'flex';
+}
+function closeApplicantModal(){ document.getElementById('applicantModal').style.display = 'none'; }
+
+async function saveApplicant() {
+  var name = document.getElementById('a_name').value.trim();
+  if (!name) { alert('請填寫應徵者姓名'); return; }
+  var applicantId = document.getElementById('a_id').value;
+  var vacSel = document.getElementById('a_vacancyId').value;
+  var caseId = '';
+  if (vacSel) {
+    var vac = _vacancies.filter(function(v){ return v['職缺ID']===vacSel; })[0];
+    if (vac) caseId = vac['案件ID']||'';
+  }
+  var p = {
+    action: applicantId ? 'updateApplicant' : 'createApplicant',
+    name: name,
+    phone: document.getElementById('a_phone').value,
+    email: document.getElementById('a_email').value,
+    salaryExpect: document.getElementById('a_salary').value,
+    resumeLink: document.getElementById('a_resume').value,
+    applyDate: document.getElementById('a_date').value,
+    面試日期: document.getElementById('a_idate').value,
+    面試地點: document.getElementById('a_iloc').value,
+    審查狀態: document.getElementById('a_status').value,
+    remark: document.getElementById('a_remark').value,
+    vacancyId: vacSel,
+    caseId: caseId
+  };
+  if (applicantId) p.applicantId = applicantId;
+  const r = await ERPALIGNED.api(p);
+  if (r.success) { closeApplicantModal(); loadApplicants(); loadStats(); }
+  else alert('儲存失敗：' + (r.error || r.message));
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
