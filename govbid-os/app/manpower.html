@@ -196,11 +196,13 @@ var _editingVacancyId = null;
 var _editingApplicantId = null;
 
 async function init() {
-  await Promise.all([loadStats(), loadVacancies(), loadApplicants()]);
+  await loadVacancies();
+  await Promise.all([loadStats(), loadApplicants()]);
   populateVacancyDropdown();
   const urlP = new URLSearchParams(location.search);
   if (urlP.get('caseId')) {
-    // Pre-filter by case if coming from cases.html — show all vacancies for case
+    document.getElementById('vKeyword').value = '';
+    // Could pre-filter if we add caseId filter to API
   }
   document.getElementById('pageSubtitle').textContent = '管理職缺發布與應徵者追蹤';
 }
@@ -317,13 +319,23 @@ function renderApplicants() {
 }
 
 function populateVacancyDropdown() {
+  refreshVacancyDropdowns();
+}
+
+function refreshVacancyDropdowns() {
   var sel = document.getElementById('aVacancyFilter');
   var sel2 = document.getElementById('a_vacancyId');
+  var prevFilter = sel.value;
+  var prevModal = sel2.value;
+  sel.innerHTML = '<option value="">全部職缺</option>';
+  sel2.innerHTML = '<option value="">— 請選擇 —</option>';
   _vacancies.forEach(function(v) {
     var o = '<option value="' + ERPALIGNED.esc(v['職缺ID']||'') + '">' + ERPALIGNED.esc(v['職缺名稱']||'') + '</option>';
     sel.innerHTML += o;
     sel2.innerHTML += o;
   });
+  if (prevFilter) sel.value = prevFilter;
+  if (prevModal) sel2.value = prevModal;
 }
 
 function switchTab(tab, btn, vacancyId) {
@@ -393,8 +405,12 @@ async function saveVacancy() {
   };
   if (vacancyId) p.vacancyId = vacancyId;
   const r = await ERPALIGNED.api(p);
-  if (r.success) { closeVacancyModal(); loadVacancies(); loadStats(); }
-  else alert('儲存失敗：' + (r.error || r.message));
+  if (r.success) {
+    closeVacancyModal();
+    await loadVacancies();
+    loadStats();
+    refreshVacancyDropdowns();
+  } else alert('儲存失敗：' + (r.error || r.message));
 }
 
 // ── 應徵者 Modal ──────────────────────────────────────────
