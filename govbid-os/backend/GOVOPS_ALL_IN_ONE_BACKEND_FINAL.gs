@@ -86,6 +86,9 @@ function govopsMainRouter_(params) {
   result = govopsClosingRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsOfficialDocRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsTaskRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -1376,6 +1379,103 @@ function govopsClosingRoute_(params, action) {
 // ════════════════════════════════════════════════════════
 var TASK_HEADERS = ['任務ID','案件ID','場次ID','任務名稱','任務類型','負責人','開始日期','截止日期','提醒日期','任務狀態','優先度','CalendarEventID','備註','建立時間','更新時間'];
 
+// ════════════════════════════════════════════════════════
+// Official Doc Route v0.1 — 收發公文管理
+// ════════════════════════════════════════════════════════
+var ODOC_HEADERS = ['公文ID','公文類型','案件ID','公文編號','主旨','發文單位','收文單位','承辦窗口','聯絡電話','來文日期','發文日期','辦理期限','是否需回覆','回覆期限','是否需補件','公文摘要','附件連結','處理狀態','負責人','備註','建立時間','更新時間'];
+
+function govopsOfficialDocRoute_(params, action) {
+  if (action === 'getOfficialDocs') {
+    govopsEnsureSheet_('收發公文', ODOC_HEADERS);
+    var rows = govopsRows_('收發公文', ODOC_HEADERS);
+    var caseId = String(params.caseId || '').trim();
+    var type = String(params.type || params['公文類型'] || '').trim();
+    var status = String(params.status || params['處理狀態'] || '').trim();
+    var kw = String(params.keyword || '').trim();
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    if (type) rows = rows.filter(function(r){ return String(r['公文類型']) === type; });
+    if (status) rows = rows.filter(function(r){ return String(r['處理狀態']) === status; });
+    if (kw) rows = rows.filter(function(r){ return String(r['主旨']).indexOf(kw)>=0 || String(r['公文編號']).indexOf(kw)>=0 || String(r['發文單位']).indexOf(kw)>=0; });
+    var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){ if(k!=='_row')o[k]=r[k]; }); return o; });
+    return { success: true, data: clean, message: '公文查詢完成，共 '+clean.length+' 筆', timestamp: govopsNow_() };
+  }
+  if (action === 'createOfficialDoc') {
+    var subj = params['主旨'] || params.subject;
+    if (!subj) return { success: false, error: 'MISSING_REQUIRED', message: '主旨為必填', timestamp: govopsNow_() };
+    govopsEnsureSheet_('收發公文', ODOC_HEADERS);
+    var obj = {
+      '公文ID': govopsId_('DOC'),
+      '公文類型': params['公文類型'] || '來文',
+      '案件ID': params.caseId || params['案件ID'] || '',
+      '公文編號': params['公文編號'] || '',
+      '主旨': subj,
+      '發文單位': params['發文單位'] || '',
+      '收文單位': params['收文單位'] || '',
+      '承辦窗口': params['承辦窗口'] || '',
+      '聯絡電話': params['聯絡電話'] || '',
+      '來文日期': params['來文日期'] || '',
+      '發文日期': params['發文日期'] || '',
+      '辦理期限': params['辦理期限'] || '',
+      '是否需回覆': params['是否需回覆'] || '否',
+      '回覆期限': params['回覆期限'] || '',
+      '是否需補件': params['是否需補件'] || '否',
+      '公文摘要': params['公文摘要'] || '',
+      '附件連結': params['附件連結'] || '',
+      '處理狀態': params['處理狀態'] || '未處理',
+      '負責人': params['負責人'] || '',
+      '備註': params['備註'] || '',
+      '建立時間': govopsNow_(),
+      '更新時間': govopsNow_()
+    };
+    govopsAppend_('收發公文', ODOC_HEADERS, obj);
+    return { success: true, data: { docId: obj['公文ID'], row: obj }, message: '公文已新增', timestamp: govopsNow_() };
+  }
+  if (action === 'updateOfficialDoc') {
+    var docId = params.docId || params['公文ID'];
+    if (!docId) return { success: false, error: 'MISSING_ID', message: '缺少公文ID', timestamp: govopsNow_() };
+    govopsEnsureSheet_('收發公文', ODOC_HEADERS);
+    var rows = govopsRows_('收發公文', ODOC_HEADERS);
+    var found = null;
+    for (var i=0;i<rows.length;i++){ if(rows[i]['公文ID']===docId){found=rows[i];break;} }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到公文：'+docId, timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['公文類型','公文編號','主旨','發文單位','收文單位','承辦窗口','聯絡電話','來文日期','發文日期','辦理期限','是否需回覆','回覆期限','是否需補件','公文摘要','附件連結','處理狀態','負責人','備註'].forEach(function(f){ if(params[f]!==undefined&&params[f]!=='')patch[f]=params[f]; });
+    govopsUpdate_('收發公文', ODOC_HEADERS, found._row, patch);
+    return { success: true, data: { docId: docId, updated: patch }, message: '公文已更新', timestamp: govopsNow_() };
+  }
+  if (action === 'deleteOfficialDoc') {
+    var docId = params.docId || params['公文ID'];
+    if (!docId) return { success: false, error: 'MISSING_ID', message: '缺少公文ID', timestamp: govopsNow_() };
+    govopsEnsureSheet_('收發公文', ODOC_HEADERS);
+    var rows = govopsRows_('收發公文', ODOC_HEADERS);
+    var found = null;
+    for (var i=0;i<rows.length;i++){ if(rows[i]['公文ID']===docId){found=rows[i];break;} }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到公文：'+docId, timestamp: govopsNow_() };
+    govopsDeleteRow_('收發公文', found._row);
+    return { success: true, data: { docId: docId }, message: '公文已刪除', timestamp: govopsNow_() };
+  }
+  if (action === 'getOfficialDocStats') {
+    govopsEnsureSheet_('收發公文', ODOC_HEADERS);
+    var rows = govopsRows_('收發公文', ODOC_HEADERS);
+    var caseId = String(params.caseId || '').trim();
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    var today = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    var byStatus = {'未處理':0,'處理中':0,'待回覆':0,'待補件':0,'已完成':0,'已歸檔':0};
+    var overdueReply = 0;
+    rows.forEach(function(r){
+      var s = String(r['處理狀態']||'未處理');
+      if (byStatus[s]!==undefined) byStatus[s]++;
+      if (r['回覆期限'] && String(r['回覆期限'])<today && ['未處理','待回覆'].indexOf(s)>=0) overdueReply++;
+    });
+    var pending = (byStatus['未處理']||0)+(byStatus['待回覆']||0)+(byStatus['待補件']||0);
+    return { success: true, data: { byStatus: byStatus, pending: pending, overdueReply: overdueReply, total: rows.length }, message: '公文統計完成', timestamp: govopsNow_() };
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Session SOP Tasks — 場次 SOP 任務自動產生
+// ════════════════════════════════════════════════════════
 function govopsTaskRoute_(params, action) {
   // getTasks: 查詢任務（支援多條件篩選）
   if (action === 'getTasks') {
@@ -1481,6 +1581,62 @@ function govopsTaskRoute_(params, action) {
     });
     var active = (byStatus['待辦'] || 0) + (byStatus['進行中'] || 0);
     return { success: true, data: { byStatus: byStatus, active: active, overdue: overdue, dueToday: dueToday, dueSoon: dueSoon, total: rows.length }, message: '任務統計完成', timestamp: govopsNow_() };
+  }
+
+  // generateSessionTasks: 根據場次自動產生 SOP 準備任務
+  if (action === 'generateSessionTasks') {
+    var sesId = params.sessionId || params['活動ID'];
+    var caseId = params.caseId || params['案件ID'] || '';
+    var sesDate = params.sessionDate || params['活動日期'] || '';
+    var sesName = params.sessionName || params['場次名稱'] || params['活動名稱'] || '場次';
+    if (!sesId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    // 計算各任務截止日（相對於場次日期）
+    function addDays(baseDate, days) {
+      if (!baseDate) return '';
+      try {
+        var d = new Date(String(baseDate).replace(/\//g,'-'));
+        d.setDate(d.getDate() + days);
+        return Utilities.formatDate(d, 'Asia/Taipei', 'yyyy-MM-dd');
+      } catch(e) { return ''; }
+    }
+    var SOPTemplates = [
+      { name:'確認場地與設備', type:'場次準備', pri:'高', offset:-14, note:'確認投影機、麥克風、冷氣、桌椅等設備' },
+      { name:'確認講師與教材', type:'場次準備', pri:'高', offset:-14, note:'確認講師出席、投影片、教材準備狀況' },
+      { name:'寄發邀請/報名通知', type:'場次準備', pri:'高', offset:-10, note:'發送課程通知至報名學員或潛在學員' },
+      { name:'完成報名審查', type:'場次準備', pri:'中', offset:-7, note:'審查所有報名資料，確認錄取名單' },
+      { name:'發送錄取通知', type:'場次準備', pri:'高', offset:-7, note:'通知已錄取學員，附上課程資訊和地點' },
+      { name:'準備簽到表與名冊', type:'場次準備', pri:'中', offset:-3, note:'列印簽到表、學員名冊、保險名冊' },
+      { name:'訂便當/確認餐食', type:'場次準備', pri:'中', offset:-3, note:'確認葷素份數，聯絡餐飲廠商' },
+      { name:'確認工作人員分工', type:'場次準備', pri:'中', offset:-2, note:'確認工作人員到位、分配任務職責' },
+      { name:'課前再次提醒學員', type:'場次準備', pri:'中', offset:-1, note:'發送提醒訊息，附上地點/時間/注意事項' },
+      { name:'課後回收問卷', type:'場次準備', pri:'中', offset:1, note:'收集學員滿意度問卷' },
+      { name:'整理成果照片', type:'結案', pri:'低', offset:3, note:'整理活動照片，上傳至案件資料夾' },
+      { name:'整理講師領據', type:'財務', pri:'高', offset:7, note:'取得講師簽名領據，準備請款' }
+    ];
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var created = 0;
+    SOPTemplates.forEach(function(t){
+      var obj = {
+        '任務ID': govopsId_('TASK'),
+        '案件ID': caseId,
+        '場次ID': sesId,
+        '任務名稱': '['+sesName+'] '+t.name,
+        '任務類型': t.type,
+        '負責人': '',
+        '開始日期': '',
+        '截止日期': addDays(sesDate, t.offset),
+        '提醒日期': '',
+        '任務狀態': '待辦',
+        '優先度': t.pri,
+        'CalendarEventID': '',
+        '備註': t.note,
+        '建立時間': govopsNow_(),
+        '更新時間': govopsNow_()
+      };
+      govopsAppend_('案件任務清單', TASK_HEADERS, obj);
+      created++;
+    });
+    return { success: true, data: { created: created, sessionId: sesId }, message: '場次 SOP 任務已產生 '+created+' 筆', timestamp: govopsNow_() };
   }
 
   // deleteTask: 刪除任務
