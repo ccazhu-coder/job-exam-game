@@ -86,6 +86,9 @@ function govopsMainRouter_(params) {
   result = govopsClosingRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsTaskRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsSimpleFallbackRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -1365,6 +1368,134 @@ function govopsClosingRoute_(params, action) {
       message: '結案摘要產生完成', timestamp: govopsNow_()
     };
   }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Task Route v0.1 — 任務管理
+// ════════════════════════════════════════════════════════
+var TASK_HEADERS = ['任務ID','案件ID','場次ID','任務名稱','任務類型','負責人','開始日期','截止日期','提醒日期','任務狀態','優先度','CalendarEventID','備註','建立時間','更新時間'];
+
+function govopsTaskRoute_(params, action) {
+  // getTasks: 查詢任務（支援多條件篩選）
+  if (action === 'getTasks') {
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var rows = govopsRows_('案件任務清單', TASK_HEADERS);
+    var caseId = String(params.caseId || '').trim();
+    var sesId  = String(params.sessionId || '').trim();
+    var status = String(params.status || '').trim();
+    var kw     = String(params.keyword || '').trim();
+    var overdue = String(params.overdue || '').toLowerCase() === 'true';
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    if (sesId)  rows = rows.filter(function(r){ return String(r['場次ID']) === sesId; });
+    if (status) rows = rows.filter(function(r){ return String(r['任務狀態']) === status; });
+    if (kw)     rows = rows.filter(function(r){ return String(r['任務名稱']).indexOf(kw) >= 0 || String(r['負責人']).indexOf(kw) >= 0; });
+    if (overdue) {
+      var today = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+      rows = rows.filter(function(r){ return r['截止日期'] && String(r['截止日期']) < today && ['待辦','進行中'].indexOf(String(r['任務狀態'])) >= 0; });
+    }
+    // 排除已取消/已完成（若無指定 status 篩選）
+    var excludeStatuses = ['取消'];
+    if (!status && !overdue) rows = rows.filter(function(r){ return excludeStatuses.indexOf(String(r['任務狀態'])) < 0; });
+    var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){ if(k!=='_row') o[k]=r[k]; }); return o; });
+    return { success: true, data: clean, message: '任務查詢完成，共 '+clean.length+' 筆', timestamp: govopsNow_() };
+  }
+
+  // createTask: 新增任務
+  if (action === 'createTask') {
+    var tname = params['任務名稱'] || params.name;
+    if (!tname) return { success: false, error: 'MISSING_REQUIRED', message: '任務名稱為必填', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var obj = {
+      '任務ID': govopsId_('TASK'),
+      '案件ID': params.caseId || params['案件ID'] || '',
+      '場次ID': params.sessionId || params['場次ID'] || '',
+      '任務名稱': tname,
+      '任務類型': params['任務類型'] || '一般',
+      '負責人': params['負責人'] || '',
+      '開始日期': params['開始日期'] || '',
+      '截止日期': params['截止日期'] || '',
+      '提醒日期': params['提醒日期'] || '',
+      '任務狀態': params['任務狀態'] || '待辦',
+      '優先度': params['優先度'] || '中',
+      'CalendarEventID': '',
+      '備註': params['備註'] || '',
+      '建立時間': govopsNow_(),
+      '更新時間': govopsNow_()
+    };
+    govopsAppend_('案件任務清單', TASK_HEADERS, obj);
+    return { success: true, data: { taskId: obj['任務ID'], row: obj }, message: '任務已建立', timestamp: govopsNow_() };
+  }
+
+  // updateTask: 更新任務（狀態、欄位）
+  if (action === 'updateTask') {
+    var taskId = params.taskId || params['任務ID'];
+    if (!taskId) return { success: false, error: 'MISSING_ID', message: '缺少任務ID', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var rows = govopsRows_('案件任務清單', TASK_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['任務ID'] === taskId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到任務：'+taskId, timestamp: govopsNow_() };
+    var patch = { '更新時間': govopsNow_() };
+    ['任務名稱','任務類型','負責人','開始日期','截止日期','提醒日期','任務狀態','優先度','備註','CalendarEventID'].forEach(function(f){ if (params[f] !== undefined && params[f] !== '') patch[f] = params[f]; });
+    govopsUpdate_('案件任務清單', TASK_HEADERS, found._row, patch);
+    return { success: true, data: { taskId: taskId, updated: patch }, message: '任務已更新', timestamp: govopsNow_() };
+  }
+
+  // batchCompleteTask: 批次完成任務
+  if (action === 'batchCompleteTask') {
+    var taskIdsRaw = String(params.taskIds || '');
+    if (!taskIdsRaw) return { success: false, error: 'MISSING_PARAM', message: '缺少 taskIds', timestamp: govopsNow_() };
+    var taskIds = taskIdsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var rows = govopsRows_('案件任務清單', TASK_HEADERS);
+    var updated = 0;
+    rows.forEach(function(r){
+      if (taskIds.indexOf(r['任務ID']) >= 0) {
+        govopsUpdate_('案件任務清單', TASK_HEADERS, r._row, { '任務狀態': params['status'] || '已完成', '更新時間': govopsNow_() });
+        updated++;
+      }
+    });
+    return { success: true, data: { updated: updated }, message: '批次更新完成：'+updated+' 筆', timestamp: govopsNow_() };
+  }
+
+  // getTaskStats: 任務統計（供 Dashboard 使用）
+  if (action === 'getTaskStats') {
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var rows = govopsRows_('案件任務清單', TASK_HEADERS);
+    var caseId = String(params.caseId || '').trim();
+    if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
+    var today = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    var tomorrow = Utilities.formatDate(new Date(new Date().getTime() + 86400000), 'Asia/Taipei', 'yyyy-MM-dd');
+    var byStatus = { '待辦': 0, '進行中': 0, '已完成': 0, '取消': 0 };
+    var overdue = 0, dueToday = 0, dueSoon = 0;
+    rows.forEach(function(r){
+      var s = String(r['任務狀態'] || '待辦');
+      if (byStatus[s] !== undefined) byStatus[s]++;
+      var due = String(r['截止日期'] || '');
+      if (due && ['待辦','進行中'].indexOf(s) >= 0) {
+        if (due < today) overdue++;
+        else if (due === today) dueToday++;
+        else if (due <= new Date(new Date().getTime() + 7*86400000).toISOString().substring(0,10)) dueSoon++;
+      }
+    });
+    var active = (byStatus['待辦'] || 0) + (byStatus['進行中'] || 0);
+    return { success: true, data: { byStatus: byStatus, active: active, overdue: overdue, dueToday: dueToday, dueSoon: dueSoon, total: rows.length }, message: '任務統計完成', timestamp: govopsNow_() };
+  }
+
+  // deleteTask: 刪除任務
+  if (action === 'deleteTask') {
+    var taskId = params.taskId || params['任務ID'];
+    if (!taskId) return { success: false, error: 'MISSING_ID', message: '缺少任務ID', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var rows = govopsRows_('案件任務清單', TASK_HEADERS);
+    var found = null;
+    for (var i = 0; i < rows.length; i++) { if (rows[i]['任務ID'] === taskId) { found = rows[i]; break; } }
+    if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到任務：'+taskId, timestamp: govopsNow_() };
+    govopsDeleteRow_('案件任務清單', found._row);
+    return { success: true, data: { taskId: taskId }, message: '任務已刪除', timestamp: govopsNow_() };
+  }
+
   return null;
 }
 
