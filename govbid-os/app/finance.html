@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜財務收支</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.fin-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.fkpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;padding:14px 16px}
+.fkpi .num{font-size:1.4rem;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+.fkpi .label{font-size:.72rem;color:var(--gray-500);margin-top:2px}
+.fkpi.income .num{color:#16a34a}
+.fkpi.expense .num{color:var(--danger)}
+.fkpi.profit .num{color:var(--navy)}
+.fkpi.pending .num{color:var(--gold)}
+
+.type-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.74rem;font-weight:700}
+.tb-收入{background:#dcfce7;color:#16a34a}
+.tb-支出{background:#fef2f2;color:#b91c1c}
+
+.status-badge2{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.73rem;font-weight:600}
+.sb2-已收款,.sb2-已付款{background:#dcfce7;color:#16a34a}
+.sb2-待收款,.sb2-待付款{background:#fef9c3;color:#ca8a04}
+.sb2-未付款,.sb2-未請款{background:#fef2f2;color:#b91c1c}
+
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filter-tab{padding:5px 13px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--gray-500)}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+
+.search-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.search-row select{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;background:var(--white);font-family:var(--font)}
+
+.row-actions{display:flex;gap:3px}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid)}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fr{display:grid;gap:9px;margin-bottom:9px}
+.fr.c2{grid-template-columns:1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi label .req{color:var(--danger)}
+.fi input,.fi select{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">財務收支</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>財務收支</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p></div>
+    <div class="btns">
+      <button class="gold" onclick="openAddModal()">＋ 新增紀錄</button>
+      <button class="secondary" onclick="loadAll()">重新整理</button>
+    </div>
+  </div>
+
+  <div class="fin-kpis" id="finKpis">
+    <div class="fkpi income"><div class="num">—</div><div class="label">總收入</div></div>
+    <div class="fkpi expense"><div class="num">—</div><div class="label">總支出</div></div>
+    <div class="fkpi profit"><div class="num">—</div><div class="label">損益</div></div>
+    <div class="fkpi pending"><div class="num">—</div><div class="label">待收款</div></div>
+  </div>
+
+  <section class="card">
+    <div class="search-row">
+      <select id="caseFilter" onchange="loadAll()" style="flex:1;min-width:180px">
+        <option value="">所有案件</option>
+      </select>
+      <select id="typeFilter" onchange="loadRecords()">
+        <option value="">全部類型</option>
+        <option>收入</option>
+        <option>支出</option>
+      </select>
+      <select id="statusFilter" onchange="loadRecords()">
+        <option value="">全部狀態</option>
+        <option>未請款</option>
+        <option>已請款</option>
+        <option>待收款</option>
+        <option>已收款</option>
+        <option>未付款</option>
+        <option>待付款</option>
+        <option>已付款</option>
+      </select>
+    </div>
+    <div id="finMsg" class="msg" style="display:none"></div>
+    <div id="finTable"></div>
+  </section>
+</main>
+
+<!-- 新增Modal -->
+<div class="modal-overlay" id="addModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal-box">
+    <div class="modal-header"><h2>新增財務紀錄</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fr c2">
+        <div class="fi"><label>類型 <span class="req">*</span></label><select id="f_type"><option>支出</option><option>收入</option></select></div>
+        <div class="fi"><label>科目 <span class="req">*</span></label><select id="f_category"><option>講師費</option><option>工作人員費</option><option>工讀生費</option><option>場地費</option><option>便當費</option><option>交通費</option><option>印刷費</option><option>行政費</option><option>行銷費</option><option>計畫收入</option><option>補助款</option><option>其他收入</option><option>其他支出</option></select></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>對象名稱</label><input id="f_target" placeholder="廠商或客戶名稱"></div>
+        <div class="fi"><label>金額 <span class="req">*</span></label><input id="f_amount" type="number" placeholder="0" min="0"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>付款方式</label><select id="f_pay"><option>匯款</option><option>現金</option><option>支票</option><option>信用卡</option><option>其他</option></select></div>
+        <div class="fi"><label>收付狀態</label><select id="f_status"><option>未付款</option><option>待付款</option><option>已付款</option><option>未請款</option><option>已請款</option><option>待收款</option><option>已收款</option></select></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>預計收付日</label><input id="f_planDate" type="date"></div>
+        <div class="fi"><label>實際收付日</label><input id="f_realDate" type="date"></div>
+      </div>
+      <div class="fr">
+        <div class="fi"><label>案件</label><select id="f_case"><option value="">不指定</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fi"><label>備註</label><input id="f_note" placeholder="憑證號、發票號或備注"></div>
+      </div>
+      <div id="addErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:9px 12px;font-size:.82rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" id="addBtn" onclick="submitAdd()">新增</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _cases = [];
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  loadCases();
+  loadAll();
+}
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases' });
+  _cases = r.data || [];
+  var opts = _cases.map(function(c){ return '<option value="'+ERPALIGNED.esc(c['專案ID'])+'">'+ERPALIGNED.esc(c['專案計畫名稱'])+'</option>'; }).join('');
+  document.getElementById('caseFilter').innerHTML = '<option value="">所有案件</option>' + opts;
+  document.getElementById('f_case').innerHTML = '<option value="">不指定</option>' + opts;
+}
+
+async function loadAll() { await Promise.all([loadSummary(), loadRecords()]); }
+
+async function loadSummary() {
+  var caseId = document.getElementById('caseFilter').value;
+  var params = { action: 'getFinanceSummary' };
+  if (caseId) params.caseId = caseId;
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) return;
+  var d = r.data || {};
+  var kpis = document.getElementById('finKpis').querySelectorAll('.num');
+  var fmt = function(n){ return (n||0).toLocaleString(); };
+  if (kpis[0]) kpis[0].textContent = fmt(d.totalIncome);
+  if (kpis[1]) kpis[1].textContent = fmt(d.totalExpense);
+  if (kpis[2]) { kpis[2].textContent = fmt(d.profit); kpis[2].style.color = d.profit >= 0 ? '#16a34a' : 'var(--danger)'; }
+  if (kpis[3]) kpis[3].textContent = fmt(d.pendingReceivable);
+}
+
+async function loadRecords() {
+  var msg = document.getElementById('finMsg');
+  var tbl = document.getElementById('finTable');
+  msg.style.display=''; msg.textContent='查詢中…'; tbl.innerHTML='';
+  var params = { action: 'getFinanceRecords' };
+  var caseId = document.getElementById('caseFilter').value;
+  var type = document.getElementById('typeFilter').value;
+  var status = document.getElementById('statusFilter').value;
+  if (caseId) params.caseId = caseId;
+  if (type) params.type = type;
+  if (status) params.status = status;
+  var r = await ERPALIGNED.api(params);
+  msg.style.display='none';
+  if (!r.success) { msg.style.display=''; msg.textContent='⚠ 查詢失敗'; return; }
+  var rows = r.data || [];
+  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆財務紀錄';
+  if (!rows.length) { tbl.innerHTML='<div style="color:var(--gray-400);padding:40px;text-align:center">查無財務紀錄</div>'; return; }
+  var html='<div style="overflow-x:auto"><table class="erp-table" style="min-width:760px"><thead><tr><th>類型</th><th>科目</th><th>對象</th><th style="text-align:right">金額</th><th>付款方式</th><th>預計日</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var type = r['類型'] || '';
+    html += '<tr>';
+    html += '<td><span class="type-badge tb-'+ERPALIGNED.esc(type)+'">'+ERPALIGNED.esc(type)+'</span></td>';
+    html += '<td>'+ERPALIGNED.esc(r['科目']||'')+'</td>';
+    html += '<td>'+ERPALIGNED.esc(r['對象名稱']||'—')+'</td>';
+    html += '<td style="text-align:right;font-weight:700">'+numFmt(r['金額'])+'</td>';
+    html += '<td style="font-size:.8rem">'+ERPALIGNED.esc(r['付款方式']||'')+'</td>';
+    html += '<td style="font-size:.78rem">'+ERPALIGNED.esc(r['預計收付日']||'—')+'</td>';
+    html += '<td><span class="status-badge2 sb2-'+ERPALIGNED.esc(r['收付狀態']||'')+'">'+ERPALIGNED.esc(r['收付狀態']||'—')+'</span></td>';
+    html += '<td style="font-size:.78rem;color:var(--gray-500)">'+ERPALIGNED.esc(r['備註']||'')+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  tbl.innerHTML = html;
+}
+
+function numFmt(v){ var n=parseInt(String(v||'0').replace(/,/g,''),10); return isNaN(n)?String(v||'0'):n.toLocaleString()+'元'; }
+
+function openAddModal() {
+  ['f_target','f_amount','f_note','f_planDate','f_realDate'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f_type').value='支出';
+  document.getElementById('f_status').value='未付款';
+  document.getElementById('addErr').style.display='none';
+  var caseId = document.getElementById('caseFilter').value;
+  if (caseId) document.getElementById('f_case').value = caseId;
+  document.getElementById('addModal').style.display='flex';
+}
+
+async function submitAdd() {
+  var amount = document.getElementById('f_amount').value;
+  if (!amount) { showErr('金額為必填'); return; }
+  var btn = document.getElementById('addBtn');
+  btn.disabled=true; btn.textContent='新增中…';
+  var r = await ERPALIGNED.api({
+    action:'createFinanceRecord',
+    caseId: document.getElementById('f_case').value,
+    '類型': document.getElementById('f_type').value,
+    '科目': document.getElementById('f_category').value,
+    '對象名稱': document.getElementById('f_target').value,
+    '金額': amount,
+    '付款方式': document.getElementById('f_pay').value,
+    '收付狀態': document.getElementById('f_status').value,
+    '預計收付日': document.getElementById('f_planDate').value,
+    '實際收付日': document.getElementById('f_realDate').value,
+    '備註': document.getElementById('f_note').value
+  });
+  btn.disabled=false; btn.textContent='新增';
+  if (!r.success) { showErr(r.message||'新增失敗'); return; }
+  closeModal(); loadAll();
+}
+
+function showErr(msg){ var el=document.getElementById('addErr'); el.textContent=msg; el.style.display=''; }
+function closeModal(){ document.getElementById('addModal').style.display='none'; }
+function closeBg(e){ if(e.target===document.getElementById('addModal')) closeModal(); }
+init();
+</script>
+</body>
+</html>
