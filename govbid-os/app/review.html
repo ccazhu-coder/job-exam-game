@@ -196,7 +196,7 @@ async function loadCases(preCid,preSid){
   var r=await ERPALIGNED.api({action:'getCases'});
   var sel=document.getElementById('caseSelect');
   if(!r.success)return;
-  var cases=r.data&&r.data.rows||[];
+  var cases=r.data||[];
   sel.innerHTML='<option value="">— 請選擇案件 —</option>';
   cases.forEach(function(c){
     var o=document.createElement('option');
@@ -214,7 +214,7 @@ async function onCaseChange(){
   sesSel.innerHTML='<option value="">全部場次</option>';
   if(!_caseId)return;
   var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
-  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){
+  if(r.success)(r.data||[]).forEach(function(s){
     var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sesSel.appendChild(o);
   });
   await loadRegs();
@@ -227,7 +227,7 @@ async function loadRegs(){
   if(_sessionId)p.sessionId=_sessionId;
   var r=await ERPALIGNED.api(p);
   if(!r.success)return;
-  _regs=r.data&&r.data.rows||[];
+  _regs=r.data||[];
   updateKpi();
   renderTable();
   document.getElementById('pageSubtitle').textContent='共 '+_regs.length+' 筆報名資料';
