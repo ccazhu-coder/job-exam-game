@@ -514,6 +514,18 @@ async function doArchive() {
 }
 
 // ── 跳轉報名 ──────────────────────────────────────────────
+async function generateSOPTasks(sesId, sesName) {
+  if(!confirm('為場次「' + sesName + '」產生 SOP 準備任務？
+（將自動建立 12 項標準任務）')) return;
+  const r = await ERPALIGNED.api({ action: 'generateSessionTasks', sessionId: sesId });
+  if(r.success) {
+    alert('已產生 ' + (r.data && r.data.created || '') + ' 筆 SOP 任務！');
+    location.href = './tasks.html?sessionId=' + encodeURIComponent(sesId);
+  } else {
+    alert('產生失敗：' + (r.error || r.message));
+  }
+}
+
 function goRegistrations(sesId, sesName) {
   var url = './registrations.html?sessionId=' + encodeURIComponent(sesId) + '&sessionName=' + encodeURIComponent(sesName);
   if (_currentCaseId) url += '&caseId=' + encodeURIComponent(_currentCaseId);
