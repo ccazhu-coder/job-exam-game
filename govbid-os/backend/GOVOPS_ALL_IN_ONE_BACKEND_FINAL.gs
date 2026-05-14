@@ -159,6 +159,8 @@ var ACTIVITY_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱
 var SESSION_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間','報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態'];
 var CAMPAIGN_HEADERS = ['招生活動ID','專案ID','活動ID','課程名稱','招生狀態','報名開始日','報名截止日','開課日期','招生名額','候補名額','報名連結','招生渠道','主辦單位','聯絡人','聯絡電話','備註','建立時間','更新時間'];
 var REG_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間'];
+// REG_EXT_HEADERS = REG_HEADERS 原有20欄 + v0.1擴充13欄
+var REG_EXT_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間','案件ID','性別','出生日期','身分證字號','地址','職稱','資格審查狀態','審查結果','補件項目','補件期限','通知日期','錄取狀態','匯入批次ID'];
 var CRM_HEADERS = ['CRM_ID','姓名','電話','Email','服務單位','身分別','標籤','最近參與活動','累積報名次數','累積出席次數','累積完訓次數','是否回流學員','行銷同意','備註','建立時間','更新時間'];
 var ATT_HEADERS = ['簽到ID','招生活動ID','活動ID','報名ID','CRM_ID','姓名','電話','Email','服務單位','簽到狀態','簽到時間','簽名連結','備註','建立時間','更新時間'];
 var ATT_LOG_HEADERS = ['紀錄ID','簽到ID','報名ID','活動ID','姓名','簽到狀態','操作時間','操作人','備註'];
@@ -559,6 +561,121 @@ function govopsEnrollmentRoute_(params, action) {
     });
     return { success: true, message: '簽到表產出完成，新增 ' + created + ' 筆', data: { created: created, total: approvedRegs.length } };
   }
+
+  // ── Registration API v0.1 ─────────────────────────────────
+  // getRegistrations: 多條件查詢報名資料
+  if (action === 'getRegistrations') {
+    var rows = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var sessionIdF = String(params.sessionId || params['活動ID'] || '').trim();
+    var caseIdF = String(params.caseId || params['案件ID'] || '').trim();
+    var statusF = String(params.status || params['審核狀態'] || '').trim();
+    var reviewF = String(params.reviewStatus || params['資格審查狀態'] || '').trim();
+    var kw = String(params.keyword || params.q || '').trim();
+    if (sessionIdF) rows = rows.filter(function(r){ return String(r['活動ID']) === sessionIdF; });
+    if (caseIdF) rows = rows.filter(function(r){ return String(r['案件ID']) === caseIdF || String(r['招生活動ID']) === caseIdF; });
+    if (statusF) rows = rows.filter(function(r){ return String(r['審核狀態']) === statusF; });
+    if (reviewF) rows = rows.filter(function(r){ return String(r['資格審查狀態']) === reviewF; });
+    if (kw) rows = rows.filter(function(r){ return String(r['姓名']).indexOf(kw) >= 0 || String(r['電話']).indexOf(kw) >= 0 || String(r['Email']).indexOf(kw) >= 0 || String(r['服務單位']).indexOf(kw) >= 0; });
+    var clean = rows.map(function(r){ var o = {}; Object.keys(r).forEach(function(k){ if (k !== '_row') o[k] = r[k]; }); return o; });
+    return { success: true, data: clean, message: '報名查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+  }
+
+  // createRegistration: 手動新增報名
+  if (action === 'createRegistration') {
+    var rname = params['姓名'] || params.name;
+    if (!rname) return { success: false, error: 'MISSING_REQUIRED', message: '姓名為必填', timestamp: govopsNow_() };
+    if (!params['電話'] && !params['Email']) return { success: false, error: 'MISSING_REQUIRED', message: '電話或 Email 至少填一項', timestamp: govopsNow_() };
+    var robj = {
+      '報名ID': govopsId_('REG'),
+      '招生活動ID': params['招生活動ID'] || params['sessionId'] || params['活動ID'] || '',
+      '活動ID': params['sessionId'] || params['活動ID'] || '',
+      '姓名': rname,
+      '電話': params['電話'] || '',
+      'Email': params['Email'] || '',
+      '身分別': params['身分別'] || '',
+      '服務單位': params['服務單位'] || '',
+      '用餐習慣': params['用餐習慣'] || '',
+      '報名狀態': params['報名狀態'] || '已報名',
+      '審核狀態': params['審核狀態'] || '待審核',
+      '出席狀態': '',
+      '完訓狀態': '',
+      '報名來源': params['報名來源'] || '手動新增',
+      '報名時間': govopsNow_(),
+      '通知狀態': '未通知',
+      '備註': params['備註'] || '',
+      'CRM_ID': '',
+      '建立時間': govopsNow_(),
+      '更新時間': govopsNow_(),
+      // v0.1 擴充欄位
+      '案件ID': params['caseId'] || params['案件ID'] || '',
+      '性別': params['性別'] || '',
+      '出生日期': params['出生日期'] || '',
+      '身分證字號': params['身分證字號'] || '',
+      '地址': params['地址'] || '',
+      '職稱': params['職稱'] || '',
+      '資格審查狀態': params['資格審查狀態'] || '待審查',
+      '審查結果': '',
+      '補件項目': '',
+      '補件期限': '',
+      '通知日期': '',
+      '錄取狀態': params['錄取狀態'] || '',
+      '匯入批次ID': params['匯入批次ID'] || ''
+    };
+    govopsAppend_('報名資料庫', REG_EXT_HEADERS, robj);
+    return { success: true, data: { regId: robj['報名ID'], row: robj }, message: '報名已新增', timestamp: govopsNow_() };
+  }
+
+  // updateRegistrationStatus: 更新單筆報名狀態（審查/錄取/通知）
+  if (action === 'updateRegistrationStatus') {
+    var regId = params['regId'] || params['報名ID'];
+    if (!regId) return { success: false, error: 'MISSING_ID', message: '缺少報名ID（regId）', timestamp: govopsNow_() };
+    var allRegs = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var foundReg = null;
+    for (var i = 0; i < allRegs.length; i++) { if (allRegs[i]['報名ID'] === regId) { foundReg = allRegs[i]; break; } }
+    if (!foundReg) return { success: false, error: 'NOT_FOUND', message: '找不到報名資料：' + regId, timestamp: govopsNow_() };
+    var regPatch = { '更新時間': govopsNow_() };
+    var regUpdatable = ['審核狀態','報名狀態','資格審查狀態','審查結果','補件項目','補件期限','錄取狀態','出席狀態','完訓狀態','通知狀態','通知日期','備註','用餐習慣','身分別','服務單位','職稱'];
+    regUpdatable.forEach(function(f){ if (params[f] !== undefined && params[f] !== '') regPatch[f] = params[f]; });
+    govopsUpdate_('報名資料庫', REG_EXT_HEADERS, foundReg._row, regPatch);
+    return { success: true, data: { regId: regId, updated: regPatch }, message: '報名狀態已更新', timestamp: govopsNow_() };
+  }
+
+  // batchUpdateStatus: 批次更新多筆報名狀態
+  if (action === 'batchUpdateStatus') {
+    var regIdsRaw = String(params.regIds || params['報名IDs'] || '');
+    var targetStatus = params['status'] || params['審核狀態'] || params['資格審查狀態'];
+    var statusField = params['statusField'] || '審核狀態';
+    if (!regIdsRaw || !targetStatus) return { success: false, error: 'MISSING_PARAM', message: 'regIds 和 status 為必填', timestamp: govopsNow_() };
+    var regIds = regIdsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var allRegs = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var updated = 0;
+    allRegs.forEach(function(r){
+      if (regIds.indexOf(r['報名ID']) >= 0) {
+        var patch = { '更新時間': govopsNow_() };
+        patch[statusField] = targetStatus;
+        govopsUpdate_('報名資料庫', REG_EXT_HEADERS, r._row, patch);
+        updated++;
+      }
+    });
+    return { success: true, data: { updated: updated, total: regIds.length }, message: '批次更新完成：' + updated + ' 筆', timestamp: govopsNow_() };
+  }
+
+  // getRegistrationStats: 統計各狀態數量
+  if (action === 'getRegistrationStats') {
+    var caseIdF = String(params.caseId || '').trim();
+    var sessionIdF = String(params.sessionId || '').trim();
+    var allRegs = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    if (caseIdF) allRegs = allRegs.filter(function(r){ return String(r['案件ID']) === caseIdF || String(r['招生活動ID']) === caseIdF; });
+    if (sessionIdF) allRegs = allRegs.filter(function(r){ return String(r['活動ID']) === sessionIdF; });
+    var reviewStats = {};
+    ['待審查','符合資格','不符合資格','需補件','已錄取','備取','未錄取','取消報名'].forEach(function(s){ reviewStats[s] = 0; });
+    allRegs.forEach(function(r){ var s = String(r['資格審查狀態'] || '待審查').trim(); if (reviewStats[s] !== undefined) reviewStats[s]++; });
+    var admitCount = reviewStats['已錄取'] || 0;
+    var pendingCount = (reviewStats['待審查'] || 0) + (reviewStats['需補件'] || 0);
+    return { success: true, data: { byReviewStatus: reviewStats, total: allRegs.length, admitted: admitCount, pending: pendingCount }, message: '報名統計完成', timestamp: govopsNow_() };
+  }
+  // ── End Registration API v0.1 ─────────────────────────────
+
   return null;
 }
 
