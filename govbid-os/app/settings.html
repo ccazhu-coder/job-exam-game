@@ -62,8 +62,10 @@
         <div style="font-size:.72rem;color:var(--gray-400);margin-top:3px">位於試算表網址 /d/XXX/ 的部分</div>
       </div>
       <div class="fi"><label>Google Drive 根資料夾 ID</label>
-        <input id="s_driveFolder" placeholder="案件資料夾的父資料夾 ID">
+        <input id="s_driveFolder" placeholder="案件資料夾的父資料夾 ID（Drive 網址 /folders/XXX 的 XXX）">
+        <div style="font-size:.72rem;color:var(--gray-400);margin-top:3px">設定後，建立案件資料夾時會在此資料夾下新增子資料夾</div>
       </div>
+      <button class="secondary save-btn" onclick="saveDriveSettings()">儲存連線設定</button>
       <button class="secondary save-btn" onclick="testConnection()">測試 API 連線</button>
       <div id="connTest" style="margin-top:8px;font-size:.82rem"></div>
     </div>
@@ -126,6 +128,27 @@ function loadOrgSettings(){
     var key=id.replace('s_','');var el=document.getElementById(id);
     if(el&&s[key])el.value=s[key];
   });
+  var conn=safeJSON('govops_conn_settings')||{};
+  if(conn.apiUrl){var el=document.getElementById('s_apiUrl');if(el)el.value=conn.apiUrl;}
+  if(conn.sheetId){var el=document.getElementById('s_sheetId');if(el)el.value=conn.sheetId;}
+  if(conn.driveFolder){var el=document.getElementById('s_driveFolder');if(el)el.value=conn.driveFolder;}
+}
+function saveDriveSettings(){
+  var conn={
+    apiUrl:document.getElementById('s_apiUrl').value,
+    sheetId:document.getElementById('s_sheetId').value,
+    driveFolder:document.getElementById('s_driveFolder').value
+  };
+  localStorage.setItem('govops_conn_settings',JSON.stringify(conn));
+  // Also save driveFolder to backend
+  if(conn.driveFolder){
+    ERPALIGNED.api({action:'saveSetting',key:'driveFolderId',value:conn.driveFolder}).then(function(r){
+      if(r.success)alert('✅ 連線設定已儲存，Drive 資料夾 ID 已同步到後端');
+      else alert('✅ 連線設定已儲存（本機），後端同步失敗：'+r.message);
+    });
+  } else {
+    alert('✅ 連線設定已儲存');
+  }
 }
 function saveOrgSettings(){
   var s={};
