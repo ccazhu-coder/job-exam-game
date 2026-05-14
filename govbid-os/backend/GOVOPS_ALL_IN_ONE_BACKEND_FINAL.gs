@@ -1274,6 +1274,7 @@ function govopsFinanceV1Route_(params, action) {
   }
   if (action === 'getFinanceSummary') {
     var caseId = params.caseId || '';
+    // 新系統：財務收支
     var rows = govopsRows_('財務收支', FINANCE_HEADERS);
     if (caseId) rows = rows.filter(function(r){ return String(r['案件ID']) === caseId; });
     var income = 0, expense = 0, received = 0, paid = 0, pending = 0;
@@ -1285,7 +1286,17 @@ function govopsFinanceV1Route_(params, action) {
       if (type === '支出') { expense += amt; if (status === '已付款') paid += amt; }
       if (type === '收入' && status !== '已收款') pending += amt;
     });
-    return { success: true, data: { totalIncome: income, totalExpense: expense, received: received, paid: paid, pendingReceivable: pending, profit: received - paid }, message: '財務摘要完成', timestamp: govopsNow_() };
+    // 舊系統：合併 16_應收帳款 / 17_收款紀錄 / 18_支出明細（不按 caseId filter，舊系統無此欄）
+    try {
+      var arRows = govopsRows_('16_應收帳款', AR_HEADERS || []);
+      var payRows = govopsRows_('17_收款紀錄', PAY_HEADERS || []);
+      var expRows = govopsRows_('18_支出明細', EXP_HEADERS || []);
+      arRows.forEach(function(r){ income += parseFloat(String(r['應收金額']).replace(/,/g,'')) || 0; });
+      payRows.forEach(function(r){ received += parseFloat(String(r['收款金額']).replace(/,/g,'')) || 0; });
+      expRows.forEach(function(r){ expense += parseFloat(String(r['支出金額']).replace(/,/g,'')) || 0; paid += parseFloat(String(r['支出金額']).replace(/,/g,'')) || 0; });
+    } catch(e) {}
+    pending = income - received;
+    return { success: true, data: { totalIncome: income, totalExpense: expense, received: received, paid: paid, pendingReceivable: pending > 0 ? pending : 0, profit: received - paid, note: '含舊財務系統資料' }, message: '財務摘要完成', timestamp: govopsNow_() };
   }
   return null;
 }
@@ -1551,7 +1562,7 @@ function govopsTaskRoute_(params, action) {
   if (action === 'batchCompleteTask') {
     var taskIdsRaw = String(params.taskIds || '');
     if (!taskIdsRaw) return { success: false, error: 'MISSING_PARAM', message: '缺少 taskIds', timestamp: govopsNow_() };
-    var taskIds = taskIdsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+    var taskIds = taskIdsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean).slice(0, 100);
     govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
     var rows = govopsRows_('案件任務清單', TASK_HEADERS);
     var updated = 0;
