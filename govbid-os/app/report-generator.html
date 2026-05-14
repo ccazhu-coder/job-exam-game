@@ -131,9 +131,10 @@
     </div>
 
     <div class="btns" style="margin-top:16px;justify-content:flex-end">
-      <button class="secondary" onclick="previewReport()">預覽報告</button>
-      <button class="gold" onclick="generateReport()">產生完整報告</button>
+      <button class="secondary" onclick="previewReport()">本地預覽</button>
+      <button class="gold" id="genBtn" onclick="generateReport()">產生結案報告到 Google Drive</button>
     </div>
+    <div id="genResult" style="margin-top:8px;font-size:.84rem"></div>
 
     <!-- 報告預覽 -->
     <div id="reportPreview" style="display:none;margin-top:16px">
@@ -380,8 +381,36 @@ function previewReport(){
   document.getElementById('reportPreview').scrollIntoView({behavior:'smooth'});
 }
 
-function generateReport(){
-  previewReport();
+async function generateReport(){
+  if(!_caseId){alert('請先載入案件資料');return;}
+  var btn=document.getElementById('genBtn');
+  var el=document.getElementById('genResult');
+  btn.textContent='產生中…';btn.disabled=true;
+  el.innerHTML='<span style="color:var(--gray-400)">正在 Google Drive 產生結案報告文件…</span>';
+  var p={
+    action:'autoGenerateClosingReport',
+    caseId:_caseId,
+    intro:document.getElementById('rp_intro').value,
+    summary:document.getElementById('rp_summary').value,
+    benefit:document.getElementById('rp_benefit').value,
+    observations:document.getElementById('rp_obs').value,
+    problems:document.getElementById('rp_prob').value,
+    adminReview:document.getElementById('rp_admin').value,
+    sessionReview:document.getElementById('rp_session').value,
+    recruitReview:document.getElementById('rp_recruit').value,
+    suggestions:document.getElementById('rp_suggest').value
+  };
+  var r=await ERPALIGNED.api(p);
+  btn.textContent='產生結案報告到 Google Drive';btn.disabled=false;
+  if(r.success){
+    var d=r.data||{};
+    el.innerHTML='<span style="color:#166534">✅ 結案報告已產生到 Google Drive</span>'
+      +(d.docUrl?'　<a href="'+d.docUrl+'" target="_blank" style="color:var(--navy);font-weight:700">在 Google Docs 開啟 →</a>':'');
+    setStep(5);
+    previewReport();
+  } else {
+    el.innerHTML='<span style="color:var(--danger)">❌ 產生失敗：'+esc(r.message||r.error||'未知錯誤')+'</span>';
+  }
 }
 
 function goToReqPage(){
