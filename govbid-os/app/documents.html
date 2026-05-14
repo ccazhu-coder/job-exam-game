@@ -584,7 +584,9 @@ async function generateToDrive(opts){
   var el=document.getElementById('driveResult');
   if(btn){btn.textContent='產生中…';btn.disabled=true;}
   if(el)el.innerHTML='<span style="color:var(--gray-400)">正在 Google Drive 產生文件，請稍候…</span>';
+  var conn=safeJSON('govops_conn_settings')||{};
   var p=Object.assign({},opts,{caseId:_caseId,sessionId:_sessionId||''});
+  if(conn.driveFolder)p.rootFolderId=conn.driveFolder;
   if(opts.action==='autoGenerateLecturerReceipt'){
     p.hours=(document.getElementById('lec_hours')||{}).value||'';
     p.hourlyRate=(document.getElementById('lec_rate')||{}).value||'';
@@ -608,7 +610,10 @@ async function createCaseFolders(){
   if(!_caseId){alert('請先選擇案件');return;}
   var el=document.getElementById('folderResult');
   el.textContent='建立中…';
-  var r=await ERPALIGNED.api({action:'createCaseFolders',caseId:_caseId});
+  var conn=safeJSON('govops_conn_settings')||{};
+  var p={action:'createCaseFolders',caseId:_caseId};
+  if(conn.driveFolder)p.rootFolderId=conn.driveFolder;
+  var r=await ERPALIGNED.api(p);
   if(r.success){
     var d=r.data||{};
     el.innerHTML='✅ 資料夾建立完成'+(d.folderUrl?'　<a href="'+d.folderUrl+'" target="_blank" style="color:var(--navy);font-weight:700">在 Drive 開啟 →</a>':'');
