@@ -110,6 +110,18 @@ function govopsMainRouter_(params) {
   result = govopsTaskRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsDriveRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsDocGenRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsFormSyncRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsNotifyRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsSimpleFallbackRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -2451,6 +2463,665 @@ function govopsFileManagerRoute_(params, action) {
   }
 
   return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Drive Route — 自動建立案件 Google Drive 資料夾結構
+// ════════════════════════════════════════════════════════
+var DRIVE_FOLDER_HEADERS = ['資料夾ID','案件ID','資料夾名稱','資料夾用途','Drive資料夾ID','Drive連結','建立時間'];
+
+function govopsDriveRoute_(params, action) {
+
+  function getOrCreateRootFolder() {
+    var rootId = params.rootFolderId || '';
+    if (rootId) { try { return DriveApp.getFolderById(rootId); } catch(e) {} }
+    // Use My Drive root
+    return DriveApp.getRootFolder();
+  }
+
+  if (action === 'createCaseFolders') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var caseInfo = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0];
+    if (!caseInfo) return { success: false, error: 'NOT_FOUND', message: '找不到案件', timestamp: govopsNow_() };
+    var caseName = caseInfo['專案計畫名稱'] || caseId;
+    var root = getOrCreateRootFolder();
+    // Create main case folder
+    var mainName = caseName + '_' + caseId.substring(0,8);
+    var mainFolder;
+    try {
+      var existing = root.getFoldersByName(mainName);
+      mainFolder = existing.hasNext() ? existing.next() : root.createFolder(mainName);
+    } catch(e) { return { success: false, error: 'DRIVE_ERROR', message: 'Drive 建立失敗：'+e.message, timestamp: govopsNow_() }; }
+    // Subfolders
+    var subFolders = [
+      '01_契約與公文','02_計畫與提案','03_場次資料','04_報名與錄取',
+      '05_簽到表與名冊','06_成果照片','07_問卷與回饋',
+      '08_講師與工作人員領據','09_請款與核銷','10_成果報告','11_結案資料','99_其他附件'
+    ];
+    var created = [];
+    subFolders.forEach(function(name) {
+      var sub;
+      try {
+        var ex = mainFolder.getFoldersByName(name);
+        sub = ex.hasNext() ? ex.next() : mainFolder.createFolder(name);
+        created.push({ name: name, id: sub.getId(), url: sub.getUrl() });
+      } catch(e) {}
+    });
+    // Update case record with Drive link
+    govopsUpdate_('01_專案主檔', CASE_HEADERS, caseInfo._row, { 'Drive連結': mainFolder.getUrl(), '更新時間': govopsNow_() });
+    return { success: true, data: { mainFolder: mainFolder.getUrl(), mainFolderId: mainFolder.getId(), subFolders: created }, message: '案件資料夾已建立，共 '+created.length+' 個子資料夾', timestamp: govopsNow_() };
+  }
+
+  if (action === 'getCaseFolders') {
+    var caseId = params.caseId;
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var caseInfo = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0];
+    var driveLink = caseInfo ? caseInfo['Drive連結'] : '';
+    return { success: true, data: { driveLink: driveLink, exists: !!driveLink }, message: 'Drive 資料夾狀態查詢完成', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// DocGen Route — 全自動產生 Google Doc / Sheet 文件
+// 使用 DocumentApp + SpreadsheetApp + DriveApp
+// ════════════════════════════════════════════════════════
+function govopsDocGenRoute_(params, action) {
+
+  // 取案件 Drive 資料夾（依名稱搜尋）
+  function getCaseFolderByName(caseName, caseId, subFolder) {
+    var rootFolderId = params.rootFolderId || '';
+    var root;
+    try { root = rootFolderId ? DriveApp.getFolderById(rootFolderId) : DriveApp.getRootFolder(); } catch(e) { root = DriveApp.getRootFolder(); }
+    var mainName = caseName + '_' + caseId.substring(0,8);
+    var folders = root.getFoldersByName(mainName);
+    var mainFolder = folders.hasNext() ? folders.next() : null;
+    if (!mainFolder) return null;
+    if (!subFolder) return mainFolder;
+    var subs = mainFolder.getFoldersByName(subFolder);
+    return subs.hasNext() ? subs.next() : mainFolder;
+  }
+
+  // 格式化日期
+  function fmtDate(v) {
+    if (!v) return '___';
+    if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Taipei', 'yyyy年MM月dd日');
+    return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1年$2月$3日');
+  }
+  function shortD(v) {
+    if (!v) return '—';
+    if (v instanceof Date) return Utilities.formatDate(v, 'Asia/Taipei', 'yyyy/MM/dd');
+    return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+  }
+  function fmtTime(v) {
+    if (!v) return '';
+    if (typeof v === 'string') { var m = v.match(/T(\d{2}):(\d{2})/); if(m) return m[1]+':'+m[2]; if(/^\d{1,2}:\d{2}/.test(v)) return v.substring(0,5); }
+    return '';
+  }
+  function rocDate(v) {
+    var d = v ? new Date(String(v).replace(/\//g,'-')) : new Date();
+    return '中華民國 '+(d.getFullYear()-1911)+' 年 ___ 月 ___ 日';
+  }
+
+  // ── 簽到表（Google Sheet 全自動） ──────────────────────
+  if (action === 'autoGenerateSignInSheet') {
+    var sessionId = params.sessionId;
+    if (!sessionId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var ses = sesRows.filter(function(r){ return String(r['活動ID'])===sessionId; })[0];
+    if (!ses) return { success: false, error: 'NOT_FOUND', message: '找不到場次', timestamp: govopsNow_() };
+    var caseId = ses['專案ID'] || '';
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var profile = null; try { profile = safeJSONGas_('govops_org_settings') || {}; } catch(e) {}
+    // Get 錄取名單
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      return String(r['活動ID'])===sessionId && (['已錄取','備取','符合資格'].indexOf(String(r['資格審查狀態']))>=0 || ['已錄取','備取'].indexOf(String(r['錄取狀態']))>=0);
+    });
+    // Create Google Sheet
+    var sheetTitle = '簽到表_'+(ses['活動名稱']||sessionId)+'_'+shortD(ses['活動日期']);
+    var ss = SpreadsheetApp.create(sheetTitle);
+    var sheet = ss.getActiveSheet();
+    sheet.setName('簽到表');
+    // Title row
+    sheet.getRange(1,1,1,9).merge().setValue('簽    到    表').setFontSize(16).setFontWeight('bold').setHorizontalAlignment('center');
+    // Meta rows
+    sheet.getRange(2,1,1,3).merge().setValue('課程名稱：'+String(ses['活動名稱']||''));
+    sheet.getRange(2,4,1,3).merge().setValue('日期：'+fmtDate(ses['活動日期']));
+    sheet.getRange(2,7,1,3).merge().setValue('場次：第 ___ 場');
+    sheet.getRange(3,1,1,4).merge().setValue('上課地點：'+String(ses['活動地點']||''));
+    sheet.getRange(3,5,1,2).merge().setValue('時間：'+fmtTime(ses['開始時間'])+'～'+fmtTime(ses['結束時間']));
+    sheet.getRange(3,7,1,3).merge().setValue('承辦單位：'+(ci['主辦單位']||''));
+    // Headers row
+    var headers = ['序號','姓名','服務單位','職稱','簽到','簽退','□葷 □素','□禮品','備註'];
+    sheet.getRange(4,1,1,9).setValues([headers]).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+    // Student data
+    if (regs.length > 0) {
+      var data = regs.map(function(r, i){
+        return [i+1, r['姓名']||'', r['服務單位']||'', r['職稱']||'', '', '', r['用餐習慣']||'', '', r['備註']||''];
+      });
+      sheet.getRange(5, 1, data.length, 9).setValues(data);
+    }
+    // Signature rows
+    var nextRow = 5 + regs.length + 1;
+    sheet.getRange(nextRow,1,1,4).merge().setValue('授課教師簽名：'+String(ses['講師']||''));
+    sheet.getRange(nextRow,5,1,5).merge().setValue('工作人員簽名：'+String(ses['工作人員']||''));
+    // Formatting
+    sheet.setColumnWidth(1,40);sheet.setColumnWidth(2,80);sheet.setColumnWidth(3,140);
+    sheet.setColumnWidth(4,80);sheet.setColumnWidth(5,70);sheet.setColumnWidth(6,70);
+    sheet.setColumnWidth(7,90);sheet.setColumnWidth(8,70);sheet.setColumnWidth(9,80);
+    var allRange = sheet.getRange(1,1,nextRow,9);
+    allRange.setBorder(true,true,true,true,true,true);
+    // Move to Drive folder
+    var targetFolder = getCaseFolderByName(ci['專案計畫名稱']||caseId, caseId, '05_簽到表與名冊');
+    var file = DriveApp.getFileById(ss.getId());
+    if (targetFolder) { file.moveTo(targetFolder); }
+    var url = ss.getUrl();
+    // Log document
+    govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+      {'產出ID':govopsId_('DOC'),'案件ID':caseId,'場次ID':sessionId,'文件類型':'簽到表','文件名稱':sheetTitle,'產出日期':govopsNow_(),'檔案連結':url,'狀態':'已產生'});
+    return { success: true, data: { url: url, sheetId: ss.getId(), count: regs.length }, message: '簽到表已產生，共 '+regs.length+' 人', timestamp: govopsNow_() };
+  }
+
+  // ── 講師鐘點費領據（Google Doc 全自動） ───────────────
+  if (action === 'autoGenerateLecturerReceipt') {
+    var sessionId = params.sessionId;
+    if (!sessionId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    var sesRows = govopsRows_('02_場次活動', SESSION_HEADERS);
+    var ses = sesRows.filter(function(r){ return String(r['活動ID'])===sessionId; })[0];
+    if (!ses) return { success: false, error: 'NOT_FOUND', message: '找不到場次', timestamp: govopsNow_() };
+    var caseId = ses['專案ID'] || params.caseId || '';
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var lecName = ses['講師'] || params.lecturerName || '';
+    var hours = parseFloat(params.hours) || 0;
+    var hourlyRate = parseFloat(params.hourlyRate) || 1000;
+    var amount = Math.round(hours * hourlyRate);
+    // Lecturer info from master data
+    var lecInfo = {};
+    try {
+      var lecRows = govopsRows_('18_講師資料', ['講師ID','姓名','電話','Email','身分證字號','出生日期','地址','銀行','帳號','戶名']);
+      var found = lecRows.filter(function(r){ return String(r['姓名'])===lecName; })[0];
+      if (found) lecInfo = found;
+    } catch(e) {}
+    var orgName = ci['主辦單位'] || params.orgName || '___限公司';
+    var caseName = ci['專案計畫名稱'] || '';
+    var docTitle = '講師領據_'+lecName+'_'+shortD(ses['活動日期']);
+    var doc = DocumentApp.create(docTitle);
+    var body = doc.getBody();
+    body.setPageWidth(595.28);body.setPageHeight(841.89);// A4
+    body.setMarginTop(50);body.setMarginBottom(50);body.setMarginLeft(60);body.setMarginRight(60);
+    // Header
+    var hp = body.appendParagraph(orgName);
+    hp.setAlignment(DocumentApp.HorizontalAlignment.RIGHT).setFontFamily('標楷體').setFontSize(11);
+    var tp = body.appendParagraph('領    據');
+    tp.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setFontFamily('標楷體').setFontSize(18).setBold(true);
+    body.appendParagraph('');
+    // Data table
+    var tableData = [
+      ['領款人', lecName+'　　身份證字號：'+(lecInfo['身分證字號']||params.idNumber||'___________________')],
+      ['出生年月日', (lecInfo['出生日期']||params.birthDate||'_____年_____月_____日')],
+      ['戶籍地址', (lecInfo['地址']||params.address||'___________________________')],
+      ['扣繳憑單寄送地址', (lecInfo['地址']||params.address||'___________________________')],
+      ['費用項目', caseName+'-講師鐘點費　'+hours+' H × '+hourlyRate+'元（'+(fmtTime(ses['開始時間'])||'')+' ～ '+(fmtTime(ses['結束時間'])||'')+'）']
+    ];
+    var table = body.appendTable(tableData);
+    table.setBorderColor('#000000');
+    var amtPara = body.appendParagraph('金額：新台幣 '+amount.toLocaleString()+' 元整　NT$ '+amount.toLocaleString()+' 元');
+    amtPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setFontFamily('標楷體').setFontSize(13).setBold(true);
+    body.appendParagraph('');
+    var signP = body.appendParagraph('上列款項已向 '+orgName+' 如數領訖');
+    signP.setFontFamily('標楷體').setFontSize(10);
+    body.appendParagraph('　　　　簽領處（請親簽）：___________________');
+    body.appendParagraph('　　　　日期：'+rocDate(ses['活動日期']));
+    body.appendParagraph('');
+    // Notes & bank info
+    var notes = [
+      '1. 領款人戶籍地址、身份証編號及領款日期請詳細填寫。',
+      '2. 領款人請於簽領處簽名，才算正式收據。',
+      '3. 請附上身份證影本，以利所得之申報。'
+    ];
+    notes.forEach(function(n){ body.appendParagraph(n).setFontSize(9).setItalic(true); });
+    body.appendParagraph('銀行名稱：'+(lecInfo['銀行']||params.bank||'___')+'　戶名：'+(lecInfo['戶名']||lecName)+'　銀行帳號：'+(lecInfo['帳號']||params.account||'___')).setFontSize(9);
+    // Move to Drive
+    var targetFolder = getCaseFolderByName(ci['專案計畫名稱']||caseId, caseId, '08_講師與工作人員領據');
+    var file = DriveApp.getFileById(doc.getId());
+    if (targetFolder) file.moveTo(targetFolder);
+    var url = doc.getUrl();
+    govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+      {'產出ID':govopsId_('DOC'),'案件ID':caseId,'場次ID':sessionId,'文件類型':'講師領據','文件名稱':docTitle,'產出日期':govopsNow_(),'檔案連結':url,'狀態':'已產生'});
+    return { success: true, data: { url: url, docId: doc.getId(), lecturer: lecName, amount: amount }, message: '講師領據已產生：'+lecName+' NT$'+amount.toLocaleString(), timestamp: govopsNow_() };
+  }
+
+  // ── 工作人員費用領據（批次，每人一份 Google Doc） ──────
+  if (action === 'autoGenerateStaffReceipts') {
+    var sessionId = params.sessionId || '', needId = params.needId || '';
+    var caseId = params.caseId || '';
+    govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
+    govopsEnsureSheet_('支援人員工時', MPOWER_HOURS_HEADERS);
+    var staffRows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS).filter(function(r){
+      if (r['審核狀態']!=='已錄取') return false;
+      if (sessionId && String(r['場次ID'])!==sessionId) return false;
+      if (needId && String(r['需求ID'])!==needId) return false;
+      if (caseId && String(r['案件ID'])!==caseId) return false;
+      return true;
+    });
+    if (!staffRows.length) return { success: false, error: 'NO_DATA', message: '無已錄取工作人員', timestamp: govopsNow_() };
+    var hoursRows = govopsRows_('支援人員工時', MPOWER_HOURS_HEADERS);
+    if (!caseId) caseId = staffRows[0]['案件ID'] || '';
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var orgName = ci['主辦單位'] || '___限公司';
+    var caseName = ci['專案計畫名稱'] || '';
+    var hourlyRate = parseFloat(params.hourlyRate) || 190;
+    var targetFolder = getCaseFolderByName(ci['專案計畫名稱']||caseId, caseId, '08_講師與工作人員領據');
+    var results = [];
+    staffRows.forEach(function(s) {
+      var myHours = hoursRows.filter(function(h){ return h['人員ID']===s['人員ID'] && h['工作狀態']==='已確認'; });
+      var totalHours = myHours.reduce(function(sum,h){ return sum+(parseFloat(h['工時'])||0); }, 0);
+      var amount = Math.round(totalHours * hourlyRate);
+      var docTitle = '工作人員領據_'+s['姓名']+'_'+shortD(new Date());
+      try {
+        var doc = DocumentApp.create(docTitle);
+        var body = doc.getBody();
+        body.setMarginTop(50);body.setMarginBottom(50);body.setMarginLeft(60);body.setMarginRight(60);
+        body.appendParagraph(orgName).setAlignment(DocumentApp.HorizontalAlignment.RIGHT).setFontFamily('標楷體').setFontSize(11);
+        body.appendParagraph('領    據').setAlignment(DocumentApp.HorizontalAlignment.CENTER).setFontFamily('標楷體').setFontSize(18).setBold(true);
+        body.appendParagraph('');
+        var tableData = [
+          ['領款人', (s['姓名']||'')+'　　身份證字號：'+(s['身分證']||'___________________')],
+          ['出生年月日', '_____年_____月_____日'],
+          ['戶籍地址', '___________________________'],
+          ['費用項目', caseName+'-'+(s['身分別']||'工作人員')+'鐘點費　'+totalHours+' H × '+hourlyRate+'元']
+        ];
+        var table = doc.getBody().appendTable(tableData);table.setBorderColor('#000000');
+        body.appendParagraph('金額：新台幣 '+amount.toLocaleString()+' 元整　NT$ '+amount.toLocaleString()+' 元').setAlignment(DocumentApp.HorizontalAlignment.CENTER).setFontFamily('標楷體').setFontSize(13).setBold(true);
+        body.appendParagraph('').appendParagraph('　　　　簽領處（請親簽）：___________________');
+        body.appendParagraph('　　　　日期：'+rocDate(new Date()));
+        ['1. 領款人戶籍地址、身份証編號及領款日期請詳細填寫。','2. 請附上身份證影本，以利所得之申報。'].forEach(function(n){body.appendParagraph(n).setFontSize(9).setItalic(true);});
+        body.appendParagraph('銀行名稱：'+(s['銀行']||'___')+'　戶名：'+(s['戶名']||s['姓名'])+'　銀行帳號：'+(s['帳號']||'___')).setFontSize(9);
+        var file = DriveApp.getFileById(doc.getId());
+        if (targetFolder) file.moveTo(targetFolder);
+        var url = doc.getUrl();
+        govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+        govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+          {'產出ID':govopsId_('DOC'),'案件ID':caseId,'場次ID':sessionId,'文件類型':'工作人員領據','文件名稱':docTitle,'產出日期':govopsNow_(),'檔案連結':url,'狀態':'已產生'});
+        results.push({ name: s['姓名'], amount: amount, url: url, hours: totalHours });
+      } catch(e) { results.push({ name: s['姓名'], error: e.message }); }
+    });
+    return { success: true, data: { results: results, count: results.length }, message: '已產生 '+results.length+' 份工作人員領據', timestamp: govopsNow_() };
+  }
+
+  // ── 核銷清單（Google Sheet 全自動） ───────────────────
+  if (action === 'autoGenerateReimbursementSheet') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var budgets = govopsRows_('案件預算明細', BUDGET_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var caseName = ci['專案計畫名稱'] || caseId;
+    var sheetTitle = '核銷清單_'+caseName;
+    var ss = SpreadsheetApp.create(sheetTitle);
+    var sheet = ss.getActiveSheet();sheet.setName('核銷清單');
+    // Title
+    sheet.getRange(1,1,1,8).merge().setValue(caseName+'　核銷清單').setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center');
+    sheet.getRange(2,1,1,8).merge().setValue('主辦單位：'+(ci['主辦單位']||'')+'　執行期間：'+shortD(ci['開始日期'])+'～'+shortD(ci['結束日期'])).setFontSize(10).setHorizontalAlignment('center');
+    var hdrs = ['編號','支出項目','單位','數量','單價(元)','場次數','預算金額(元)','核銷狀態'];
+    sheet.getRange(3,1,1,8).setValues([hdrs]).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
+    var totalBudget = 0;
+    if (budgets.length) {
+      var rows = budgets.map(function(b,i){
+        totalBudget += parseFloat(b['預算金額'])||0;
+        return [i+1, b['支出項目']||'', b['單位']||'式', b['數量']||1, b['單價']||0, b['場次數']||1, b['預算金額']||0, b['核銷狀態']||'未核銷'];
+      });
+      sheet.getRange(4,1,rows.length,8).setValues(rows);
+      var lastRow = 4+rows.length;
+      sheet.getRange(lastRow,1,1,6).merge().setValue('合計').setFontWeight('bold').setBackground('#f0ede8');
+      sheet.getRange(lastRow,7).setValue(totalBudget).setFontWeight('bold').setBackground('#f0ede8');
+    } else {
+      sheet.getRange(4,1,1,8).merge().setValue('（尚未建立預算明細，請先在「案件需求摘要→核銷與財務」建立預算項目）').setFontColor('#b91c1c');
+    }
+    sheet.setColumnWidth(1,40);sheet.setColumnWidth(2,180);sheet.setColumnWidth(7,100);
+    var allR = sheet.getRange(1,1,Math.max(5,4+budgets.length),8);
+    allR.setBorder(true,true,true,true,true,true);
+    var targetFolder = getCaseFolderByName(caseName, caseId, '09_請款與核銷');
+    var file = DriveApp.getFileById(ss.getId());
+    if (targetFolder) file.moveTo(targetFolder);
+    var url = ss.getUrl();
+    govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+      {'產出ID':govopsId_('DOC'),'案件ID':caseId,'場次ID':'','文件類型':'核銷清單','文件名稱':sheetTitle,'產出日期':govopsNow_(),'檔案連結':url,'狀態':'已產生'});
+    return { success: true, data: { url: url, sheetId: ss.getId(), totalBudget: totalBudget, itemCount: budgets.length }, message: '核銷清單已產生', timestamp: govopsNow_() };
+  }
+
+  // ── 結案報告（Google Doc 全自動） ─────────────────────
+  if (action === 'autoGenerateClosingReport') {
+    var caseId = params.caseId;
+    if (!caseId) return { success: false, error: 'MISSING_PARAM', message: '缺少 caseId', timestamp: govopsNow_() };
+    // Gather all data
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var caseName = ci['專案計畫名稱'] || caseId;
+    govopsEnsureSheet_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var reqRows = govopsRows_('03_案件需求摘要', CASE_REQ_HEADERS);
+    var req = reqRows.filter(function(r){ return String(r['案件ID'])===caseId; })[0] || {};
+    govopsEnsureSheet_('03b_驗收條件', ACCEPTANCE_HEADERS);
+    var accepts = govopsRows_('03b_驗收條件', ACCEPTANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var sessions = govopsRows_('02_場次活動', SESSION_HEADERS).filter(function(r){ return String(r['專案ID'])===caseId; });
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var admitted = regs.filter(function(r){ return ['已錄取','備取'].indexOf(String(r['資格審查狀態']))>=0||['已錄取','備取'].indexOf(String(r['錄取狀態']))>=0; });
+    govopsEnsureSheet_('財務收支', FINANCE_HEADERS);
+    var finRows = govopsRows_('財務收支', FINANCE_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var finIncome = finRows.filter(function(r){ return r['類型']==='收入'; }).reduce(function(s,r){ return s+(parseFloat(r['金額'])||0); }, 0);
+    var finExpense = finRows.filter(function(r){ return r['類型']==='支出'; }).reduce(function(s,r){ return s+(parseFloat(r['金額'])||0); }, 0);
+    govopsEnsureSheet_('案件預算明細', BUDGET_HEADERS);
+    var budgets = govopsRows_('案件預算明細', BUDGET_HEADERS).filter(function(r){ return String(r['案件ID'])===caseId; });
+    var org = ci['主辦單位'] || '';
+    var profile = {}; try { profile = JSON.parse(PropertiesService.getScriptProperties().getProperty('govops_org_settings')||'{}'); } catch(e) {}
+    var myOrg = profile.orgName || '';
+    var rocY = new Date().getFullYear() - 1911;
+    var docTitle = '結案報告_'+caseName;
+    var doc = DocumentApp.create(docTitle);
+    var body = doc.getBody();
+    body.setMarginTop(72);body.setMarginBottom(72);body.setMarginLeft(72);body.setMarginRight(72);
+    var setStyle = function(p, size, bold, center) {
+      p.setFontFamily('標楷體').setFontSize(size||11);
+      if (bold) p.setBold(true);
+      if (center) p.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    };
+    // === Cover ===
+    body.appendParagraph('');body.appendParagraph('');body.appendParagraph('');
+    setStyle(body.appendParagraph(caseName), 18, true, true);
+    setStyle(body.appendParagraph('成果暨結案報告'), 16, true, true);
+    body.appendParagraph('');body.appendParagraph('');
+    var covData = [['主辦單位',org],['承辦單位',myOrg],['執行期間',shortD(ci['開始日期'])+' 至 '+shortD(ci['結束日期'])],['結案日期',shortD(new Date())]];
+    body.appendTable(covData).setBorderColor('#000000');
+    setStyle(body.appendParagraph('中華民國 '+rocY+' 年'), 11, false, true);
+    body.appendPageBreak();
+    // === 壹、前言 ===
+    setStyle(body.appendParagraph('壹、前言'), 14, true, false).setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(req['計畫緣起與背景'] || '（請補充計畫緣起與背景說明）');
+    body.appendParagraph('');
+    // === 貳、計畫摘要 ===
+    setStyle(body.appendParagraph('貳、計畫摘要'), 14, true, false).setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(req['計畫目標'] || '（請補充計畫目標說明）');
+    var summaryItems = [['服務對象', req['服務對象']||'—'],['預期場次數', String(req['預期場次數']||'—')+'場'],['預期參與人次', String(req['預期參與人次']||'—')+'人次']];
+    body.appendTable(summaryItems).setBorderColor('#000000');
+    body.appendParagraph('');
+    // === 參、實施內容 ===
+    setStyle(body.appendParagraph('參、實施內容'), 14, true, false).setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    setStyle(body.appendParagraph('一、辦理場次規劃'), 12, true, false);
+    if (sessions.length) {
+      var sesHeader = [['場次','日期','時間','地點','主題','講師','預計人數']];
+      var sesData = sessions.map(function(s,i){
+        return ['第'+(i+1)+'場', shortD(s['活動日期']), fmtTime(s['開始時間'])+'～'+fmtTime(s['結束時間']), s['活動地點']||'', s['活動名稱']||'', s['講師']||'', String(s['預計人數']||'')];
+      });
+      body.appendTable(sesHeader.concat(sesData)).setBorderColor('#000000');
+    } else { body.appendParagraph('（尚無場次資料）'); }
+    body.appendParagraph('');
+    setStyle(body.appendParagraph('二、報名與出席統計'), 12, true, false);
+    body.appendTable([['報名總數', regs.length+'人'],['審查通過／錄取', admitted.length+'人'],['實際出席', '（請填入）']]).setBorderColor('#000000');
+    body.appendParagraph('');
+    setStyle(body.appendParagraph('三、驗收條件達成'), 12, true, false);
+    if (accepts.length) {
+      var acHeader = [['#','驗收項目','驗收要求','繳交規格','完成狀態']];
+      var acData = accepts.map(function(a,i){
+        return [String(i+1), a['驗收項目名稱']||'', a['驗收要求說明']||'', (a['繳交數量']||'')+(a['繳交格式']?' ('+a['繳交格式']+')':''), a['完成狀態']||'未完成'];
+      });
+      body.appendTable(acHeader.concat(acData)).setBorderColor('#000000');
+    } else { body.appendParagraph('（請先在案件需求摘要中建立驗收條件）'); }
+    body.appendParagraph('');
+    // === 肆、實施效益 ===
+    setStyle(body.appendParagraph('肆、實施效益與分析'), 14, true, false).setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    body.appendParagraph(req['預期效益'] || '（請補充實施效益說明）');
+    body.appendParagraph('');
+    // === 財務 ===
+    setStyle(body.appendParagraph('經費與核銷摘要'), 12, true, false);
+    body.appendTable([['收入合計','NT$ '+finIncome.toLocaleString()],['支出合計','NT$ '+finExpense.toLocaleString()],['損益','NT$ '+(finIncome-finExpense).toLocaleString()]]).setBorderColor('#000000');
+    if (budgets.length) {
+      body.appendParagraph('');setStyle(body.appendParagraph('預算明細'), 11, true, false);
+      var bdHeader = [['#','支出項目','單位','預算金額','核銷狀態']];
+      var bdData = budgets.map(function(b,i){ return [String(i+1), b['支出項目']||'', b['單位']||'', 'NT$ '+(parseFloat(b['預算金額'])||0).toLocaleString(), b['核銷狀態']||'未核銷']; });
+      body.appendTable(bdHeader.concat(bdData)).setBorderColor('#000000');
+    }
+    body.appendParagraph('');
+    // === 伍、檢討建議 ===
+    setStyle(body.appendParagraph('伍、執行檢討與後續建議'), 14, true, false).setHeading(DocumentApp.ParagraphHeading.HEADING1);
+    var reviewSections = [['一、執行過程觀察',''],['二、執行中遇到的問題',''],['三、行政作業檢討',''],['四、場次安排檢討',''],['五、招生／參與情形檢討',''],['六、未來改善建議','']];
+    reviewSections.forEach(function(s){
+      setStyle(body.appendParagraph(s[0]), 12, true, false);
+      body.appendParagraph('（請填入本項檢討內容）');body.appendParagraph('');
+    });
+    // Move to Drive
+    var targetFolder = getCaseFolderByName(caseName, caseId, '10_成果報告');
+    var file = DriveApp.getFileById(doc.getId());
+    if (targetFolder) file.moveTo(targetFolder);
+    var url = doc.getUrl();
+    govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+      {'產出ID':govopsId_('DOC'),'案件ID':caseId,'場次ID':'','文件類型':'結案報告','文件名稱':docTitle,'產出日期':govopsNow_(),'檔案連結':url,'狀態':'已產生（需補充伍章）'});
+    return { success: true, data: { url: url, docId: doc.getId(), chapters: 5, note: '伍、執行檢討與後續建議章節需在 Google Doc 中手動補充' }, message: '結案報告已產生，請開啟連結補充伍章內容', timestamp: govopsNow_() };
+  }
+
+  // ── 取得文件產出紀錄 ──────────────────────────────────
+  if (action === 'getDocumentRecords') {
+    govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    var rows = govopsRows_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    if (params.docType) rows = rows.filter(function(r){ return r['文件類型']===params.docType; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '文件紀錄查詢完成', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Form Sync Route — Google 表單報名全自動同步
+// ════════════════════════════════════════════════════════
+var FORM_CONFIG_HEADERS = ['設定ID','案件ID','場次ID','表單名稱','試算表ID','工作表名稱','欄位對應JSON','上次同步時間','同步筆數','啟用狀態','備註'];
+
+function govopsFormSyncRoute_(params, action) {
+
+  if (action === 'saveFormConfig') {
+    govopsEnsureSheet_('28_Google表單設定', FORM_CONFIG_HEADERS);
+    var rows = govopsRows_('28_Google表單設定', FORM_CONFIG_HEADERS);
+    var caseId = params.caseId || '';
+    var sessionId = params.sessionId || '';
+    var existing = rows.filter(function(r){ return String(r['案件ID'])===caseId && String(r['場次ID'])===sessionId && String(r['試算表ID'])===params.sheetId; })[0];
+    var now = govopsNow_();
+    if (existing) {
+      govopsUpdate_('28_Google表單設定', FORM_CONFIG_HEADERS, existing._row, {'工作表名稱': params.tabName||'表單回覆 1','欄位對應JSON': params.fieldMapJson||'','啟用狀態': '啟用','更新時間': now});
+      return { success: true, data: { configId: existing['設定ID'] }, message: '表單設定已更新', timestamp: now };
+    } else {
+      var obj = { '設定ID': govopsId_('FRM'), '案件ID': caseId, '場次ID': sessionId, '表單名稱': params.formName||'', '試算表ID': params.sheetId||'', '工作表名稱': params.tabName||'表單回覆 1', '欄位對應JSON': params.fieldMapJson||'', '上次同步時間': '', '同步筆數': 0, '啟用狀態': '啟用', '備註': params.remark||'' };
+      govopsAppend_('28_Google表單設定', FORM_CONFIG_HEADERS, obj);
+      return { success: true, data: obj, message: '表單設定已建立', timestamp: now };
+    }
+  }
+
+  if (action === 'getFormConfigs') {
+    govopsEnsureSheet_('28_Google表單設定', FORM_CONFIG_HEADERS);
+    var rows = govopsRows_('28_Google表單設定', FORM_CONFIG_HEADERS);
+    if (params.caseId) rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
+    return { success: true, data: { rows: rows, count: rows.length }, message: '表單設定查詢完成', timestamp: govopsNow_() };
+  }
+
+  if (action === 'syncFormRegistrations') {
+    var configId = params.configId || '';
+    var sheetId = params.sheetId || '';
+    var tabName = params.tabName || '表單回覆 1';
+    var caseId = params.caseId || '';
+    var sessionId = params.sessionId || '';
+    var fieldMapJson = params.fieldMapJson || '';
+    // Get config if configId provided
+    if (configId) {
+      govopsEnsureSheet_('28_Google表單設定', FORM_CONFIG_HEADERS);
+      var configs = govopsRows_('28_Google表單設定', FORM_CONFIG_HEADERS);
+      var cfg = configs.filter(function(r){ return r['設定ID']===configId; })[0];
+      if (cfg) { sheetId=cfg['試算表ID']; tabName=cfg['工作表名稱']; caseId=cfg['案件ID']; sessionId=cfg['場次ID']; fieldMapJson=cfg['欄位對應JSON']; }
+    }
+    if (!sheetId) return { success: false, error: 'MISSING_PARAM', message: '缺少試算表ID', timestamp: govopsNow_() };
+    // Default field mapping
+    var fieldMap = { '姓名':'姓名','電話':'聯絡電話','Email':'電子郵件','服務單位':'任職單位','身分別':'身分類別','用餐習慣':'用餐習慣','備註':'備註' };
+    if (fieldMapJson) { try { var fm = JSON.parse(fieldMapJson); Object.keys(fm).forEach(function(k){ fieldMap[k]=fm[k]; }); } catch(e) {} }
+    // Read Google Sheet
+    var ss, sheet, data;
+    try { ss = SpreadsheetApp.openById(sheetId); } catch(e) { return { success: false, error: 'SHEET_ERROR', message: '無法開啟試算表：'+e.message+'\n請確認試算表ID正確且已分享權限給此 Apps Script', timestamp: govopsNow_() }; }
+    try {
+      sheet = tabName ? ss.getSheetByName(tabName) : ss.getSheets()[0];
+      if (!sheet) return { success: false, error: 'TAB_NOT_FOUND', message: '找不到工作表「'+tabName+'」', timestamp: govopsNow_() };
+      data = sheet.getDataRange().getValues();
+    } catch(e) { return { success: false, error: 'READ_ERROR', message: '讀取失敗：'+e.message, timestamp: govopsNow_() }; }
+    if (data.length < 2) return { success: true, data: { imported: 0, duplicate: 0 }, message: '表單尚無回覆資料', timestamp: govopsNow_() };
+    var headers = data[0].map(function(h){ return String(h).trim(); });
+    var rows = data.slice(1);
+    // Get existing registrations to deduplicate
+    var existRegs = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var existEmails = {};
+    var existPhones = {};
+    existRegs.forEach(function(r){ if(r['Email'])existEmails[String(r['Email']).toLowerCase()]=true; if(r['電話'])existPhones[String(r['電話']).replace(/\D/g,'')]=true; });
+    var imported = 0, duplicate = 0, failed = 0;
+    var now = govopsNow_();
+    rows.forEach(function(row) {
+      var obj = {};
+      headers.forEach(function(h, i){ obj[h] = row[i]!==undefined&&row[i]!==null ? String(row[i]) : ''; });
+      // Map fields
+      var reg = { '報名ID': govopsId_('REG'), '案件ID': caseId, '活動ID': sessionId, '報名來源': 'Google表單', '報名時間': now, '建立時間': now, '更新時間': now, '資格審查狀態': '待審查' };
+      Object.keys(fieldMap).forEach(function(sysField){ var formField = fieldMap[sysField]; if(formField && obj[formField] !== undefined) reg[sysField] = obj[formField]; });
+      if (!reg['姓名']) return;
+      // Dedup check
+      var email = (reg['Email']||'').toLowerCase();
+      var phone = (reg['電話']||'').replace(/\D/g,'');
+      if ((email && existEmails[email]) || (phone && existPhones[phone])) { duplicate++; return; }
+      govopsAppend_('報名資料庫', REG_EXT_HEADERS, reg);
+      if (email) existEmails[email] = true;
+      if (phone) existPhones[phone] = true;
+      imported++;
+    });
+    // Update sync status
+    if (configId) {
+      govopsEnsureSheet_('28_Google表單設定', FORM_CONFIG_HEADERS);
+      var cfgs = govopsRows_('28_Google表單設定', FORM_CONFIG_HEADERS);
+      var c = cfgs.filter(function(r){ return r['設定ID']===configId; })[0];
+      if (c) govopsUpdate_('28_Google表單設定', FORM_CONFIG_HEADERS, c._row, {'上次同步時間': now, '同步筆數': (parseInt(c['同步筆數'])||0)+imported});
+    }
+    // Log batch
+    govopsEnsureSheet_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS);
+    govopsAppend_('29_資料匯入批次紀錄', IMPORT_BATCH_HEADERS, {'批次ID':govopsId_('IMP'),'案件ID':caseId,'場次ID':sessionId,'匯入類型':'Google表單同步','匯入來源':sheetId,'資料筆數':rows.length,'成功筆數':imported,'失敗筆數':failed,'重複筆數':duplicate,'匯入狀態':'完成','錯誤訊息':'','匯入時間':now,'操作人':'','備註':''});
+    return { success: true, data: { total: rows.length, imported: imported, duplicate: duplicate, failed: failed }, message: '同步完成：新增 '+imported+' 筆，重複 '+duplicate+' 筆', timestamp: now };
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Notify Route — 全自動 Email 通知
+// 使用 MailApp 直接發送通知信
+// ════════════════════════════════════════════════════════
+function govopsNotifyRoute_(params, action) {
+
+  function sendMail(to, subject, body) {
+    if (!to || !to.includes('@')) return false;
+    try { MailApp.sendEmail({ to: to, subject: subject, htmlBody: body }); return true; } catch(e) { return false; }
+  }
+
+  function buildAdmissionHtml(name, caseName, sessionInfo, status) {
+    var statusText = status === '已錄取' ? '恭喜您已通過資格審查，錄取本次課程！' : status === '備取' ? '您已被列為備取，如有名額釋出將優先通知。' : '很遺憾，您未能通過本次資格審查。';
+    return '<div style="font-family:Microsoft JhengHei,Arial;max-width:600px;margin:0 auto;border:1px solid #e0dbd2;border-radius:8px;overflow:hidden">'
+      +'<div style="background:#0d2340;color:#fff;padding:20px 24px"><h2 style="margin:0;font-size:18px">GovOps OS 通知</h2></div>'
+      +'<div style="padding:24px"><p style="font-size:15px">親愛的 '+name+' 您好，</p>'
+      +'<p>'+statusText+'</p>'
+      +(sessionInfo?'<div style="background:#f7f4ef;border-radius:6px;padding:12px 16px;margin:16px 0"><b>課程名稱：</b>'+caseName+'<br><b>場次資訊：</b>'+sessionInfo+'</div>':'')
+      +'<p style="color:#5a5248;font-size:13px">如有任何問題，請聯繫承辦單位。</p></div>'
+      +'<div style="background:#f7f4ef;padding:12px 24px;font-size:12px;color:#8a8278">此為系統自動通知，請勿直接回覆。</div></div>';
+  }
+
+  if (action === 'sendAdmissionNotices') {
+    // 批次發送錄取/備取/未錄取通知
+    var caseId = params.caseId || '';
+    var sessionId = params.sessionId || '';
+    var statusToSend = params.statusFilter || '已錄取'; // '已錄取','備取','未錄取' or '' for all
+    var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+    var caseName = ci['專案計畫名稱'] || '';
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      var sm = sessionId ? String(r['活動ID'])===sessionId : true;
+      var cm = caseId ? (String(r['案件ID'])===caseId) : true;
+      if (!sm || !cm) return false;
+      var status = r['資格審查狀態'] || r['錄取狀態'] || '';
+      if (statusToSend && status !== statusToSend) return false;
+      if (r['通知日期']) return false; // Already notified
+      return !!r['Email'];
+    });
+    var sent = 0, failed = 0;
+    var today = govopsNow_().substring(0,10);
+    regs.forEach(function(r) {
+      var status = r['資格審查狀態'] || r['錄取狀態'] || '待審查';
+      var sesInfo = sessionId ? '（請至報名頁面查詢詳細場次資訊）' : '';
+      var ok = sendMail(r['Email'], '【'+caseName+'】報名結果通知', buildAdmissionHtml(r['姓名']||'您', caseName, sesInfo, status));
+      if (ok) {
+        sent++;
+        govopsUpdate_('報名資料庫', REG_EXT_HEADERS, r._row, { '通知狀態': '已通知', '通知日期': today, '更新時間': govopsNow_() });
+      } else { failed++; }
+    });
+    return { success: true, data: { sent: sent, failed: failed, total: regs.length }, message: '通知發送完成：成功 '+sent+' 封，失敗 '+failed+' 封', timestamp: govopsNow_() };
+  }
+
+  if (action === 'sendSupplementNotices') {
+    // 發補件通知
+    var caseId = params.caseId || '';
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      return (caseId ? String(r['案件ID'])===caseId : true) && r['資格審查狀態']==='需補件' && !!r['Email'] && !r['通知日期'];
+    });
+    var ci = (govopsRows_('01_專案主檔', CASE_HEADERS).filter(function(r){ return String(r['專案ID'])===caseId; })[0])||{};
+    var sent = 0;
+    var today = govopsNow_().substring(0,10);
+    regs.forEach(function(r) {
+      var html = '<div style="font-family:Microsoft JhengHei,Arial;max-width:600px;margin:0 auto;border:1px solid #e0dbd2;border-radius:8px;overflow:hidden">'
+        +'<div style="background:#0d2340;color:#fff;padding:20px 24px"><h2 style="margin:0">補件通知</h2></div>'
+        +'<div style="padding:24px"><p>親愛的 '+(r['姓名']||'您')+' 您好，</p>'
+        +'<p>您的報名資料需要補件，請於期限前提供下列文件：</p>'
+        +'<div style="background:#fff7ed;border-left:4px solid #ea580c;padding:12px 16px;margin:16px 0">'
+        +'<b>補件項目：</b>'+(r['補件項目']||'請聯繫承辦人')+'<br>'
+        +'<b>補件期限：</b>'+(r['補件期限']||'請盡速處理')+'</div>'
+        +'</div></div>';
+      var ok = sendMail(r['Email'], '【'+(ci['專案計畫名稱']||'')+'】報名補件通知', html);
+      if (ok) { sent++; govopsUpdate_('報名資料庫', REG_EXT_HEADERS, r._row, { '通知日期': today, '更新時間': govopsNow_() }); }
+    });
+    return { success: true, data: { sent: sent }, message: '補件通知發送完成：'+sent+' 封', timestamp: govopsNow_() };
+  }
+
+  if (action === 'sendTaskReminders') {
+    // 發任務到期提醒（依 MailApp quota 每次最多50封）
+    govopsEnsureSheet_('案件任務清單', TASK_HEADERS);
+    var today = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy-MM-dd');
+    var tomorrow = Utilities.formatDate(new Date(new Date().getTime()+86400000), 'Asia/Taipei', 'yyyy-MM-dd');
+    var tasks = govopsRows_('案件任務清單', TASK_HEADERS).filter(function(r){
+      return (r['截止日期']===today||r['截止日期']===tomorrow) && r['任務狀態']==='待辦' && !!r['負責人'];
+    });
+    var profile = {};
+    try { profile = JSON.parse(PropertiesService.getScriptProperties().getProperty('govops_org_settings')||'{}'); } catch(e) {}
+    var myEmail = profile.email || Session.getActiveUser().getEmail();
+    var sent = 0;
+    if (myEmail && tasks.length) {
+      var taskList = tasks.map(function(t){ return '• ['+t['優先度']+'] '+t['任務名稱']+' — 截止：'+t['截止日期']; }).join('<br>');
+      sendMail(myEmail, '【GovOps OS】今日/明日到期任務提醒（'+tasks.length+'筆）', '<div style="font-family:Microsoft JhengHei,Arial;padding:20px"><h3>任務到期提醒</h3>'+taskList+'</div>');
+      sent = 1;
+    }
+    return { success: true, data: { sent: sent, tasks: tasks.length }, message: '任務提醒已發送', timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
+function safeJSONGas_(key) {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty(key)||'null'); } catch(e) { return null; }
 }
 
 function govopsSimpleFallbackRoute_(params, action) {
