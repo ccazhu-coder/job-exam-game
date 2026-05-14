@@ -74,6 +74,9 @@ function govopsMainRouter_(params) {
   result = govopsReviewNotifRoute_(params, action);
   if (result) return jsonOutput(result);
 
+  result = govopsDocumentRoute_(params, action);
+  if (result) return jsonOutput(result);
+
   result = govopsSimpleFallbackRoute_(params, action);
   if (result) return jsonOutput(result);
 
@@ -908,6 +911,91 @@ function govopsTenderRoute_(params, action) {
       return { success: false, message: '採購網查詢失敗：' + e.message };
     }
   }
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// Document Generator Route v0.1
+// 產生：簽到表資料、錄取名冊、便當統計、地址標籤、人力清單
+// ════════════════════════════════════════════════════════
+function govopsDocumentRoute_(params, action) {
+
+  // generateAttendanceList: 產生簽到表資料（從報名資料庫篩出已錄取名單）
+  if (action === 'generateAttendanceList') {
+    var sessionId = params.sessionId || params['活動ID'];
+    if (!sessionId) return { success: false, error: 'MISSING_PARAM', message: '缺少 sessionId', timestamp: govopsNow_() };
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      return String(r['活動ID']) === sessionId && ['已錄取','備取','符合資格'].indexOf(String(r['資格審查狀態'])) >= 0;
+    });
+    var list = regs.map(function(r, i){
+      return { 序號: i + 1, 姓名: r['姓名'], 服務單位: r['服務單位'] || '', 職稱: r['職稱'] || '', 電話: r['電話'] || '', 用餐: r['用餐習慣'] || '', 簽到: '', 簽退: '', 備註: r['備註'] || '' };
+    });
+    return { success: true, data: { list: list, count: list.length, sessionId: sessionId }, message: '簽到表資料產生完成，共 ' + list.length + ' 人', timestamp: govopsNow_() };
+  }
+
+  // generateAdmissionList: 產生錄取名冊（已錄取+備取）
+  if (action === 'generateAdmissionList') {
+    var sessionId = params.sessionId || params['活動ID'];
+    var caseId = params.caseId || params['案件ID'];
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      var sesMatch = sessionId ? String(r['活動ID']) === sessionId : true;
+      var caseMatch = caseId ? (String(r['案件ID']) === caseId || String(r['招生活動ID']) === caseId) : true;
+      var admitted = ['已錄取','備取'].indexOf(String(r['資格審查狀態'])) >= 0 || ['已錄取','備取'].indexOf(String(r['錄取狀態'])) >= 0;
+      return sesMatch && caseMatch && admitted;
+    });
+    var list = regs.map(function(r, i){
+      var type = (String(r['資格審查狀態']) === '備取' || String(r['錄取狀態']) === '備取') ? '備取' : '正取';
+      return { 序號: i + 1, 姓名: r['姓名'], 性別: r['性別'] || '', 服務單位: r['服務單位'] || '', 身分別: r['身分別'] || '', 電話: r['電話'] || '', Email: r['Email'] || '', 錄取別: type, 備註: r['備註'] || '' };
+    });
+    return { success: true, data: { list: list, count: list.length }, message: '錄取名冊產生完成，共 ' + list.length + ' 人', timestamp: govopsNow_() };
+  }
+
+  // generateMealCount: 便當統計表
+  if (action === 'generateMealCount') {
+    var sessionId = params.sessionId || params['活動ID'];
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      var sesMatch = sessionId ? String(r['活動ID']) === sessionId : true;
+      return sesMatch && ['已錄取','備取','符合資格'].indexOf(String(r['資格審查狀態'])) >= 0;
+    });
+    var counts = {};
+    regs.forEach(function(r){
+      var meal = String(r['用餐習慣'] || '未填').trim();
+      counts[meal] = (counts[meal] || 0) + 1;
+    });
+    var list = Object.keys(counts).map(function(k){ return { 用餐習慣: k, 人數: counts[k] }; });
+    return { success: true, data: { summary: counts, list: list, total: regs.length }, message: '便當統計完成', timestamp: govopsNow_() };
+  }
+
+  // generateAddressLabels: 地址標籤資料
+  if (action === 'generateAddressLabels') {
+    var sessionId = params.sessionId || params['活動ID'];
+    var caseId = params.caseId || params['案件ID'];
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS).filter(function(r){
+      var sesMatch = sessionId ? String(r['活動ID']) === sessionId : true;
+      var caseMatch = caseId ? (String(r['案件ID']) === caseId || String(r['招生活動ID']) === caseId) : true;
+      return sesMatch && caseMatch && r['地址'];
+    });
+    var list = regs.map(function(r){ return { 姓名: r['姓名'], 地址: r['地址'] || '', 電話: r['電話'] || '', 郵遞區號: '' }; });
+    return { success: true, data: { list: list, count: list.length }, message: '地址標籤資料產生完成', timestamp: govopsNow_() };
+  }
+
+  // getDocumentableData: 取得可產文件的彙整資料（for documents.html）
+  if (action === 'getDocumentableData') {
+    var sessionId = params.sessionId || '';
+    var caseId = params.caseId || '';
+    var regs = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var filtered = regs.filter(function(r){
+      var sm = sessionId ? String(r['活動ID']) === sessionId : true;
+      var cm = caseId ? (String(r['案件ID']) === caseId || String(r['招生活動ID']) === caseId) : true;
+      return sm && cm;
+    });
+    var total = filtered.length;
+    var admitted = filtered.filter(function(r){ return ['已錄取','備取'].indexOf(String(r['資格審查狀態'])) >= 0 || ['已錄取','備取'].indexOf(String(r['錄取狀態'])) >= 0; }).length;
+    var withAddr = filtered.filter(function(r){ return !!r['地址']; }).length;
+    var needMeal = filtered.filter(function(r){ return r['用餐習慣'] && r['用餐習慣'] !== '不需要'; }).length;
+    return { success: true, data: { total: total, admitted: admitted, withAddress: withAddr, needMeal: needMeal }, message: '文件資料彙整完成', timestamp: govopsNow_() };
+  }
+
   return null;
 }
 
