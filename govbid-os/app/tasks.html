@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜任務管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+/* KPI */
+.task-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:16px}
+.tkpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:9px;padding:11px 13px;cursor:pointer;transition:.15s}
+.tkpi:hover{border-color:var(--navy-mid);box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.tkpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.tkpi .label{font-size:.71rem;color:var(--gray-500);margin-top:1px}
+.tkpi.alert .num{color:var(--danger)}
+.tkpi.warn .num{color:var(--gold)}
+.tkpi.ok .num{color:#16a34a}
+
+/* 狀態徽章 */
+.task-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:10px;font-size:.74rem;font-weight:700;white-space:nowrap}
+.tb-待辦{background:#e8f0fe;color:#1a56db}
+.tb-進行中{background:#fff7ed;color:#ea580c}
+.tb-已完成{background:#dcfce7;color:#16a34a}
+.tb-取消{background:#f3f4f6;color:#9ca3af}
+.tb-逾期{background:#fef2f2;color:#b91c1c}
+
+/* 優先度 */
+.pri{display:inline-block;padding:1px 7px;border-radius:8px;font-size:.72rem;font-weight:700}
+.pri-高{background:#fef2f2;color:#b91c1c}
+.pri-中{background:#fef9c3;color:#ca8a04}
+.pri-低{background:#f3f4f6;color:#6b7280}
+
+/* 篩選 */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filter-tab{padding:5px 13px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.78rem;font-weight:600;cursor:pointer;color:var(--gray-500)}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.filter-tab.red.active{background:var(--danger);border-color:var(--danger)}
+.filter-tab.gold.active{background:var(--gold);border-color:var(--gold);color:var(--white)}
+
+/* 搜尋 */
+.search-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.search-row input,.search-row select{padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white)}
+.search-row input{flex:1;min-width:160px}
+.search-row input:focus,.search-row select:focus{outline:none;border-color:var(--navy-mid)}
+
+/* 批次操作 */
+.batch-bar{background:var(--navy);border-radius:8px;padding:9px 14px;margin-bottom:10px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.batch-bar.show{display:flex}
+.batch-bar .cnt{color:rgba(255,255,255,.9);font-size:.84rem;font-weight:600}
+
+/* 任務列 */
+.task-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:8px;border:1.5px solid var(--gray-100);margin-bottom:6px;background:var(--white);transition:.15s;flex-wrap:wrap}
+.task-row:hover{border-color:var(--navy-mid);box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.task-row.overdue{border-left:4px solid var(--danger)}
+.task-row.due-today{border-left:4px solid var(--gold)}
+.task-row.done{opacity:.6}
+.task-row input[type=checkbox]{accent-color:var(--navy);width:16px;height:16px;cursor:pointer;flex-shrink:0}
+.task-info{flex:1;min-width:160px}
+.task-name{font-size:.88rem;font-weight:700;color:var(--navy);margin-bottom:2px}
+.task-name.done-text{text-decoration:line-through;color:var(--gray-400)}
+.task-sub{font-size:.75rem;color:var(--gray-500);display:flex;gap:8px;flex-wrap:wrap}
+.task-due{font-size:.74rem;font-weight:600}
+.task-due.overdue{color:var(--danger)}
+.task-due.today{color:var(--gold)}
+.task-due.future{color:var(--gray-400)}
+.task-actions{display:flex;gap:4px;flex-shrink:0}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid)}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fr{display:grid;gap:9px;margin-bottom:9px}
+.fr.c2{grid-template-columns:1fr 1fr}
+.fr.c3{grid-template-columns:1fr 1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi label .req{color:var(--danger)}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">任務管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>任務管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openAddModal()">＋ 新增任務</button>
+      <button class="secondary" onclick="loadAll()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="task-kpis" id="taskKpis">
+    <div class="tkpi alert" onclick="setFilter('overdue','')"><div class="num" id="kpi_overdue">—</div><div class="label">逾期</div></div>
+    <div class="tkpi warn" onclick="setFilter('','today')"><div class="num" id="kpi_today">—</div><div class="label">今日到期</div></div>
+    <div class="tkpi" onclick="setFilter('待辦','')"><div class="num" id="kpi_todo">—</div><div class="label">待辦</div></div>
+    <div class="tkpi" onclick="setFilter('進行中','')"><div class="num" id="kpi_wip">—</div><div class="label">進行中</div></div>
+    <div class="tkpi ok" onclick="setFilter('已完成','')"><div class="num" id="kpi_done">—</div><div class="label">已完成</div></div>
+  </div>
+
+  <section class="card">
+    <!-- 篩選標籤 -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" id="tab_all" onclick="setFilter('','')">全部</button>
+      <button class="filter-tab red" id="tab_overdue" onclick="setFilter('overdue','')">逾期</button>
+      <button class="filter-tab gold" id="tab_today" onclick="setFilter('','today')">今日到期</button>
+      <button class="filter-tab" id="tab_todo" onclick="setFilter('待辦','')">待辦</button>
+      <button class="filter-tab" id="tab_wip" onclick="setFilter('進行中','')">進行中</button>
+      <button class="filter-tab" id="tab_done" onclick="setFilter('已完成','')">已完成</button>
+    </div>
+
+    <!-- 搜尋 -->
+    <div class="search-row">
+      <input id="kwInput" type="search" placeholder="搜尋任務名稱、負責人…" oninput="debouncedSearch()">
+      <select id="caseFilter" onchange="loadTasks()">
+        <option value="">所有案件</option>
+      </select>
+      <select id="priFilter" onchange="loadTasks()">
+        <option value="">所有優先度</option>
+        <option>高</option><option>中</option><option>低</option>
+      </select>
+    </div>
+
+    <!-- 批次操作 -->
+    <div class="batch-bar" id="batchBar">
+      <span class="cnt" id="batchCnt">已選 0 筆</span>
+      <button class="gold" style="padding:5px 13px;font-size:.82rem" onclick="batchComplete('已完成')">✓ 標記完成</button>
+      <button class="secondary" style="padding:5px 13px;font-size:.82rem;color:rgba(255,255,255,.8)" onclick="batchComplete('取消')">× 取消</button>
+      <button class="secondary" style="padding:5px 13px;font-size:.82rem;color:rgba(255,255,255,.5)" onclick="clearSelection()">清除選取</button>
+    </div>
+
+    <div id="taskMsg" class="msg" style="display:none"></div>
+    <div id="taskList"></div>
+  </section>
+</main>
+
+<!-- 新增/編輯任務 Modal -->
+<div class="modal-overlay" id="taskModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalTitle">新增任務</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTaskId">
+      <div class="fr">
+        <div class="fi"><label>任務名稱 <span class="req">*</span></label><input id="f_name" placeholder="例如：上傳合約、確認講師、繳交核銷"></div>
+      </div>
+      <div class="fr c3">
+        <div class="fi">
+          <label>任務類型</label>
+          <select id="f_type">
+            <option>一般</option><option>案件待辦</option><option>場次準備</option>
+            <option>財務</option><option>結案</option><option>公文</option><option>行政</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>優先度</label>
+          <select id="f_pri">
+            <option value="高">高</option><option value="中" selected>中</option><option value="低">低</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>任務狀態</label>
+          <select id="f_status">
+            <option value="待辦" selected>待辦</option>
+            <option value="進行中">進行中</option>
+            <option value="已完成">已完成</option>
+            <option value="取消">取消</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>負責人</label><input id="f_assignee" placeholder="姓名或單位"></div>
+        <div class="fi">
+          <label>關聯案件</label>
+          <select id="f_case"><option value="">不指定</option></select>
+        </div>
+      </div>
+      <div class="fr c3">
+        <div class="fi"><label>開始日期</label><input id="f_start" type="date"></div>
+        <div class="fi"><label>截止日期</label><input id="f_due" type="date"></div>
+        <div class="fi"><label>提醒日期</label><input id="f_remind" type="date"></div>
+      </div>
+      <div class="fr">
+        <div class="fi"><label>備註</label><input id="f_note" placeholder="補充說明或連結"></div>
+      </div>
+      <div id="modalErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:9px 12px;font-size:.82rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" id="submitBtn" onclick="submitTask()">新增任務</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _statusFilter = '';
+var _timeFilter = '';  // 'today' | 'overdue' | ''
+var _selectedIds = new Set();
+var _searchTimer = null;
+var _cases = [];
+var _today = new Date().toISOString().substring(0,10);
+var _soon = new Date(new Date().getTime() + 7*86400000).toISOString().substring(0,10);
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  // URL params
+  var sp = new URLSearchParams(location.search);
+  var caseId = sp.get('caseId') || '';
+  loadCases().then(function() {
+    if (caseId) document.getElementById('caseFilter').value = caseId;
+    loadAll();
+  });
+}
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function loadCases() {
+  var r = await ERPALIGNED.api({ action: 'getCases' });
+  _cases = r.data || [];
+  var opts = _cases.map(function(c){ return '<option value="'+ERPALIGNED.esc(c['專案ID'])+'">'+ERPALIGNED.esc(c['專案計畫名稱'])+'</option>'; }).join('');
+  ['caseFilter','f_case'].forEach(function(id){ var el=document.getElementById(id); if(el) el.innerHTML=(id==='caseFilter'?'<option value="">所有案件</option>':'<option value="">不指定</option>')+opts; });
+}
+
+async function loadAll() { await Promise.all([loadStats(), loadTasks()]); }
+
+async function loadStats() {
+  var params = { action: 'getTaskStats' };
+  var caseId = document.getElementById('caseFilter').value;
+  if (caseId) params.caseId = caseId;
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) return;
+  var d = r.data || {};
+  var bs = d.byStatus || {};
+  setKpi('kpi_overdue', d.overdue || 0);
+  setKpi('kpi_today', d.dueToday || 0);
+  setKpi('kpi_todo', bs['待辦'] || 0);
+  setKpi('kpi_wip', bs['進行中'] || 0);
+  setKpi('kpi_done', bs['已完成'] || 0);
+}
+function setKpi(id, v) { var el=document.getElementById(id); if(el) el.textContent=v; }
+
+async function loadTasks() {
+  var msg = document.getElementById('taskMsg');
+  var list = document.getElementById('taskList');
+  msg.style.display=''; msg.textContent='查詢中…'; list.innerHTML=''; clearSelection();
+  var params = { action: 'getTasks' };
+  var kw = document.getElementById('kwInput').value.trim();
+  var caseId = document.getElementById('caseFilter').value;
+  var pri = document.getElementById('priFilter').value;
+  if (kw) params.keyword = kw;
+  if (caseId) params.caseId = caseId;
+  if (pri) params['優先度'] = pri;
+  if (_timeFilter === 'overdue') params.overdue = 'true';
+  else if (_statusFilter) params.status = _statusFilter;
+  var r = await ERPALIGNED.api(params);
+  msg.style.display='none';
+  if (!r.success) { msg.style.display=''; msg.textContent='⚠ '+r.message; return; }
+  var rows = r.data || [];
+  // 用戶端再過濾「今日到期」
+  if (_timeFilter === 'today') rows = rows.filter(function(row){ return String(row['截止日期']).substring(0,10) === _today && ['待辦','進行中'].indexOf(String(row['任務狀態'])) >= 0; });
+  // 排序：逾期→今日→未來（依截止日期）
+  rows.sort(function(a,b){
+    var da = String(a['截止日期'] || '9999'), db = String(b['截止日期'] || '9999');
+    var sa = String(a['任務狀態']), sb = String(b['任務狀態']);
+    if (sa === '已完成' && sb !== '已完成') return 1;
+    if (sa !== '已完成' && sb === '已完成') return -1;
+    return da.localeCompare(db);
+  });
+  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆任務';
+  if (!rows.length) { list.innerHTML='<div style="text-align:center;padding:50px 20px;color:var(--gray-400)"><div style="font-size:2rem">✅</div><p>沒有符合的任務</p></div>'; return; }
+  list.innerHTML = rows.map(function(row){ return renderTaskRow(row); }).join('');
+  window.__taskRows__ = rows;
+}
+
+function renderTaskRow(row) {
+  var id = ERPALIGNED.esc(row['任務ID'] || '');
+  var name = ERPALIGNED.esc(row['任務名稱'] || '—');
+  var due = String(row['截止日期'] || '').substring(0,10);
+  var status = String(row['任務狀態'] || '待辦');
+  var isDone = status === '已完成';
+  var isOverdue = due && due < _today && !isDone;
+  var isToday = due === _today && !isDone;
+  var dueClass = isOverdue ? 'overdue' : (isToday ? 'today' : 'future');
+  var dueLabel = due ? (isOverdue ? '⚠ 逾期 '+due : (isToday ? '⏰ 今天 '+due : due)) : '—';
+  var caseName = '';
+  if (row['案件ID']) {
+    var c = _cases.find(function(x){ return x['專案ID'] === row['案件ID']; });
+    if (c) caseName = c['專案計畫名稱'];
+  }
+  var rowClass = 'task-row' + (isOverdue?' overdue':'') + (isToday?' due-today':'') + (isDone?' done':'');
+  return '<div class="'+rowClass+'" id="tr_'+id+'">'+
+    '<input type="checkbox" class="row-check" value="'+id+'" onchange="onCheck(this)">'+
+    '<div class="task-info">'+
+      '<div class="task-name'+(isDone?' done-text':'')+'">'+name+'</div>'+
+      '<div class="task-sub">'+
+        (row['任務類型']&&row['任務類型']!=='一般'?'<span>'+ERPALIGNED.esc(row['任務類型'])+'</span>':'')+
+        (row['負責人']?'<span>👤 '+ERPALIGNED.esc(row['負責人'])+'</span>':'')+
+        (caseName?'<span>📁 '+ERPALIGNED.esc(caseName)+'</span>':'')+
+      '</div>'+
+    '</div>'+
+    '<span class="pri pri-'+ERPALIGNED.esc(row['優先度']||'中')+'">'+ERPALIGNED.esc(row['優先度']||'中')+'</span>'+
+    '<span class="task-due '+dueClass+'">'+dueLabel+'</span>'+
+    '<span class="task-badge tb-'+(isOverdue&&!isDone?'逾期':status)+'">'+status+'</span>'+
+    '<div class="task-actions">'+
+      (!isDone?'<button class="row-btn ok" onclick="quickComplete(\''+id+'\')">完成</button>':'')+
+      '<button class="row-btn" onclick="openEditModal(\''+id+'\')">編輯</button>'+
+      '<button class="row-btn danger" onclick="deleteTask(\''+id+'\',\''+name+'\')">刪除</button>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── 篩選 ─────────────────────────────────────────────────
+function setFilter(status, time) {
+  _statusFilter = status === 'overdue' ? '' : status;
+  _timeFilter = status === 'overdue' ? 'overdue' : time;
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  var tabMap = {'':'tab_all','待辦':'tab_todo','進行中':'tab_wip','已完成':'tab_done'};
+  var tabId = status==='overdue' ? 'tab_overdue' : (time==='today' ? 'tab_today' : (tabMap[status]||'tab_all'));
+  var el = document.getElementById(tabId); if(el) el.classList.add('active');
+  loadTasks();
+}
+function debouncedSearch(){ clearTimeout(_searchTimer); _searchTimer=setTimeout(loadTasks,350); }
+
+// ── 選取 ─────────────────────────────────────────────────
+function onCheck(cb) { if(cb.checked) _selectedIds.add(cb.value); else _selectedIds.delete(cb.value); updateBatchBar(); }
+function clearSelection() { _selectedIds.clear(); document.querySelectorAll('.row-check').forEach(function(c){c.checked=false;}); updateBatchBar(); }
+function updateBatchBar() { var bar=document.getElementById('batchBar'),cnt=_selectedIds.size; document.getElementById('batchCnt').textContent='已選 '+cnt+' 筆'; bar.classList.toggle('show',cnt>0); }
+
+async function batchComplete(status) {
+  if (!_selectedIds.size) return;
+  await ERPALIGNED.api({ action: 'batchCompleteTask', taskIds: Array.from(_selectedIds).join(','), status: status });
+  clearSelection(); loadAll();
+}
+
+// ── 快速完成 ─────────────────────────────────────────────
+async function quickComplete(taskId) {
+  await ERPALIGNED.api({ action: 'updateTask', taskId: taskId, '任務狀態': '已完成' });
+  loadAll();
+}
+
+// ── 刪除 ─────────────────────────────────────────────────
+async function deleteTask(taskId, name) {
+  if (!confirm('確定刪除任務「'+name+'」？')) return;
+  await ERPALIGNED.api({ action: 'deleteTask', taskId: taskId });
+  loadAll();
+}
+
+// ── 新增 Modal ────────────────────────────────────────────
+function openAddModal() {
+  clearForm();
+  document.getElementById('editTaskId').value = '';
+  document.getElementById('modalTitle').textContent = '新增任務';
+  document.getElementById('submitBtn').textContent = '新增任務';
+  // 預設今天
+  var sp = new URLSearchParams(location.search);
+  var caseId = sp.get('caseId') || document.getElementById('caseFilter').value;
+  if (caseId) document.getElementById('f_case').value = caseId;
+  document.getElementById('taskModal').style.display = 'flex';
+}
+
+async function openEditModal(taskId) {
+  document.getElementById('modalTitle').textContent = '編輯任務';
+  document.getElementById('submitBtn').textContent = '儲存變更';
+  document.getElementById('editTaskId').value = taskId;
+  document.getElementById('taskModal').style.display = 'flex';
+  var rows = (window.__taskRows__ || []).filter(function(r){ return r['任務ID'] === taskId; });
+  if (!rows.length) {
+    var r = await ERPALIGNED.api({ action: 'getTasks', keyword: taskId });
+    rows = (r.data || []).filter(function(x){ return x['任務ID'] === taskId; });
+  }
+  if (!rows.length) { showErr('找不到任務資料'); return; }
+  var row = rows[0];
+  document.getElementById('f_name').value = row['任務名稱'] || '';
+  document.getElementById('f_type').value = row['任務類型'] || '一般';
+  document.getElementById('f_pri').value = row['優先度'] || '中';
+  document.getElementById('f_status').value = row['任務狀態'] || '待辦';
+  document.getElementById('f_assignee').value = row['負責人'] || '';
+  document.getElementById('f_case').value = row['案件ID'] || '';
+  document.getElementById('f_start').value = isoDate(row['開始日期']);
+  document.getElementById('f_due').value = isoDate(row['截止日期']);
+  document.getElementById('f_remind').value = isoDate(row['提醒日期']);
+  document.getElementById('f_note').value = row['備註'] || '';
+}
+
+function clearForm() {
+  ['f_name','f_assignee','f_note','f_start','f_due','f_remind'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('f_type').value='一般';
+  document.getElementById('f_pri').value='中';
+  document.getElementById('f_status').value='待辦';
+  document.getElementById('f_case').value='';
+  hideErr();
+}
+
+function isoDate(v){ if(!v)return''; var m=String(v).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/); return m?m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'):''; }
+
+async function submitTask() {
+  hideErr();
+  var name = document.getElementById('f_name').value.trim();
+  if (!name) { showErr('任務名稱為必填'); return; }
+  var taskId = document.getElementById('editTaskId').value;
+  var isEdit = !!taskId;
+  var btn = document.getElementById('submitBtn');
+  btn.disabled=true; btn.textContent='處理中…';
+  var params = {
+    action: isEdit ? 'updateTask' : 'createTask',
+    '任務名稱': name,
+    '任務類型': document.getElementById('f_type').value,
+    '優先度': document.getElementById('f_pri').value,
+    '任務狀態': document.getElementById('f_status').value,
+    '負責人': document.getElementById('f_assignee').value,
+    caseId: document.getElementById('f_case').value,
+    '開始日期': document.getElementById('f_start').value,
+    '截止日期': document.getElementById('f_due').value,
+    '提醒日期': document.getElementById('f_remind').value,
+    '備註': document.getElementById('f_note').value
+  };
+  if (isEdit) params.taskId = taskId;
+  var r = await ERPALIGNED.api(params);
+  btn.disabled=false; btn.textContent=isEdit?'儲存變更':'新增任務';
+  if (!r.success) { showErr(r.message||'操作失敗'); return; }
+  closeModal(); loadAll();
+}
+
+function showErr(msg){var el=document.getElementById('modalErr');el.textContent=msg;el.style.display='';}
+function hideErr(){document.getElementById('modalErr').style.display='none';}
+function closeModal(){document.getElementById('taskModal').style.display='none';}
+function closeBg(e){if(e.target===document.getElementById('taskModal'))closeModal();}
+
+init();
+</script>
+</body>
+</html>
