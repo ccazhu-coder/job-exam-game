@@ -92,30 +92,35 @@
 
     <div class="grid">
       <section class="card span8">
-        <h2>資料總覽</h2>
-        <div class="btns">
-          <button onclick="loadDashboard()">刷新儀表板</button>
-          <button class="secondary" onclick="loadOverview()">專案總覽</button>
-          <button class="secondary" onclick="loadRisk()">風險報告</button>
-          <button class="secondary" onclick="loadMarketing()">行銷名單</button>
-          <button class="secondary" onclick="loadReturn()">回流學員</button>
+        <h2>業務案件總覽</h2>
+        <div id="caseKpiRow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px">
+          <div class="kpi"><div class="num" id="dk_total">—</div><div class="name">全部案件</div></div>
+          <div class="kpi"><div class="num" id="dk_active">—</div><div class="name">進行中</div></div>
+          <div class="kpi warn"><div class="num" id="dk_urgent">—</div><div class="name">需行動</div></div>
+          <div class="kpi ok"><div class="num" id="dk_closed">—</div><div class="name">已結案</div></div>
         </div>
-        <div id="dashMsg" class="msg" style="margin-top:12px">載入中…</div>
-        <div id="table" style="margin-top:12px"></div>
+        <div class="btns" style="margin-bottom:10px">
+          <button onclick="loadCaseStats()">刷新案件統計</button>
+          <button class="secondary" onclick="loadSchedule()">近期行程</button>
+          <button class="secondary" onclick="loadOverview()">舊版專案總覽</button>
+          <button class="secondary" onclick="loadMarketing()">行銷名單</button>
+        </div>
+        <div id="dashMsg" class="msg" style="margin-top:8px">—</div>
+        <div id="table" style="margin-top:10px"></div>
       </section>
 
       <section class="card span4">
         <h2>快速操作</h2>
         <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
-          <button class="gold" onclick="location.href='./projects.html'">＋ 新增專案</button>
-          <button class="secondary" onclick="location.href='./activities.html'">＋ 新增活動</button>
-          <button class="secondary" onclick="location.href='./enrollment.html'">＋ 招生報名</button>
-          <button class="secondary" onclick="location.href='./vendors.html'">＋ 新增廠商</button>
-          <button class="secondary" onclick="location.href='./resource-master.html'">＋ 新增講師</button>
-          <button class="secondary" onclick="location.href='./resource-master.html?tab=stf'">＋ 新增工作人員</button>
-          <button class="secondary" onclick="location.href='./crm.html'">學員 CRM</button>
-          <button class="secondary" onclick="location.href='./archive.html'">核銷歸檔</button>
-          <button class="ghost" onclick="location.href='./finance-secretary.html'">財務秘書</button>
+          <button class="gold" onclick="location.href='./cases.html'">＋ 新增業務案件</button>
+          <button class="secondary" onclick="location.href='./sessions.html'">場次管理</button>
+          <button class="secondary" onclick="location.href='./registrations.html'">報名管理</button>
+          <button class="secondary" onclick="location.href='./documents.html'">文件產生</button>
+          <button class="secondary" onclick="location.href='./calendar.html'">日曆管理</button>
+          <button class="secondary" onclick="location.href='./finance.html'">財務收支</button>
+          <button class="secondary" onclick="location.href='./closing.html'">結案管理</button>
+          <button class="secondary" onclick="location.href='./vendors.html'">廠商</button>
+          <button class="ghost" onclick="location.href='./crm.html'">學員 CRM</button>
         </div>
         <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
         <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
@@ -182,6 +187,7 @@ function enterApp(profile){
   ERPALIGNED.appendUserChip('#appScreen header .wrap');
   loadDashboard();
   healthCheck();
+  // v0.1: 預載案件統計
 }
 
 // ── 登錄 ──────────────────────────────────────────────
@@ -227,16 +233,65 @@ function showErr(msg){
 
 // ── 儀表板 ────────────────────────────────────────────
 async function loadDashboard(){
-  const r=await ERPALIGNED.api({action:'取得ERP儀表板'},'dashMsg');
-  const d=r.data||{};
-  const kpiDefs=[['專案總數','',''],['活動總數','',''],['今日待辦','','warn'],['未收款金額','元','danger'],['已收收入','元','ok'],['支出總額','元',''],['損益','元',''],['核銷缺件','件','warn']];
-  document.getElementById('kpis').innerHTML=kpiDefs.map(([k,u,cls])=>'<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+(d[k]??'—')+'</div><div class="name">'+k+(u?'('+u+')':'')+'</div></div>').join('');
-  const rows=d.未收款||d.今日任務||d.核銷缺件明細||[];
-  if(rows.length)ERPALIGNED.renderTable({data:{rows}},'table');
-  else document.getElementById('table').innerHTML='<div class="empty">目前無待處理項目</div>';
+  loadCaseStats();
+  loadFinanceSummary();
+  loadSchedule();
 }
-async function loadOverview(){const r=await ERPALIGNED.api({action:'ERP專案總覽'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
-async function loadRisk(){const r=await ERPALIGNED.api({action:'ERP風險報告'},'dashMsg');const d=r.data||{};const rows=[...(d.逾期任務||[]),...(d.未收款||[]),...(d.核銷缺件||[])];ERPALIGNED.renderTable({data:{rows}},'table')}
+
+async function loadCaseStats(){
+  const r=await ERPALIGNED.api({action:'getCaseStats'});
+  if(!r.success) return;
+  const d=r.data||{};
+  const bs=d.byStatus||{};
+  // 更新頂部 KPI
+  const kpiDefs=[
+    ['進行中案件', d.active||0, ''],
+    ['待請款', bs['待請款']||0, 'warn'],
+    ['待收款', bs['待收款']||0, 'warn'],
+    ['待結案', bs['待結案']||0, 'warn'],
+    ['已結案', bs['已結案']||0, 'ok'],
+    ['草稿中', bs['草稿']||0, ''],
+    ['全部案件', d.total||0, ''],
+    ['封存', d.archived||0, '']
+  ];
+  document.getElementById('kpis').innerHTML=kpiDefs.map(([k,v,cls])=>'<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+v+'</div><div class="name">'+k+'</div></div>').join('');
+  // 更新案件卡片內小 KPI
+  const el=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
+  el('dk_total',d.total||0); el('dk_active',d.active||0); el('dk_urgent',d.urgent||0); el('dk_closed',bs['已結案']||0);
+  // 顯示需行動案件清單
+  const urgentList=['待請款','待收款','待結案'];
+  const r2=await ERPALIGNED.api({action:'getCases',status:''});
+  if(!r2.success) return;
+  const urgent=(r2.data||[]).filter(c=>urgentList.includes(c['狀態']));
+  if(urgent.length){
+    const msg=document.getElementById('dashMsg');
+    msg.textContent='';
+    ERPALIGNED.renderTable({data:{rows:urgent.map(c=>({'案件':c['專案計畫名稱'],'客戶':c['主辦單位']||'—','狀態':c['狀態'],'預估收入':c['契約金額']||'—'}))}}, 'table');
+  } else {
+    document.getElementById('dashMsg').textContent='目前無需行動案件';
+    document.getElementById('table').innerHTML='';
+  }
+}
+
+async function loadFinanceSummary(){
+  const r=await ERPALIGNED.api({action:'getFinanceSummary'});
+  if(!r||!r.success) return;
+  const d=r.data||{};
+  const fmt=n=>(n||0).toLocaleString()+'元';
+  // 在 KPI 最後更新財務數字（如有對應欄位）
+}
+
+async function loadSchedule(){
+  const msg=document.getElementById('dashMsg');
+  msg.textContent='查詢近期行程…';
+  const r=await ERPALIGNED.api({action:'getUpcomingSchedule',days:'14'});
+  msg.textContent='';
+  if(!r.success||!r.data||!r.data.length){document.getElementById('table').innerHTML='<div class="empty">近14天無排定場次</div>';return;}
+  const today=new Date().toISOString().substring(0,10);
+  ERPALIGNED.renderTable({data:{rows:r.data.map(e=>({'日期':e['日期'],'場次名稱':e['名稱'],'時間':e['時間'],'地點':e['地點']||'—','狀態':e['狀態']}))}}, 'table');
+}
+
+async function loadOverview(){const r=await ERPALIGNED.api({action:'getCases'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function loadMarketing(){const r=await ERPALIGNED.api({action:'行銷名單'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function loadReturn(){const r=await ERPALIGNED.api({action:'回流學員分析'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
