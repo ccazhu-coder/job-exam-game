@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜場次管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+/* ── 場次狀態徽章 ── */
+.ses-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:.76rem;font-weight:700;white-space:nowrap}
+.ses-badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.7}
+.ss-規劃中{background:#e8f0fe;color:#1a56db}
+.ss-確認中{background:#ede9fe;color:#7c3aed}
+.ss-執行中{background:#dcfce7;color:#16a34a}
+.ss-已完成{background:#f0fdf4;color:#15803d}
+.ss-取消{background:#fef2f2;color:#b91c1c}
+.ss-封存{background:#f3f4f6;color:#6b7280}
+
+/* ── 快速篩選 ── */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-tab{padding:5px 14px;border-radius:20px;border:1.5px solid var(--gray-200);background:var(--white);font-size:.8rem;font-weight:600;cursor:pointer;color:var(--gray-500);transition:.15s}
+.filter-tab:hover{border-color:var(--navy-mid);color:var(--navy)}
+.filter-tab.active{background:var(--navy);color:var(--white);border-color:var(--navy)}
+
+/* ── 搜尋列 ── */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search-row input{flex:1;min-width:180px;padding:9px 13px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.88rem;font-family:var(--font)}
+.search-row input:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+
+/* ── 案件 context bar ── */
+.case-bar{background:var(--gold-pale);border:1.5px solid var(--gold);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.case-bar .label{font-size:.76rem;font-weight:700;color:var(--gold);text-transform:uppercase}
+.case-bar .name{font-size:.9rem;font-weight:700;color:var(--navy)}
+.case-bar a{font-size:.78rem;color:var(--navy-mid);text-decoration:none;margin-left:auto}
+.case-bar a:hover{text-decoration:underline}
+
+/* ── 表格操作 ── */
+.row-actions{display:flex;gap:4px}
+.row-btn{padding:4px 10px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.75rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:var(--white);border-color:var(--navy)}
+.row-btn.danger:hover{background:var(--danger);border-color:var(--danger)}
+
+/* ── KPI ── */
+.ses-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.skpi{background:var(--white);border:1.5px solid var(--gray-100);border-radius:10px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.skpi .num{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.skpi .label{font-size:.72rem;color:var(--gray-500);margin-top:1px}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:20px 24px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:1rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.3rem;color:var(--gray-400);cursor:pointer;padding:4px 8px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:12px 24px 20px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+
+/* ── 表單 ── */
+.form-section{margin-bottom:16px}
+.form-section-title{font-size:.76rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:3px;border-bottom:1px solid var(--gold-pale)}
+.form-row{display:grid;gap:10px;margin-bottom:10px}
+.form-row.cols2{grid-template-columns:1fr 1fr}
+.form-row.cols3{grid-template-columns:1fr 1fr 1fr}
+.field label{display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.field label .req{color:var(--danger)}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.87rem;font-family:var(--font);background:var(--white);box-sizing:border-box}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--navy-mid);box-shadow:0 0 0 3px rgba(13,35,64,.07)}
+.field textarea{min-height:60px;resize:vertical}
+
+/* ── checkbox grid ── */
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;margin-top:4px}
+.check-item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--navy)}
+.check-item input[type=checkbox]{accent-color:var(--navy);width:14px;height:14px}
+
+/* ── confirm ── */
+.confirm-box{background:var(--white);border-radius:12px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center}
+.confirm-box h3{font-size:1rem;font-weight:700;color:var(--navy);margin:0 0 8px}
+.confirm-box p{font-size:.85rem;color:var(--gray-500);margin:0 0 20px}
+.confirm-box .btns{display:flex;gap:8px;justify-content:center}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">場次管理</div>
+  <nav id="nav"></nav>
+</div></header>
+
+<main class="wrap">
+  <!-- 案件 Context Bar -->
+  <div class="case-bar" id="caseBar" style="display:none">
+    <span class="label">案件</span>
+    <span class="name" id="caseBarName">—</span>
+    <a href="./cases.html">← 回業務案件</a>
+  </div>
+
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>場次管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openCreateModal()">＋ 新增場次</button>
+      <button class="secondary" onclick="loadSessions()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="ses-kpis" id="sesKpis">
+    <div class="skpi"><div class="num">—</div><div class="label">全部場次</div></div>
+    <div class="skpi"><div class="num">—</div><div class="label">規劃中</div></div>
+    <div class="skpi"><div class="num">—</div><div class="label">執行中</div></div>
+    <div class="skpi"><div class="num">—</div><div class="label">已完成</div></div>
+  </div>
+
+  <section class="card">
+    <!-- 快速篩選標籤 -->
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter(this,'')">全部</button>
+      <button class="filter-tab" onclick="setFilter(this,'規劃中')">規劃中</button>
+      <button class="filter-tab" onclick="setFilter(this,'確認中')">確認中</button>
+      <button class="filter-tab" onclick="setFilter(this,'執行中')">執行中</button>
+      <button class="filter-tab" onclick="setFilter(this,'已完成')">已完成</button>
+    </div>
+
+    <!-- 搜尋列 -->
+    <div class="search-row">
+      <input id="kwInput" type="search" placeholder="搜尋場次名稱、地點、講師…" oninput="debouncedSearch()" />
+    </div>
+
+    <div id="sesMsg" class="msg" style="display:none"></div>
+    <div id="sesTable"></div>
+  </section>
+</main>
+
+<!-- ── 新增/編輯場次 Modal ── -->
+<div class="modal-overlay" id="sesModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="modalTitle">新增場次</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editSesId">
+
+      <div class="form-section">
+        <div class="form-section-title">基本資訊</div>
+        <div class="form-row">
+          <div class="field"><label>場次名稱 <span class="req">*</span></label><input id="f_name" placeholder="例如：第一梯次 職業技能培訓"></div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field">
+            <label>場次類型</label>
+            <select id="f_type">
+              <option value="課程">課程</option>
+              <option value="講座">講座</option>
+              <option value="活動">活動</option>
+              <option value="諮詢">諮詢</option>
+              <option value="顧問會議">顧問會議</option>
+              <option value="籌備會議">籌備會議</option>
+              <option value="成果會議">成果會議</option>
+              <option value="驗收會議">驗收會議</option>
+              <option value="訪視行程">訪視行程</option>
+              <option value="場勘行程">場勘行程</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>場次狀態</label>
+            <select id="f_status">
+              <option value="規劃中">規劃中</option>
+              <option value="確認中">確認中</option>
+              <option value="執行中">執行中</option>
+              <option value="已完成">已完成</option>
+              <option value="取消">取消</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">時間與地點</div>
+        <div class="form-row cols3">
+          <div class="field"><label>場次日期</label><input id="f_date" type="date"></div>
+          <div class="field"><label>開始時間</label><input id="f_start" type="time" value="09:00"></div>
+          <div class="field"><label>結束時間</label><input id="f_end" type="time" value="17:00"></div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field"><label>上課地點</label><input id="f_loc" placeholder="例如：彰化縣政府大禮堂"></div>
+          <div class="field"><label>報名截止日</label><input id="f_regEnd" type="date"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">人員</div>
+        <div class="form-row cols3">
+          <div class="field"><label>講師</label><input id="f_lecturer" placeholder="講師姓名"></div>
+          <div class="field"><label>聯絡人</label><input id="f_contact" placeholder="現場聯絡人"></div>
+          <div class="field"><label>工作人員</label><input id="f_staff" placeholder="工作人員（可逗號分隔）"></div>
+        </div>
+        <div class="form-row cols2">
+          <div class="field"><label>預計人數</label><input id="f_planNum" type="number" placeholder="0" min="0"></div>
+          <div class="field"><label>實際人數</label><input id="f_realNum" type="number" placeholder="0" min="0"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">現場需求</div>
+        <div class="check-grid">
+          <label class="check-item"><input type="checkbox" id="c_signin">簽到表</label>
+          <label class="check-item"><input type="checkbox" id="c_signout">簽退表</label>
+          <label class="check-item"><input type="checkbox" id="c_lunch">便當</label>
+          <label class="check-item"><input type="checkbox" id="c_insure">保險</label>
+          <label class="check-item"><input type="checkbox" id="c_survey">問卷</label>
+          <label class="check-item"><input type="checkbox" id="c_photo">成果照片</label>
+          <label class="check-item"><input type="checkbox" id="c_receipt">講師領據</label>
+          <label class="check-item"><input type="checkbox" id="c_worker">工作人員</label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title">備註</div>
+        <div class="field"><textarea id="f_note" placeholder="特殊需求、注意事項…"></textarea></div>
+      </div>
+
+      <div id="modalErr" style="display:none;background:rgba(192,57,43,.08);color:var(--danger);border:1px solid rgba(192,57,43,.2);border-radius:6px;padding:10px 12px;font-size:.83rem;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" id="submitBtn" onclick="submitSession()">新增場次</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認封存 -->
+<div class="modal-overlay" id="confirmModal" style="display:none">
+  <div class="confirm-box">
+    <h3>確認封存場次？</h3>
+    <p id="confirmMsg">封存後不會刪除資料。</p>
+    <div class="btns">
+      <button class="secondary" onclick="closeConfirm()">取消</button>
+      <button id="confirmOkBtn" class="danger" onclick="doArchive()">封存</button>
+    </div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _statusFilter = '';
+var _pendingArchiveId = '';
+var _searchTimer = null;
+var _currentCaseId = '';
+var _currentCaseName = '';
+
+function init() {
+  var profile = safeJSON('govops_profile');
+  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
+  // URL params
+  var sp = new URLSearchParams(location.search);
+  _currentCaseId = sp.get('caseId') || '';
+  _currentCaseName = sp.get('caseName') || '';
+  if (_currentCaseName) {
+    document.getElementById('caseBar').style.display = 'flex';
+    document.getElementById('caseBarName').textContent = decodeURIComponent(_currentCaseName);
+  }
+  loadStats();
+  loadSessions();
+}
+
+function safeJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e) { return null; } }
+
+// ── 統計 ─────────────────────────────────────────────────
+async function loadStats() {
+  var params = { action: 'getSessionStats' };
+  if (_currentCaseId) params.caseId = _currentCaseId;
+  var r = await ERPALIGNED.api(params);
+  if (!r.success) return;
+  var d = r.data || {};
+  var bs = d.byStatus || {};
+  document.getElementById('sesKpis').innerHTML =
+    skpi('全部場次', d.total || 0) +
+    skpi('規劃中', bs['規劃中'] || 0) +
+    skpi('執行中', bs['執行中'] || 0) +
+    skpi('已完成', bs['已完成'] || 0);
+}
+
+function skpi(label, num) {
+  return '<div class="skpi"><div class="num">' + num + '</div><div class="label">' + label + '</div></div>';
+}
+
+// ── 查詢場次 ─────────────────────────────────────────────
+async function loadSessions() {
+  var msg = document.getElementById('sesMsg');
+  var tbl = document.getElementById('sesTable');
+  msg.style.display = ''; msg.textContent = '查詢中…';
+  tbl.innerHTML = '';
+
+  var params = { action: 'getSessions' };
+  if (_currentCaseId) params.caseId = _currentCaseId;
+  var kw = document.getElementById('kwInput').value.trim();
+  if (kw) params.keyword = kw;
+  if (_statusFilter) params.status = _statusFilter;
+
+  var r = await ERPALIGNED.api(params);
+  msg.style.display = 'none';
+  if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ 查詢失敗：' + (r.message || ''); return; }
+
+  var rows = r.data || [];
+  var subtitle = '共 ' + rows.length + ' 筆場次';
+  if (_currentCaseName) subtitle += '（' + decodeURIComponent(_currentCaseName) + '）';
+  document.getElementById('pageSubtitle').textContent = subtitle;
+
+  if (!rows.length) {
+    tbl.innerHTML = '<div class="empty-state" style="text-align:center;padding:50px 20px;color:var(--gray-400)"><div style="font-size:2rem;margin-bottom:8px">📅</div><p>目前沒有場次資料</p></div>';
+    return;
+  }
+  renderTable(rows, tbl);
+}
+
+// ── 渲染 ─────────────────────────────────────────────────
+function renderTable(rows, el) {
+  var html = '<div style="overflow-x:auto"><table class="erp-table" style="min-width:760px">';
+  html += '<thead><tr><th>場次編號</th><th>場次名稱</th><th>類型</th><th>日期</th><th>時間</th><th>地點</th><th>講師</th><th>人數</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+  rows.forEach(function(r) {
+    var id = ERPALIGNED.esc(r['活動ID'] || '');
+    var name = ERPALIGNED.esc(r['活動名稱'] || '—');
+    var type = ERPALIGNED.esc(r['活動類型'] || '');
+    var date = ERPALIGNED.esc(shortDate(r['活動日期']));
+    var time = [r['開始時間'], r['結束時間']].filter(Boolean).join(' ~ ');
+    var loc = ERPALIGNED.esc(r['活動地點'] || '—');
+    var lec = ERPALIGNED.esc(r['講師'] || '—');
+    var num = r['預計人數'] ? r['預計人數'] + '人' : '—';
+    var status = r['狀態'] || '';
+    html += '<tr>';
+    html += '<td style="font-size:.72rem;color:var(--gray-400);font-family:monospace">' + id + '</td>';
+    html += '<td><strong>' + name + '</strong></td>';
+    html += '<td><span style="font-size:.75rem;background:var(--gray-100);padding:2px 7px;border-radius:4px">' + type + '</span></td>';
+    html += '<td style="white-space:nowrap">' + date + '</td>';
+    html += '<td style="font-size:.8rem;white-space:nowrap;color:var(--gray-500)">' + ERPALIGNED.esc(time) + '</td>';
+    html += '<td>' + loc + '</td>';
+    html += '<td>' + lec + '</td>';
+    html += '<td style="text-align:center">' + num + '</td>';
+    html += '<td>' + sesBadge(status) + '</td>';
+    html += '<td><div class="row-actions">';
+    html += '<button class="row-btn" onclick="openEditModal(\'' + id + '\')">編輯</button>';
+    html += '<button class="row-btn danger" onclick="confirmArchive(\'' + id + '\',\'' + name + '\')">封存</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function sesBadge(s) {
+  return '<span class="ses-badge ss-' + ERPALIGNED.esc(s) + '">' + ERPALIGNED.esc(s || '—') + '</span>';
+}
+
+function shortDate(v) {
+  if (!v) return '—';
+  return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/, '$1/$2/$3');
+}
+
+// ── 篩選 ─────────────────────────────────────────────────
+function setFilter(btn, status) {
+  _statusFilter = status;
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  loadSessions();
+}
+
+function debouncedSearch() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(loadSessions, 350);
+}
+
+// ── Modal ─────────────────────────────────────────────────
+function openCreateModal() {
+  clearForm();
+  document.getElementById('editSesId').value = '';
+  document.getElementById('modalTitle').textContent = '新增場次';
+  document.getElementById('submitBtn').textContent = '新增場次';
+  document.getElementById('sesModal').style.display = 'flex';
+}
+
+async function openEditModal(sesId) {
+  document.getElementById('modalTitle').textContent = '編輯場次';
+  document.getElementById('submitBtn').textContent = '儲存變更';
+  document.getElementById('editSesId').value = sesId;
+  document.getElementById('sesModal').style.display = 'flex';
+  var r = await ERPALIGNED.api({ action: 'getSessions', keyword: sesId });
+  var rows = (r.data || []).filter(function(x){ return x['活動ID'] === sesId; });
+  if (!rows.length) { showErr('找不到場次資料'); return; }
+  fillForm(rows[0]);
+}
+
+function fillForm(row) {
+  document.getElementById('f_name').value = row['活動名稱'] || '';
+  document.getElementById('f_type').value = row['活動類型'] || '課程';
+  document.getElementById('f_status').value = row['狀態'] || '規劃中';
+  document.getElementById('f_date').value = isoDate(row['活動日期']);
+  document.getElementById('f_start').value = row['開始時間'] || '';
+  document.getElementById('f_end').value = row['結束時間'] || '';
+  document.getElementById('f_loc').value = row['活動地點'] || '';
+  document.getElementById('f_regEnd').value = isoDate(row['報名截止日']);
+  document.getElementById('f_lecturer').value = row['講師'] || '';
+  document.getElementById('f_contact').value = row['聯絡人'] || '';
+  document.getElementById('f_staff').value = row['工作人員'] || '';
+  document.getElementById('f_planNum').value = row['預計人數'] || '';
+  document.getElementById('f_realNum').value = row['實際人數'] || '';
+  document.getElementById('f_note').value = row['備註'] || '';
+  var ck = { c_signin:'是否需簽到表', c_signout:'是否需簽退表', c_lunch:'是否需便當', c_insure:'是否需保險', c_survey:'是否需問卷', c_photo:'是否需成果照片', c_receipt:'是否需講師領據', c_worker:'是否需工作人員' };
+  Object.keys(ck).forEach(function(id){ document.getElementById(id).checked = String(row[ck[id]]).toLowerCase() === '是'; });
+}
+
+function clearForm() {
+  ['f_name','f_loc','f_regEnd','f_lecturer','f_contact','f_staff','f_note'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('f_type').value = '課程';
+  document.getElementById('f_status').value = '規劃中';
+  document.getElementById('f_date').value = '';
+  document.getElementById('f_start').value = '09:00';
+  document.getElementById('f_end').value = '17:00';
+  document.getElementById('f_planNum').value = '';
+  document.getElementById('f_realNum').value = '';
+  ['c_signin','c_signout','c_lunch','c_insure','c_survey','c_photo','c_receipt','c_worker'].forEach(function(id){ document.getElementById(id).checked = false; });
+  hideErr();
+}
+
+function isoDate(v) {
+  if (!v) return '';
+  var m = String(v).match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  return m ? m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0') : '';
+}
+
+function ckVal(id) { return document.getElementById(id).checked ? '是' : '否'; }
+
+// ── Submit ────────────────────────────────────────────────
+async function submitSession() {
+  hideErr();
+  var name = document.getElementById('f_name').value.trim();
+  if (!name) { showErr('場次名稱為必填'); return; }
+  var sesId = document.getElementById('editSesId').value;
+  var isEdit = !!sesId;
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '處理中…';
+
+  var params = {
+    action: isEdit ? 'updateSession' : 'createSession',
+    '場次名稱': name,
+    '場次類型': document.getElementById('f_type').value,
+    '場次狀態': document.getElementById('f_status').value,
+    '場次日期': document.getElementById('f_date').value,
+    '開始時間': document.getElementById('f_start').value,
+    '結束時間': document.getElementById('f_end').value,
+    '活動地點': document.getElementById('f_loc').value,
+    '報名截止日': document.getElementById('f_regEnd').value,
+    '講師': document.getElementById('f_lecturer').value,
+    '聯絡人': document.getElementById('f_contact').value,
+    '工作人員': document.getElementById('f_staff').value,
+    '預計人數': document.getElementById('f_planNum').value,
+    '實際人數': document.getElementById('f_realNum').value,
+    '備註': document.getElementById('f_note').value,
+    '是否需簽到表': ckVal('c_signin'),
+    '是否需簽退表': ckVal('c_signout'),
+    '是否需便當': ckVal('c_lunch'),
+    '是否需保險': ckVal('c_insure'),
+    '是否需問卷': ckVal('c_survey'),
+    '是否需成果照片': ckVal('c_photo'),
+    '是否需講師領據': ckVal('c_receipt'),
+    '是否需工作人員': ckVal('c_worker')
+  };
+
+  if (isEdit) {
+    params.sessionId = sesId;
+  } else {
+    params.caseId = _currentCaseId || '';
+  }
+
+  var r = await ERPALIGNED.api(params);
+  btn.disabled = false;
+  btn.textContent = isEdit ? '儲存變更' : '新增場次';
+  if (!r.success) { showErr(r.message || '操作失敗'); return; }
+  closeModal();
+  loadStats();
+  loadSessions();
+}
+
+// ── Archive ───────────────────────────────────────────────
+function confirmArchive(id, name) {
+  _pendingArchiveId = id;
+  document.getElementById('confirmMsg').textContent = '「' + name + '」封存後仍可查詢。';
+  document.getElementById('confirmModal').style.display = 'flex';
+}
+
+async function doArchive() {
+  document.getElementById('confirmOkBtn').disabled = true;
+  var r = await ERPALIGNED.api({ action: 'archiveSession', sessionId: _pendingArchiveId });
+  document.getElementById('confirmOkBtn').disabled = false;
+  closeConfirm();
+  if (r.success) { loadStats(); loadSessions(); }
+  else alert('封存失敗：' + (r.message || ''));
+}
+
+// ── 輔助 ─────────────────────────────────────────────────
+function closeModal() { document.getElementById('sesModal').style.display = 'none'; }
+function closeConfirm() { document.getElementById('confirmModal').style.display = 'none'; _pendingArchiveId = ''; }
+function closeBg(e) { if (e.target === document.getElementById('sesModal')) closeModal(); }
+function showErr(msg) { var el = document.getElementById('modalErr'); el.textContent = msg; el.style.display = ''; }
+function hideErr() { document.getElementById('modalErr').style.display = 'none'; }
+
+init();
+</script>
+</body>
+</html>
