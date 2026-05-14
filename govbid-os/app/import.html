@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜資料匯入與同步</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.import-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:22px}
+.import-card{background:var(--white);border:1.5px solid var(--gray-200);border-radius:12px;padding:18px 20px;cursor:pointer;transition:.15s}
+.import-card:hover{border-color:var(--navy);box-shadow:0 2px 10px rgba(13,35,64,.08)}
+.import-card.active{border-color:var(--navy);background:var(--gold-pale)}
+.import-card .ic-ico{font-size:1.6rem;margin-bottom:8px}
+.import-card .ic-title{font-size:.92rem;font-weight:700;color:var(--navy);margin-bottom:3px}
+.import-card .ic-desc{font-size:.77rem;color:var(--gray-500);line-height:1.5}
+.import-work{background:var(--white);border:1.5px solid var(--gray-200);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+.import-work h3{font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:14px}
+.step-hint{font-size:.8rem;color:var(--gray-400);background:var(--offwhite);border-radius:6px;padding:8px 12px;margin-bottom:12px;line-height:1.6}
+.erp-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.erp-table th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-size:.76rem}
+.erp-table td{padding:8px 10px;border-bottom:1px solid var(--gray-100)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:.72rem;font-weight:700}
+.fi{margin-bottom:10px}.fi label{display:block;font-size:.76rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:var(--navy-mid)}
+.fi textarea{min-height:100px;resize:vertical;font-family:monospace;font-size:.82rem}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">資料匯入與同步</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title">
+    <h1>資料匯入與同步中心</h1>
+    <p style="color:var(--gray-500);font-size:.84rem;margin:0">Google 表單同步、Excel/CSV 匯入、報名/人力/問卷等多類型資料</p>
+  </div>
+
+  <!-- 選擇匯入類型 -->
+  <h3 style="font-size:.86rem;font-weight:700;color:var(--navy-mid);margin-bottom:10px">選擇匯入類型</h3>
+  <div class="import-grid">
+    <div class="import-card" id="ic_reg" onclick="selectType('reg')">
+      <div class="ic-ico">📝</div>
+      <div class="ic-title">報名資料匯入</div>
+      <div class="ic-desc">Google 表單同步 / Excel 匯入學員報名名單，匯入後進入資格審查流程</div>
+    </div>
+    <div class="import-card" id="ic_staff" onclick="selectType('staff')">
+      <div class="ic-ico">👷</div>
+      <div class="ic-title">人力資料匯入</div>
+      <div class="ic-desc">匯入工作人員、工讀生、志工應徵資料，匯入後進入人力審查流程</div>
+    </div>
+    <div class="import-card" id="ic_survey" onclick="selectType('survey')">
+      <div class="ic-ico">📊</div>
+      <div class="ic-title">問卷統計匯入</div>
+      <div class="ic-desc">紙本問卷統計 Excel 匯入 / Google 表單問卷同步，支援紙本與線上合併統計</div>
+    </div>
+    <div class="import-card" id="ic_finance" onclick="selectType('finance')">
+      <div class="ic-ico">💰</div>
+      <div class="ic-title">財務資料匯入</div>
+      <div class="ic-desc">匯入財務收支資料，自動分類進入財務收支紀錄</div>
+    </div>
+  </div>
+
+  <!-- 工作區 -->
+  <div id="importWork" style="display:none">
+    <div class="import-work">
+      <h3 id="workTitle">報名資料匯入</h3>
+      <div class="step-hint" id="workHint">— 選擇匯入類型後顯示操作說明 —</div>
+
+      <!-- 案件場次選擇 -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+        <select id="caseSelect" onchange="loadSessions()" style="padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;min-width:200px;font-family:var(--font)">
+          <option value="">— 選擇案件 —</option>
+        </select>
+        <select id="sessionSelect" style="padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;min-width:170px;font-family:var(--font)">
+          <option value="">— 選擇場次（選填）—</option>
+        </select>
+      </div>
+
+      <!-- 分源類型選擇 -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap" id="sourceTypeBar">
+        <button class="secondary" id="st_manual" onclick="setSource('manual')" style="font-size:.8rem">手動輸入</button>
+        <button class="secondary" id="st_excel" onclick="setSource('excel')" style="font-size:.8rem">Excel/CSV 貼上</button>
+        <button class="secondary" id="st_gform" onclick="setSource('gform')" style="font-size:.8rem">Google 表單同步</button>
+      </div>
+
+      <!-- 手動輸入 -->
+      <div id="src_manual" style="display:none">
+        <div id="manualFields"></div>
+        <button class="gold" onclick="doManualImport()">新增這筆資料</button>
+      </div>
+
+      <!-- Excel 貼上 -->
+      <div id="src_excel" style="display:none">
+        <div class="step-hint">複製 Excel 的資料（含標題列），直接貼到下方文字框。系統會自動解析欄位。</div>
+        <div class="fi"><label>貼上 Excel 資料</label>
+          <textarea id="excelData" placeholder="姓名&#9;電話&#9;Email&#9;服務單位&#9;身分別&#10;王小明&#9;0912345678&#9;abc@mail.com&#9;彰化縣政府&#9;在職&#10;…"></textarea>
+        </div>
+        <button class="gold" onclick="doExcelImport()">解析並預覽</button>
+        <div id="excelPreview" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Google 表單同步 -->
+      <div id="src_gform" style="display:none">
+        <div class="step-hint">
+          1. 開啟 Google 表單 → 回覆 → 試算表圖示 → 複製試算表 ID（網址中 /d/XXX/edit 的 XXX 部分）<br>
+          2. 填入試算表 ID 和工作表名稱（預設為「表單回覆 1」）<br>
+          3. 點擊「同步資料」，系統會讀取最新回覆並匯入
+        </div>
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="fi"><label>試算表 ID</label><input id="gSheetId" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"></div>
+          <div class="fi"><label>工作表名稱</label><input id="gSheetTab" value="表單回覆 1"></div>
+        </div>
+        <div class="fi"><label>欄位對應（系統欄位 = 表單欄位）</label>
+          <textarea id="gFieldMap" style="min-height:80px;font-family:monospace;font-size:.8rem" placeholder="姓名 = 請問您的姓名&#10;電話 = 聯絡電話&#10;Email = 電子郵件&#10;服務單位 = 任職單位&#10;身分別 = 身分類別"></textarea>
+        </div>
+        <button class="gold" onclick="doGFormSync()">同步 Google 表單資料</button>
+      </div>
+
+      <div id="importResult" style="margin-top:12px"></div>
+    </div>
+
+    <!-- 匯入批次紀錄 -->
+    <div class="import-work">
+      <h3>匯入批次紀錄</h3>
+      <div class="table-wrap">
+        <table class="erp-table">
+          <thead><tr><th>批次ID</th><th>匯入類型</th><th>匯入時間</th><th>資料筆數</th><th>成功</th><th>失敗</th><th>重複</th><th>狀態</th></tr></thead>
+          <tbody id="batchBody"><tr><td colspan="8" style="text-align:center;padding:16px;color:var(--gray-400)">載入中…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+var _type='',_source='manual',_caseId='',_sessionId='';
+var typeConfig={
+  reg:{title:'報名資料匯入',hint:'匯入後進入報名資料庫，需再進行資格審查才能錄取。支援手動新增、Excel貼上、Google表單同步。',action:'createRegistration',
+    fields:[['name','姓名','text'],['phone','電話','text'],['email','Email','email'],['unit','服務單位','text'],['role','身分別','text'],['meal','用餐習慣','text'],['remark','備註','text']]},
+  staff:{title:'人力資料匯入',hint:'匯入後進入支援人員名單，需再進行審查才能錄取派工。支援手動新增、Excel貼上。',action:'createStaff',
+    fields:[['name','姓名','text'],['phone','電話','text'],['email','Email','email'],['staffType','身分別','text'],['bank','銀行','text'],['account','帳號','text'],['accountName','戶名','text'],['remark','備註','text']]},
+  survey:{title:'問卷統計匯入',hint:'支援紙本問卷統計 Excel 匯入，或 Google 表單回覆同步。兩種來源可合併統計。',action:null,
+    fields:[]},
+  finance:{title:'財務資料匯入',hint:'匯入財務收支資料，對應到案件財務收支紀錄。',action:'createFinanceRecord',
+    fields:[['type','類型(收入/支出)','text'],['subject','科目','text'],['target','對象名稱','text'],['amount','金額','number'],['method','付款方式','text'],['remark','備註','text']]}
+};
+function init(){
+  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+  loadCasesDropdown();loadBatches();
+}
+async function loadCasesDropdown(){
+  var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
+  if(!r.success)return;
+  (r.data&&r.data.rows||[]).forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+}
+async function loadSessions(){
+  _caseId=document.getElementById('caseSelect').value;var sel=document.getElementById('sessionSelect');
+  sel.innerHTML='<option value="">— 選擇場次（選填）—</option>';if(!_caseId)return;
+  var r=await ERPALIGNED.api({action:'getSessions',caseId:_caseId});
+  if(r.success)(r.data&&r.data.rows||[]).forEach(function(s){var o=document.createElement('option');o.value=s['活動ID']||'';o.textContent=s['活動名稱']||'';sel.appendChild(o);});
+}
+async function loadBatches(){
+  var r=await ERPALIGNED.api({action:'getImportBatches'});
+  var tbody=document.getElementById('batchBody');
+  if(!r.success){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray-400)">載入失敗</td></tr>';return;}
+  var rows=r.data&&r.data.rows||[];
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:16px;color:var(--gray-400)">尚無匯入紀錄</td></tr>';return;}
+  tbody.innerHTML=rows.slice(0,20).map(function(r){
+    return '<tr><td style="font-size:.72rem;font-family:monospace">'+esc(r['批次ID']||'')+'</td>'
+      +'<td>'+esc(r['匯入類型']||'')+'</td><td style="font-size:.75rem">'+esc(r['匯入時間']||'')+'</td>'
+      +'<td>'+esc(r['資料筆數']||0)+'</td><td style="color:#166534">'+esc(r['成功筆數']||0)+'</td>'
+      +'<td style="color:var(--danger)">'+esc(r['失敗筆數']||0)+'</td><td>'+esc(r['重複筆數']||0)+'</td>'
+      +'<td><span class="badge" style="background:var(--offwhite);color:var(--navy-mid)">'+esc(r['匯入狀態']||'')+'</span></td></tr>';
+  }).join('');
+}
+function selectType(t){
+  _type=t;
+  document.querySelectorAll('.import-card').forEach(function(c){c.classList.remove('active');});
+  document.getElementById('ic_'+t).classList.add('active');
+  var cfg=typeConfig[t]||{};
+  document.getElementById('workTitle').textContent=cfg.title||'';
+  document.getElementById('workHint').textContent=cfg.hint||'';
+  document.getElementById('importWork').style.display='';
+  setSource('manual');
+  buildManualFields(cfg.fields||[]);
+}
+function setSource(src){
+  _source=src;
+  ['manual','excel','gform'].forEach(function(s){document.getElementById('src_'+s).style.display=s===src?'':'none';});
+  ['st_manual','st_excel','st_gform'].forEach(function(s){
+    var el=document.getElementById(s);
+    if(el)el.style.background=s==='st_'+src?'var(--navy)':'';
+    if(el)el.style.color=s==='st_'+src?'#fff':'';
+  });
+}
+function buildManualFields(fields){
+  var el=document.getElementById('manualFields');
+  var html='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px">';
+  fields.forEach(function(f){
+    html+='<div class="fi"><label>'+esc(f[1])+'</label><input id="mf_'+f[0]+'" type="'+f[2]+'" placeholder="'+esc(f[1])+'"></div>';
+  });
+  html+='</div>';el.innerHTML=html;
+}
+async function doManualImport(){
+  _caseId=document.getElementById('caseSelect').value;_sessionId=document.getElementById('sessionSelect').value;
+  if(!_caseId){alert('請選擇案件');return;}
+  var cfg=typeConfig[_type]||{};if(!cfg.action){alert('此類型尚不支援手動新增');return;}
+  var p={action:cfg.action,caseId:_caseId,sessionId:_sessionId};
+  cfg.fields.forEach(function(f){p[f[0]]=document.getElementById('mf_'+f[0])&&document.getElementById('mf_'+f[0]).value||'';});
+  var r=await ERPALIGNED.api(p);
+  if(r.success){
+    document.getElementById('importResult').innerHTML='<div style="color:#166534;font-size:.84rem">✅ 已新增 1 筆資料</div>';
+    await ERPALIGNED.api({action:'createImportBatch',caseId:_caseId,importType:typeConfig[_type].title,source:'手動輸入',total:1,success:1,failed:0,duplicate:0});
+    loadBatches();
+    cfg.fields.forEach(function(f){var el=document.getElementById('mf_'+f[0]);if(el)el.value='';});
+  }else document.getElementById('importResult').innerHTML='<div style="color:var(--danger);font-size:.84rem">❌ 新增失敗：'+esc(r.message||r.error)+'</div>';
+}
+async function doExcelImport(){
+  _caseId=document.getElementById('caseSelect').value;_sessionId=document.getElementById('sessionSelect').value;
+  if(!_caseId){alert('請選擇案件');return;}
+  var raw=document.getElementById('excelData').value.trim();if(!raw){alert('請先貼上 Excel 資料');return;}
+  var lines=raw.split('\n');if(lines.length<2){alert('資料至少需要標題列+1筆資料');return;}
+  var headers=lines[0].split('\t').map(function(h){return h.trim();});
+  var dataRows=lines.slice(1).map(function(line){
+    var cols=line.split('\t');var obj={};
+    headers.forEach(function(h,i){obj[h]=cols[i]&&cols[i].trim()||'';});return obj;
+  }).filter(function(r){return Object.values(r).some(Boolean);});
+  // Preview
+  document.getElementById('excelPreview').innerHTML='<div style="font-size:.82rem;color:var(--navy-mid);margin-bottom:8px">解析到 '+dataRows.length+' 筆資料，標題欄：'+headers.join('、')+'</div>'
+    +'<div style="display:flex;gap:8px"><button class="gold" onclick="confirmExcelImport('+JSON.stringify(dataRows).replace(/</g,'&lt;')+')" style="display:none" id="confirmBtn"></button></div>';
+  window._pendingExcel=dataRows;
+  document.getElementById('excelPreview').innerHTML+='<button class="gold" onclick="confirmExcelImport(window._pendingExcel)">確認匯入 '+dataRows.length+' 筆</button>';
+}
+async function confirmExcelImport(rows){
+  var cfg=typeConfig[_type]||{};if(!cfg.action){alert('此類型尚不支援匯入');return;}
+  var ok=0,fail=0;
+  for(var i=0;i<rows.length;i++){
+    var row=rows[i];var p={action:cfg.action,caseId:_caseId,sessionId:_sessionId};
+    // Map Excel columns to action params (best-effort)
+    p.name=row['姓名']||row['name']||'';p.phone=row['電話']||row['phone']||'';p.email=row['Email']||row['email']||'';
+    p.staffType=row['身分別']||row['role']||'';p.unit=row['服務單位']||row['unit']||'';
+    if(!p.name)continue;
+    var r=await ERPALIGNED.api(p);if(r.success)ok++;else fail++;
+  }
+  await ERPALIGNED.api({action:'createImportBatch',caseId:_caseId,importType:cfg.title,source:'Excel貼上',total:rows.length,success:ok,failed:fail,duplicate:0});
+  document.getElementById('importResult').innerHTML='<div style="font-size:.84rem;color:#166534">✅ 匯入完成：成功 '+ok+' 筆'+(fail?' ／ 失敗 '+fail+' 筆':'')+'</div>';
+  loadBatches();
+}
+async function doGFormSync(){
+  alert('Google 表單同步需要後端 OAuth 授權。\n\n目前流程：\n1. 手動到 Google 試算表複製資料\n2. 使用「Excel/CSV 貼上」功能匯入\n\n後續版本將支援直接 API 同步。');
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
