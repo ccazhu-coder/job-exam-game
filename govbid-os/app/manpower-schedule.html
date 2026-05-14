@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜人力排班與工時</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.filter-row select{padding:8px 10px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.84rem;font-family:var(--font)}
+.filter-row select:focus{outline:none;border-color:var(--navy-mid)}
+.erp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.erp-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-size:.78rem;font-weight:600;white-space:nowrap}
+.erp-table td{padding:9px 12px;border-bottom:1px solid var(--gray-100);vertical-align:middle}
+.erp-table tr:hover td{background:var(--offwhite)}
+.table-wrap{overflow-x:auto}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.s-待確認{background:#fef3c7;color:#92400e}
+.s-已確認{background:#dcfce7;color:#166534}
+.s-缺席{background:#fee2e2;color:#991b1b}
+.row-btn{padding:3px 9px;border:1.5px solid var(--gray-200);border-radius:4px;font-size:.73rem;background:var(--white);cursor:pointer;color:var(--navy-mid);transition:.12s}
+.row-btn:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.row-btn.ok:hover{background:#16a34a;border-color:#16a34a}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kn{background:var(--white);border:1.5px solid var(--gray-100);border-radius:8px;padding:10px 12px}
+.kn .v{font-size:1.4rem;font-weight:800;color:var(--navy)}
+.kn .l{font-size:.72rem;color:var(--gray-500);margin-top:2px}
+.kn.warn .v{color:var(--gold)}.kn.ok .v{color:#16a34a}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--white);border-radius:14px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-header{padding:18px 22px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1.5px solid var(--gray-100);position:sticky;top:0;background:var(--white);z-index:1}
+.modal-header h2{font-size:.95rem;font-weight:700;color:var(--navy);margin:0}
+.modal-close{background:none;border:none;font-size:1.2rem;color:var(--gray-400);cursor:pointer;padding:4px 7px;border-radius:4px}
+.modal-close:hover{background:var(--gray-100)}
+.modal-body{padding:18px 22px}
+.modal-footer{padding:10px 22px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--gray-100)}
+.fr{display:grid;gap:9px;margin-bottom:9px}.fr.c2{grid-template-columns:1fr 1fr}.fr.c3{grid-template-columns:1fr 1fr 1fr}
+.fi label{display:block;font-size:.75rem;font-weight:600;color:var(--navy-mid);margin-bottom:3px}
+.fi input,.fi select{width:100%;padding:8px 11px;border:1.5px solid var(--gray-200);border-radius:var(--radius);font-size:.86rem;font-family:var(--font);box-sizing:border-box}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--navy-mid)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS</div>
+  <div class="sub">人力排班與工時</div>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div><h1>人力排班與工時</h1><p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">記錄工作人員工讀生實際出勤工時，確認後作為付款依據</p></div>
+    <div class="btns"><button class="secondary" onclick="location.href='./manpower.html'">← 人力招募管理</button>
+      <button class="gold" onclick="openModal()">＋ 新增工時</button></div>
+  </div>
+  <div class="filter-row">
+    <select id="caseSelect" onchange="onCaseChange()" style="min-width:200px"><option value="">載入案件…</option></select>
+    <select id="needSelect" onchange="loadHours()" style="min-width:180px"><option value="">全部需求</option></select>
+    <select id="statusFilter" onchange="renderTable()">
+      <option value="">全部狀態</option><option>待確認</option><option>已確認</option><option>缺席</option>
+    </select>
+    <button class="secondary" onclick="batchConfirm()">批次確認工時</button>
+  </div>
+  <div class="kpi-row">
+    <div class="kn"><div class="v" id="k_total">0</div><div class="l">工時紀錄總筆</div></div>
+    <div class="kn warn"><div class="v" id="k_pending">0</div><div class="l">待確認</div></div>
+    <div class="kn ok"><div class="v" id="k_confirmed">0</div><div class="l">已確認</div></div>
+    <div class="kn ok"><div class="v" id="k_hours">0</div><div class="l">總工時 (h)</div></div>
+  </div>
+  <div class="table-wrap">
+    <table class="erp-table" style="min-width:780px">
+      <thead><tr><th><input type="checkbox" id="chkAll" onchange="toggleAll(this)"></th>
+        <th>姓名</th><th>對應需求</th><th>工作日期</th><th>開始</th><th>結束</th><th>工時(h)</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead>
+      <tbody id="tableBody"><tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">請先選擇案件</td></tr></tbody>
+    </table>
+  </div>
+</main>
+<div class="modal-overlay" id="hourModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="mTitle">新增工時</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="h_id">
+      <div class="fr c2">
+        <div class="fi"><label>人員</label><select id="h_staff"><option value="">— 請選擇 —</option></select></div>
+        <div class="fi"><label>對應需求</label><select id="h_need"><option value="">— 請選擇 —</option></select></div>
+      </div>
+      <div class="fr c3">
+        <div class="fi"><label>工作日期</label><input id="h_date" type="date"></div>
+        <div class="fi"><label>開始時間</label><input id="h_start" type="time"></div>
+        <div class="fi"><label>結束時間</label><input id="h_end" type="time" onchange="calcH()"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>工時 (h)</label><input id="h_hours" type="number" step="0.5" placeholder="自動計算"></div>
+        <div class="fi"><label>狀態</label><select id="h_status"><option>待確認</option><option>已確認</option><option>缺席</option></select></div>
+      </div>
+      <div class="fr"><div class="fi"><label>備註</label><input id="h_remark"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">取消</button>
+      <button class="gold" onclick="saveHour()">儲存</button>
+    </div>
+  </div>
+</div>
+<script src="./erp-aligned-core.js"></script>
+<script>
+function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function esc(v){return ERPALIGNED.esc(v);}
+function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
+function fmtTime(v){if(!v)return'';var m=String(v).match(/T(\d{2}):(\d{2})/);if(m)return m[1]+':'+m[2];if(/^\d{1,2}:\d{2}/.test(String(v)))return String(v).substring(0,5);return'';}
+var _caseId='',_hours=[],_needs=[],_staff=[],_selected=new Set();
+function init(){
+  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+  var sp=new URLSearchParams(location.search);loadCases(sp.get('caseId')||'');
+}
+async function loadCases(pre){
+  var r=await ERPALIGNED.api({action:'getCases'});var sel=document.getElementById('caseSelect');
+  if(!r.success)return;var cases=r.data&&r.data.rows||[];
+  sel.innerHTML='<option value="">— 請選擇案件 —</option>';
+  cases.forEach(function(c){var o=document.createElement('option');o.value=c['專案ID']||'';o.textContent=c['專案計畫名稱']||'';sel.appendChild(o);});
+  if(pre){sel.value=pre;await onCaseChange();}
+}
+async function onCaseChange(){
+  _caseId=document.getElementById('caseSelect').value;if(!_caseId)return;
+  var nr=await ERPALIGNED.api({action:'getManpowerNeeds',caseId:_caseId});
+  var sr=await ERPALIGNED.api({action:'getStaffList',caseId:_caseId});
+  _needs=nr.success&&nr.data&&nr.data.rows||[];
+  _staff=sr.success&&sr.data&&sr.data.rows||[];
+  var ns=document.getElementById('needSelect');ns.innerHTML='<option value="">全部需求</option>';
+  _needs.forEach(function(n){var o=document.createElement('option');o.value=n['需求ID']||'';o.textContent=n['需求名稱']||'';ns.appendChild(o);});
+  refreshModalDropdowns();await loadHours();
+}
+async function loadHours(){
+  if(!_caseId)return;var nf=document.getElementById('needSelect').value;
+  var p={action:'getWorkHours'};if(nf)p.needId=nf;else if(_caseId)p.caseId=_caseId;
+  var r=await ERPALIGNED.api(p);if(!r.success)return;
+  _hours=r.data&&r.data.rows||[];renderTable();
+  document.getElementById('pageSubtitle').textContent='共 '+_hours.length+' 筆工時紀錄';
+}
+function renderTable(){
+  var sf=document.getElementById('statusFilter').value;
+  var rows=sf?_hours.filter(function(r){return r['工作狀態']===sf;}):_hours;
+  var total=_hours.length,pending=0,confirmed=0,totalHours=0;
+  _hours.forEach(function(r){if(r['工作狀態']==='待確認')pending++;else if(r['工作狀態']==='已確認')confirmed++;totalHours+=parseFloat(r['工時'])||0;});
+  document.getElementById('k_total').textContent=total;document.getElementById('k_pending').textContent=pending;
+  document.getElementById('k_confirmed').textContent=confirmed;document.getElementById('k_hours').textContent=Math.round(totalHours*10)/10;
+  var tbody=document.getElementById('tableBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">無工時資料</td></tr>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var hid=esc(r['工時ID']||'');var sc='s-'+(r['工作狀態']||'待確認');
+    var needName=(_needs.find(function(n){return n['需求ID']===r['需求ID'];})||{})['需求名稱']||r['需求ID']||'—';
+    var chk=_selected.has(r['工時ID'])?'checked':'';
+    html+='<tr><td><input type="checkbox" '+chk+' onchange="toggleChk(\''+hid+'\',this)"></td>'
+      +'<td><strong>'+esc(r['姓名']||'—')+'</strong></td>'
+      +'<td style="font-size:.77rem;color:var(--gray-500)">'+esc(needName)+'</td>'
+      +'<td>'+shortDate(r['工作日期'])+'</td>'
+      +'<td>'+fmtTime(r['開始時間'])+'</td><td>'+fmtTime(r['結束時間'])+'</td>'
+      +'<td style="font-weight:700">'+(r['工時']||'—')+'</td>'
+      +'<td><span class="badge '+sc+'">'+(r['工作狀態']||'—')+'</span></td>'
+      +'<td style="font-size:.76rem">'+esc(r['備註']||'')+'</td>'
+      +'<td style="display:flex;gap:3px">'
+      +'<button class="row-btn" onclick="openModal(\''+hid+'\')">編輯</button>'
+      +(r['工作狀態']==='待確認'?'<button class="row-btn ok" onclick="confirm_(\''+hid+'\')">確認</button>':'')
+      +'</td></tr>';
+  });
+  tbody.innerHTML=html;
+}
+function toggleChk(id,el){if(el.checked)_selected.add(id);else _selected.delete(id);}
+function toggleAll(el){_hours.forEach(function(r){if(el.checked)_selected.add(r['工時ID']);else _selected.delete(r['工時ID']);});renderTable();}
+async function batchConfirm(){
+  if(!_selected.size){alert('請先勾選工時紀錄');return;}
+  var ids=[..._selected];var ok=0;
+  for(var i=0;i<ids.length;i++){var r=await ERPALIGNED.api({action:'updateWorkHour',hourId:ids[i],workStatus:'已確認'});if(r.success)ok++;}
+  _selected.clear();alert('已確認 '+ok+' 筆');loadHours();
+}
+async function confirm_(hid){var r=await ERPALIGNED.api({action:'updateWorkHour',hourId:hid,workStatus:'已確認'});if(r.success)loadHours();}
+function refreshModalDropdowns(){
+  var ss=document.getElementById('h_staff');ss.innerHTML='<option value="">— 請選擇 —</option>';
+  _staff.filter(function(s){return s['審核狀態']==='已錄取';}).forEach(function(s){var o=document.createElement('option');o.value=s['人員ID']||'';o.textContent=s['姓名']||'';ss.appendChild(o);});
+  var ns2=document.getElementById('h_need');ns2.innerHTML='<option value="">— 請選擇 —</option>';
+  _needs.forEach(function(n){var o=document.createElement('option');o.value=n['需求ID']||'';o.textContent=n['需求名稱']||'';ns2.appendChild(o);});
+}
+function openModal(hid){
+  document.getElementById('mTitle').textContent=hid?'編輯工時':'新增工時';
+  ['h_id','h_remark'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('h_hours').value='';document.getElementById('h_date').value=new Date().toISOString().substring(0,10);
+  document.getElementById('h_start').value=document.getElementById('h_end').value='';
+  document.getElementById('h_status').value='待確認';
+  if(hid){var r=_hours.find(function(h){return h['工時ID']===hid;});if(r){
+    document.getElementById('h_id').value=r['工時ID']||'';
+    document.getElementById('h_staff').value=r['人員ID']||'';document.getElementById('h_need').value=r['需求ID']||'';
+    document.getElementById('h_date').value=String(r['工作日期']||'').substring(0,10);
+    document.getElementById('h_start').value=fmtTime(r['開始時間']);document.getElementById('h_end').value=fmtTime(r['結束時間']);
+    document.getElementById('h_hours').value=r['工時']||'';document.getElementById('h_status').value=r['工作狀態']||'待確認';
+    document.getElementById('h_remark').value=r['備註']||'';
+  }}
+  document.getElementById('hourModal').style.display='flex';
+}
+function closeModal(){document.getElementById('hourModal').style.display='none';}
+function calcH(){
+  var s=document.getElementById('h_start').value,e=document.getElementById('h_end').value;if(!s||!e)return;
+  var sh=parseInt(s.split(':')[0]),sm=parseInt(s.split(':')[1]),eh=parseInt(e.split(':')[0]),em=parseInt(e.split(':')[1]);
+  var d=Math.round(((eh*60+em)-(sh*60+sm))/60*10)/10;if(d>0)document.getElementById('h_hours').value=d;
+}
+async function saveHour(){
+  var sid=document.getElementById('h_staff').value;if(!sid){alert('請選擇人員');return;}
+  var hid=document.getElementById('h_id').value;
+  var p={action:hid?'updateWorkHour':'createWorkHour',staffId:sid,needId:document.getElementById('h_need').value,
+    workDate:document.getElementById('h_date').value,startTime:document.getElementById('h_start').value,
+    endTime:document.getElementById('h_end').value,hours:document.getElementById('h_hours').value,
+    workStatus:document.getElementById('h_status').value,remark:document.getElementById('h_remark').value};
+  if(hid)p.hourId=hid;
+  var r=await ERPALIGNED.api(p);if(r.success){closeModal();loadHours();}else alert('儲存失敗：'+r.message);
+}
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
