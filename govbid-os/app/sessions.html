@@ -348,6 +348,7 @@ function renderTable(rows, el) {
     html += '<td>' + sesBadge(status) + '</td>';
     html += '<td><div class="row-actions">';
     html += '<button class="row-btn" onclick="openEditModal(\'' + id + '\')">編輯</button>';
+    html += '<button class="row-btn" onclick="goRegistrations(\'' + id + '\',\'' + ERPALIGNED.esc(r['活動名稱'] || '') + '\')">報名</button>';
     html += '<button class="row-btn danger" onclick="confirmArchive(\'' + id + '\',\'' + name + '\')">封存</button>';
     html += '</div></td>';
     html += '</tr>';
@@ -503,6 +504,14 @@ async function doArchive() {
   closeConfirm();
   if (r.success) { loadStats(); loadSessions(); }
   else alert('封存失敗：' + (r.message || ''));
+}
+
+// ── 跳轉報名 ──────────────────────────────────────────────
+function goRegistrations(sesId, sesName) {
+  var url = './registrations.html?sessionId=' + encodeURIComponent(sesId) + '&sessionName=' + encodeURIComponent(sesName);
+  if (_currentCaseId) url += '&caseId=' + encodeURIComponent(_currentCaseId);
+  if (_currentCaseName) url += '&caseName=' + encodeURIComponent(_currentCaseName);
+  location.href = url;
 }
 
 // ── 輔助 ─────────────────────────────────────────────────
