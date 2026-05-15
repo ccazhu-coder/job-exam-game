@@ -219,7 +219,7 @@ var _docsPager = null;
 
 function init() {
   var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
+  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _docsPager = GovOpsPager.init({ containerId: 'docsPager', pageSize: 50, onPage: function() { loadDocs(); } });
