@@ -66,6 +66,7 @@
     <div class="btns">
       <button class="gold" onclick="openAddModal()">＋ 新增紀錄</button>
       <button class="secondary" onclick="loadAll()">重新整理</button>
+      <button class="secondary" onclick="migrateOldData()" title="將舊版16/17/18工作表資料一次性遷移到財務收支">🔄 遷移舊資料</button>
     </div>
   </div>
 
@@ -156,6 +157,20 @@ function init() {
   loadAll();
 }
 function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+
+async function migrateOldData() {
+  if (!confirm('將舊版 16_應收帳款 / 18_支出明細 資料一次性遷移到財務收支。\n已遷移過的資料會自動跳過，不重複新增。\n確定繼續？')) return;
+  var msg = document.getElementById('finMsg');
+  msg.style.display = ''; msg.textContent = '遷移中，請稍候…';
+  var r = await ERPALIGNED.api({ action: 'migrateOldFinanceData' });
+  if (r.success) {
+    var d = r.data || {};
+    msg.textContent = '✅ 遷移完成：新增 ' + (d.created||0) + ' 筆，跳過重複 ' + (d.skipped||0) + ' 筆。';
+    setTimeout(function(){ msg.style.display='none'; loadAll(); }, 3000);
+  } else {
+    msg.textContent = '❌ 遷移失敗：' + (r.message || '未知錯誤');
+  }
+}
 
 async function loadCases() {
   var r = await ERPALIGNED.api({ action: 'getCases' });
