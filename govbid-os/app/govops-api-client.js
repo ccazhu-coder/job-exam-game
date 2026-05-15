@@ -24,11 +24,12 @@
     ['govops_auth','govops_profile','govops_conn_settings','govops_root_folder'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
     window.location.href='./login.html';
   }
-  // UNAUTHORIZED 回應處理：清除 session 並跳轉登入頁
+  // UNAUTHORIZED 回應處理：清除 session 並跳轉登入頁（帶 redirect 參數以便登入後返回）
   function handleUnauthorized(){
     ['govops_auth','govops_profile'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
-    if(!window.location.pathname.includes('login.html')&&!window.location.pathname.includes('register.html')){
-      window.location.href='./login.html';
+    var cur=window.location.pathname+window.location.search;
+    if(!cur.includes('login.html')&&!cur.includes('register.html')){
+      window.location.href='./login.html?redirect='+encodeURIComponent(cur);
     }
   }
   function runtimeParams(params){
@@ -47,6 +48,7 @@
   }
   function toQuery(params){
     const enriched=runtimeParams(params||{});
+    enriched._t=Date.now();
     const payload=window.GovOpsSaaS&&window.GovOpsSaaS.toBackendParams?window.GovOpsSaaS.toBackendParams(enriched):enriched;
     return new URLSearchParams(payload).toString();
   }
