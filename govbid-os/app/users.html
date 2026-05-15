@@ -11,7 +11,6 @@
 <header><div class="wrap">
   <div class="brand">GovOps OS <span style="font-size:.65rem;background:rgba(184,150,62,.18);color:#b8963e;border-radius:4px;padding:2px 7px;margin-left:6px">SaaS MVP</span></div>
   <nav id="nav"></nav>
-  <button onclick="doLogout()" style="font-size:.75rem;padding:5px 12px;background:transparent;border:1px solid #2a4060;color:#7a9bc5;border-radius:4px;cursor:pointer">登出</button>
 </div></header>
 
 <main class="wrap">
@@ -49,35 +48,34 @@
 </main>
 
 <!-- 邀請成員 Modal -->
-<div class="modal-overlay" id="inviteModal" style="display:none" onclick="closeBg(event)">
-  <div class="modal-box" style="max-width:480px">
-    <div class="modal-header"><h2>邀請成員</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
-    <div class="modal-body">
-      <div class="fr c2">
-        <div class="fi"><label>姓名 *</label><input id="inv_name" placeholder="成員姓名"></div>
-        <div class="fi"><label>Email *</label><input id="inv_email" type="email" placeholder="成員 Email"></div>
-      </div>
-      <div class="fr c2">
-        <div class="fi"><label>角色</label>
-          <select id="inv_role">
-            <option value="admin">管理者</option>
-            <option value="project">專案人員</option>
-            <option value="admin_staff">行政人員</option>
-            <option value="finance">財務人員</option>
-            <option value="viewer" selected>檢視者</option>
-          </select>
-        </div>
-        <div class="fi"><label>臨時密碼（預設 temp1234）</label><input id="inv_pwd" placeholder="temp1234" value="temp1234"></div>
-      </div>
-      <div style="background:rgba(184,150,62,.08);border:1px solid rgba(184,150,62,.3);border-radius:6px;padding:10px 12px;font-size:.8rem;color:#b8963e;margin-top:8px">
-        成員收到邀請後，請提醒其使用 Email + 臨時密碼登入，並立即修改密碼。
-      </div>
+<div class="modal-backdrop" id="inviteModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal" style="max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0">邀請成員</h2>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--gray-500);font-size:1.2rem;cursor:pointer;padding:0 4px">✕</button>
     </div>
-    <div class="modal-footer">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fi"><label>姓名 *</label><input id="inv_name" placeholder="成員姓名"></div>
+      <div class="fi"><label>Email *</label><input id="inv_email" type="email" placeholder="成員 Email"></div>
+      <div class="fi"><label>角色</label>
+        <select id="inv_role">
+          <option value="admin">管理者</option>
+          <option value="project">專案人員</option>
+          <option value="admin_staff">行政人員</option>
+          <option value="finance">財務人員</option>
+          <option value="viewer" selected>檢視者</option>
+        </select>
+      </div>
+      <div class="fi"><label>臨時密碼（預設 temp1234）</label><input id="inv_pwd" placeholder="temp1234" value="temp1234"></div>
+    </div>
+    <div style="background:rgba(184,150,62,.08);border:1px solid rgba(184,150,62,.3);border-radius:6px;padding:10px 12px;font-size:.8rem;color:#b8963e;margin:12px 0">
+      成員收到邀請後，請提醒其使用 Email + 臨時密碼登入，並立即修改密碼。
+    </div>
+    <div id="inviteMsg" style="font-size:.82rem;margin-bottom:8px;display:none"></div>
+    <div class="btns" style="margin-top:0">
       <button class="gold" id="inviteBtn" onclick="submitInvite()">邀請</button>
       <button class="secondary" onclick="closeModal()">取消</button>
     </div>
-    <div id="inviteMsg" style="font-size:.82rem;padding:6px 16px;display:none"></div>
   </div>
 </div>
 
@@ -100,6 +98,7 @@ function init() {
   _auth = safeJSON('govops_auth');
   if (!_auth || !_auth.sessionToken) { window.location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  ERPALIGNED.appendUserChip('header .wrap');
   loadUsers();
   loadPlanInfo();
 }
