@@ -177,7 +177,7 @@
       ['finance.html','財務'],['official-docs.html','公文'],
       ['file-manager.html','檔案管理'],['closing.html','結案'],['report-generator.html','結案報告'],
       ['master-data.html','基本資料'],['settings.html','系統設定'],
-      ['tender-pool.html','標案池'],['vendors.html','廠商'],
+      ['tender-pool.html','標案池'],
       ['users.html','成員管理']
     ]
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
