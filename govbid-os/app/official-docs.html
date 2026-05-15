@@ -218,8 +218,8 @@ var _cases = [];
 var _docsPager = null;
 
 function init() {
-  var p = safeJSON('govops_profile');
-  if (!p || !p.userId) { location.href = './dashboard.html'; return; }
+  var _auth = safeJSON('govops_auth');
+  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _docsPager = GovOpsPager.init({ containerId: 'docsPager', pageSize: 50, onPage: function() { loadDocs(); } });
