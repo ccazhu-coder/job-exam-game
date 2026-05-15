@@ -131,8 +131,7 @@ function esc(v){return ERPALIGNED.esc(v);}
 function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2}).*/,'$1/$2/$3');}
 var _caseId='',_files=[],_typeFilter='',_sessions=[];
 function init(){
-  var _auth=safeJSON('govops_auth');if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
   document.getElementById('f_date').value=new Date().toISOString().substring(0,10);
   document.getElementById('f_uploader').value=p.userName||p.orgName||'';
   var sp=new URLSearchParams(location.search);loadCases(sp.get('caseId')||'');
