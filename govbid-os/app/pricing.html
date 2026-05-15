@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜方案選擇</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+body{background:linear-gradient(170deg,#0d1f37 0%,#0a1220 100%);min-height:100vh}
+.hero{text-align:center;padding:56px 20px 32px}
+.hero h1{font-size:2rem;color:#b8963e;margin:0 0 8px}
+.hero p{color:#7a9bc5;font-size:1rem;margin:0}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;max-width:960px;margin:0 auto;padding:0 20px 40px}
+.plan{background:#0e1e31;border:1.5px solid #1e3a5c;border-radius:14px;padding:28px 22px;display:flex;flex-direction:column;transition:.2s}
+.plan:hover{border-color:#2a5080;transform:translateY(-3px)}
+.plan.highlight{border-color:#b8963e;background:linear-gradient(160deg,#0e1e31,#152840)}
+.plan-badge{display:inline-block;background:#b8963e;color:#000;font-size:.72rem;font-weight:700;border-radius:20px;padding:3px 10px;margin-bottom:10px;align-self:flex-start}
+.plan-name{font-size:1.2rem;font-weight:700;color:#ccd6f6;margin-bottom:4px}
+.plan-price{font-size:1.8rem;font-weight:700;color:#b8963e;margin:8px 0 4px}
+.plan-price span{font-size:.9rem;color:#7a9bc5;font-weight:400}
+.plan-desc{font-size:.82rem;color:#4a6a8c;margin-bottom:14px}
+.plan-features{list-style:none;padding:0;margin:0 0 20px;flex:1}
+.plan-features li{font-size:.83rem;color:#7a9bc5;padding:4px 0;border-bottom:1px solid #162035}
+.plan-features li::before{content:'✓　';color:#b8963e}
+.plan-btn{padding:11px;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;text-align:center;text-decoration:none;display:block}
+.plan-btn.free{background:transparent;border:1.5px solid #2a4060;color:#7a9bc5}
+.plan-btn.free:hover{border-color:#b8963e;color:#b8963e}
+.plan-btn.paid{background:#b8963e;color:#000}
+.plan-btn.paid:hover{background:#d4a84e}
+.plan-btn.enterprise{background:transparent;border:1.5px solid #b8963e;color:#b8963e}
+/* 付款 Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;display:none}
+.modal-box{background:#0e1e31;border:1.5px solid #1e3a5c;border-radius:14px;padding:32px;max-width:480px;width:100%}
+.modal-title{font-size:1.1rem;font-weight:700;color:#b8963e;margin:0 0 6px}
+.modal-sub{font-size:.83rem;color:#4a6a8c;margin-bottom:20px}
+.qr-wrap{text-align:center;margin-bottom:20px}
+.qr-wrap img{width:200px;border-radius:12px;border:3px solid #b8963e}
+.qr-name{font-size:.9rem;color:#ccd6f6;margin-top:8px;font-weight:700}
+.qr-amount{font-size:1.4rem;color:#b8963e;font-weight:700;margin:4px 0}
+.steps{background:#0a1628;border-radius:8px;padding:12px 16px;margin-bottom:16px}
+.step{font-size:.82rem;color:#7a9bc5;padding:4px 0}
+.step strong{color:#ccd6f6}
+.fi label{display:block;font-size:.8rem;color:#7a9bc5;margin-bottom:4px}
+.fi input,.fi select{width:100%;background:#0a1628;border:1.5px solid #1e3a5c;color:#ccd6f6;border-radius:6px;padding:9px 12px;font-size:.88rem;font-family:inherit;box-sizing:border-box;margin-bottom:10px}
+.fi input:focus{outline:none;border-color:#b8963e}
+.submit-btn{width:100%;padding:12px;background:#b8963e;color:#000;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:4px}
+.submit-btn:disabled{opacity:.5;cursor:wait}
+.cancel-btn{width:100%;padding:10px;background:transparent;border:1px solid #2a4060;color:#7a9bc5;border-radius:8px;font-size:.85rem;cursor:pointer;margin-top:8px}
+.msg-ok{background:rgba(22,163,74,.12);color:#4ade80;border:1px solid rgba(22,163,74,.3);border-radius:6px;padding:10px 14px;font-size:.83rem;margin-top:8px;display:none}
+.msg-err{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.3);border-radius:6px;padding:10px 14px;font-size:.83rem;margin-top:8px;display:none}
+.top-nav{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid #1e3a5c;background:#0a1628}
+.top-brand{color:#b8963e;font-weight:700;font-size:1rem}
+.top-links a{color:#7a9bc5;text-decoration:none;font-size:.85rem;margin-left:16px}
+.top-links a:hover{color:#b8963e}
+</style>
+</head>
+<body>
+<div class="top-nav">
+  <div class="top-brand">GovOps OS</div>
+  <div class="top-links">
+    <a href="./dashboard.html">進入系統</a>
+    <a href="./register.html">免費試用</a>
+    <a href="./login.html">登入</a>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>選擇適合你的方案</h1>
+  <p>政府標案全流程營運系統｜SaaS 商業版</p>
+</div>
+
+<div class="plans">
+  <!-- Free -->
+  <div class="plan">
+    <div class="plan-name">Free 試用</div>
+    <div class="plan-price">NT$0<span> / 永久</span></div>
+    <div class="plan-desc">適合個人評估使用</div>
+    <ul class="plan-features">
+      <li>5 個業務案件</li>
+      <li>2 位成員</li>
+      <li>10 次文件產出</li>
+      <li>基本功能</li>
+    </ul>
+    <a href="./register.html" class="plan-btn free">免費開始</a>
+  </div>
+
+  <!-- Basic -->
+  <div class="plan">
+    <div class="plan-name">Basic</div>
+    <div class="plan-price">NT$990<span> / 月</span></div>
+    <div class="plan-desc">適合小型工作室或個人接案</div>
+    <ul class="plan-features">
+      <li>20 個業務案件</li>
+      <li>5 位成員</li>
+      <li>50 次文件產出</li>
+      <li>全功能（含財務、公文）</li>
+    </ul>
+    <button class="plan-btn paid" onclick="openPayModal('basic','Basic','990')">立即訂閱</button>
+  </div>
+
+  <!-- Pro（推薦） -->
+  <div class="plan highlight">
+    <div class="plan-badge">最受歡迎</div>
+    <div class="plan-name">Pro</div>
+    <div class="plan-price">NT$2,490<span> / 月</span></div>
+    <div class="plan-desc">適合顧問公司、訓練機構</div>
+    <ul class="plan-features">
+      <li>50 個業務案件</li>
+      <li>10 位成員</li>
+      <li>200 次文件產出</li>
+      <li>全功能 + Google Drive</li>
+      <li>客服優先支援</li>
+    </ul>
+    <button class="plan-btn paid" onclick="openPayModal('pro','Pro','2490')">立即訂閱</button>
+  </div>
+
+  <!-- Team -->
+  <div class="plan">
+    <div class="plan-name">Team</div>
+    <div class="plan-price">NT$5,990<span> / 月</span></div>
+    <div class="plan-desc">適合多人團隊、公協會</div>
+    <ul class="plan-features">
+      <li>200 個業務案件</li>
+      <li>30 位成員</li>
+      <li>500 次文件產出</li>
+      <li>全功能 + 多工作空間</li>
+      <li>專屬客服</li>
+    </ul>
+    <button class="plan-btn paid" onclick="openPayModal('team','Team','5990')">立即訂閱</button>
+  </div>
+
+  <!-- Enterprise -->
+  <div class="plan">
+    <div class="plan-name">Enterprise</div>
+    <div class="plan-price" style="font-size:1.2rem">洽談報價</div>
+    <div class="plan-desc">政府機關、大型協會專案</div>
+    <ul class="plan-features">
+      <li>無限案件與成員</li>
+      <li>客製化功能</li>
+      <li>專屬部署</li>
+      <li>SLA 保證</li>
+    </ul>
+    <a href="mailto:ccazhu@gmail.com?subject=GovOps OS Enterprise 洽詢" class="plan-btn enterprise">聯絡洽談</a>
+  </div>
+</div>
+
+<!-- 付款 Modal -->
+<div class="modal-bg" id="payModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">訂閱 Pro 方案</div>
+    <div class="modal-sub">掃描下方 LINE Pay QR Code 完成付款，再填寫通知表單</div>
+
+    <div class="qr-wrap">
+      <!-- LINE Pay QR Code 圖片 -->
+      <div id="qrPlaceholder" style="width:200px;height:200px;background:#0a1628;border:2px dashed #2a4060;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:.75rem;color:#4a6a8c;text-align:center;padding:16px;box-sizing:border-box">
+        請將 LINE Pay QR Code<br>圖片貼到這裡<br><br>
+        <small>（管理員在程式碼中替換 qrPlaceholder）</small>
+      </div>
+      <div class="qr-name">收款人：珍語塔羅</div>
+      <div class="qr-amount" id="modalAmount">NT$2,490</div>
+      <div style="font-size:.75rem;color:#4a6a8c">請備註您的 Email 或公司名稱</div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><strong>步驟 1</strong>　掃描上方 QR Code 完成 LINE Pay 付款</div>
+      <div class="step"><strong>步驟 2</strong>　記下付款後的末 5 碼或備註，填入下方表單</div>
+      <div class="step"><strong>步驟 3</strong>　提交後，我們確認（通常 1 小時內）即升級方案</div>
+    </div>
+
+    <div class="fi"><label>您的登入 Email *</label><input id="notifyEmail" type="email" placeholder="已登入帳號的 Email"></div>
+    <div class="fi"><label>付款末 5 碼或備註</label><input id="payNote" placeholder="例如：12345 或 XX公司"></div>
+
+    <div class="msg-ok" id="modalOk"></div>
+    <div class="msg-err" id="modalErr"></div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitRequest()">送出付款通知</button>
+    <button class="cancel-btn" onclick="closeModal()">取消</button>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script>
+var _currentPlanId = '', _currentPlanName = '', _currentAmount = '';
+
+function openPayModal(planId, planName, amount) {
+  _currentPlanId = planId; _currentPlanName = planName; _currentAmount = amount;
+  document.getElementById('modalTitle').textContent = '訂閱 '+planName+' 方案';
+  document.getElementById('modalAmount').textContent = 'NT$' + parseInt(amount).toLocaleString();
+  document.getElementById('modalOk').style.display = 'none';
+  document.getElementById('modalErr').style.display = 'none';
+  document.getElementById('submitBtn').textContent = '送出付款通知'; document.getElementById('submitBtn').disabled = false;
+  // 預填 email
+  try { var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}'); if(auth.email) document.getElementById('notifyEmail').value = auth.email; } catch(e) {}
+  document.getElementById('payModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('payModal').style.display = 'none'; }
+document.getElementById('payModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+async function submitRequest() {
+  var email   = document.getElementById('notifyEmail').value.trim();
+  var payNote = document.getElementById('payNote').value.trim();
+  var ok = document.getElementById('modalOk'), err = document.getElementById('modalErr');
+  ok.style.display='none'; err.style.display='none';
+  if (!email) { err.textContent='請填寫 Email'; err.style.display=''; return; }
+
+  // 確認已登入
+  var auth = {};
+  try { auth = JSON.parse(localStorage.getItem('govops_auth')||'{}'); } catch(e) {}
+  if (!auth.sessionToken) {
+    err.textContent = '請先登入後再訂閱方案。'; err.style.display = '';
+    setTimeout(function(){ window.location.href='./login.html?redirect='+encodeURIComponent(location.pathname); }, 1500);
+    return;
+  }
+
+  var btn = document.getElementById('submitBtn');
+  btn.textContent = '送出中…'; btn.disabled = true;
+
+  var r = await GovOpsAPI.post({ action:'requestPlanUpgrade', planId:_currentPlanId, payNote:payNote+'（Email:'+email+'）' });
+  btn.textContent = '送出付款通知'; btn.disabled = false;
+  if (r.success) {
+    ok.textContent = '✅ ' + (r.message || '申請已送出！');
+    ok.style.display = '';
+    btn.style.display = 'none';
+  } else {
+    err.textContent = '❌ ' + (r.message || '送出失敗，請重試');
+    err.style.display = '';
+  }
+}
+
+// URL 參數處理
+(function(){
+  var p = new URLSearchParams(location.search);
+  if (p.get('canceled')) {
+    var banner = document.createElement('div');
+    banner.style.cssText='background:rgba(239,68,68,.12);color:#f87171;text-align:center;padding:10px;font-size:.85rem';
+    banner.textContent='付款已取消，您可以重新選擇方案。';
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
+})();
+</script>
+</body>
+</html>
