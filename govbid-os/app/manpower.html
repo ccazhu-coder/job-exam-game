@@ -384,7 +384,7 @@ function fmtTime(v){if(!v)return'';var m=String(v).match(/T(\d{2}):(\d{2})/);if(
 // ── 初始化 ──────────────────────────────────────────────
 async function init(){
   var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
+  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML=ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
 
