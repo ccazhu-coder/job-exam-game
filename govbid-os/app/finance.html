@@ -149,7 +149,7 @@ var _finPager = null;
 
 function init() {
   var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
+  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _finPager = GovOpsPager.init({ containerId: 'finPager', pageSize: 50, onPage: function() { loadRecords(); } });
