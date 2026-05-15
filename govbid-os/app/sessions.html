@@ -269,9 +269,7 @@ var _currentCaseName = '';
 var _sesPager = null;
 
 function init() {
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   // URL params
   var sp = new URLSearchParams(location.search);
