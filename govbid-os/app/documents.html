@@ -157,9 +157,7 @@ var _caseId='', _sessionId='', _docData={}, _currentDoc='';
 var _cases=[], _sessions=[];
 
 function init(){
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML=ERPALIGNED.nav();
+document.getElementById('nav').innerHTML=ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   // Check URL params
   var sp=new URLSearchParams(location.search);
