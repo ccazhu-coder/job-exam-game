@@ -153,6 +153,7 @@
     <!-- 案件表格 -->
     <div id="caseMsg" class="msg" style="display:none"></div>
     <div id="caseTable"></div>
+    <div id="casesPager"></div>
   </section>
 </main>
 
@@ -296,12 +297,14 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./govops-pagination.js"></script>
 <script>
 // ── 狀態 ──────────────────────────────────────────────────
 var _statusFilter = '';
 var _pendingArchiveId = '';
 var _searchTimer = null;
 var _statsCache = null;
+var _casesPager = null;
 
 // ── 初始化 ────────────────────────────────────────────────
 function init() {
@@ -309,6 +312,7 @@ function init() {
   if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
+  _casesPager = GovOpsPager.init({ containerId: 'casesPager', pageSize: 50, onPage: function() { loadCases(); } });
   loadStats();
   loadCases();
 }
@@ -361,13 +365,16 @@ async function loadCases() {
   if (kw) params.keyword = kw;
   if (typeVal) params.type = typeVal;
   if (_statusFilter) params.status = _statusFilter;
+  if (_casesPager) { params.limit = _casesPager.currentLimit(); params.offset = _casesPager.currentOffset(); }
 
   var r = await ERPALIGNED.api(params);
   msg.style.display = 'none';
   if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ 查詢失敗：' + (r.message || '未知錯誤'); return; }
 
   var rows = r.data || [];
-  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆' + (_statusFilter ? '（' + _statusFilter + '）' : '');
+  var total = r.total !== undefined ? r.total : rows.length;
+  document.getElementById('pageSubtitle').textContent = '共 ' + total + ' 筆' + (_statusFilter ? '（' + _statusFilter + '）' : '');
+  if (_casesPager) _casesPager.setTotal(total);
 
   if (!rows.length) {
     tbl.innerHTML = '<div class="empty-state"><div class="ico">📋</div><p>目前沒有案件資料</p></div>';
