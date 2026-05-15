@@ -73,8 +73,8 @@ function esc(v){return ERPALIGNED.esc(v);}
 var _tab='lecturer',_data=[],_editId=null;
 var TAB_CONFIG={
   lecturer:{label:'講師',action:{get:'查詢講師',save:'儲存講師'},sheetName:'18_講師資料',
-    headers:['講師ID','姓名','電話','Email','服務單位','專業領域','費率','銀行','帳號','戶名','身分證字號','備註'],
-    fields:[['姓名','text'],['電話','text'],['Email','email'],['服務單位','text'],['專業領域','text'],['費率','text'],['銀行','text'],['帳號','text'],['戶名','text'],['身分證字號','text'],['備註','textarea']]},
+    headers:['講師ID','姓名','電話','Email','服務單位','專業領域','費率','銀行','帳號','戶名','身分證字號','地址','備註'],
+    fields:[['姓名','text'],['電話','text'],['Email','email'],['服務單位','text'],['專業領域','text'],['費率','text'],['銀行','text'],['帳號','text'],['戶名','text'],['身分證字號','text'],['地址','text'],['備註','textarea']]},
   vendor:{label:'廠商',action:{get:'查詢合作廠商',save:'儲存合作廠商'},sheetName:'23_合作廠商主檔',
     headers:['廠商編號','名稱','類型','聯絡人','電話','Email','地址','備註'],
     fields:[['名稱','text'],['類型','text'],['聯絡人','text'],['電話','text'],['Email','email'],['地址','text'],['備註','textarea']]},
