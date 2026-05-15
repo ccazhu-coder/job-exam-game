@@ -153,9 +153,7 @@ var typeConfig={
     fields:[['type','類型(收入/支出)','text'],['subject','科目','text'],['target','對象名稱','text'],['amount','金額','number'],['method','付款方式','text'],['remark','備註','text']]}
 };
 function init(){
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
   loadCasesDropdown();loadBatches();
 }
 async function loadCasesDropdown(){
