@@ -225,9 +225,7 @@ var _today = new Date().toISOString().substring(0,10);
 var _soon = new Date(new Date().getTime() + 7*86400000).toISOString().substring(0,10);
 
 function init() {
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   // URL params
   var sp = new URLSearchParams(location.search);
