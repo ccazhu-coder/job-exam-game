@@ -2,7 +2,7 @@
  * 更新：修正 API URL、加入 UNAUTHORIZED 自動跳轉、登出清除、sessionToken 自動注入。
  */
 (function(){
-  const DEFAULT_TIMEOUT_MS=25000;
+  const DEFAULT_TIMEOUT_MS=45000;
   // 正式後端 URL（@40 SaaS 多租戶版本）
   const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxGSf_wVrwBHKpJigE3Azh0_gouy84BZnhYG5KioBtPw0FRCVTAiIYmh_u0smzb6ZxPxA/exec';
   function getDefaultApiUrl(){
