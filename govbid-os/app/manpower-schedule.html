@@ -109,8 +109,7 @@ function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](
 function fmtTime(v){if(!v)return'';var m=String(v).match(/T(\d{2}):(\d{2})/);if(m)return m[1]+':'+m[2];if(/^\d{1,2}:\d{2}/.test(String(v)))return String(v).substring(0,5);return'';}
 var _caseId='',_hours=[],_needs=[],_staff=[],_selected=new Set();
 function init(){
-  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
-  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
   var sp=new URLSearchParams(location.search);loadCases(sp.get('caseId')||'');
 }
 async function loadCases(pre){
