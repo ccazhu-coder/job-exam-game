@@ -267,9 +267,7 @@ var _allSessions = [];
 var _regsPager = null;
 
 function init() {
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   var sp = new URLSearchParams(location.search);
   _currentCaseId = sp.get('caseId') || '';
