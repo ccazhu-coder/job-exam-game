@@ -309,8 +309,8 @@ var _casesPager = null;
 
 // ── 初始化 ────────────────────────────────────────────────
 function init() {
-  var profile = (() => { try { return JSON.parse(localStorage.getItem('govops_profile') || 'null'); } catch(e){ return null; } })();
-  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  var auth = (() => { try { return JSON.parse(localStorage.getItem('govops_auth') || 'null'); } catch(e){ return null; } })();
+  if (!auth || !auth.sessionToken || !auth.isLoggedIn) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _casesPager = GovOpsPager.init({ containerId: 'casesPager', pageSize: 50, onPage: function() { loadCases(); } });
