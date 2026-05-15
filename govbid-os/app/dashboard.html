@@ -41,8 +41,7 @@
         <div class="btns" style="margin-bottom:10px">
           <button onclick="loadCaseStats()">刷新案件統計</button>
           <button class="secondary" onclick="loadSchedule()">近期行程</button>
-          <button class="secondary" onclick="loadOverview()">舊版專案總覽</button>
-          <button class="secondary" onclick="loadMarketing()">行銷名單</button>
+          <button class="secondary" onclick="loadOverview()">案件總覽</button>
         </div>
         <div id="dashMsg" class="msg" style="margin-top:8px">—</div>
         <div id="table" style="margin-top:10px"></div>
@@ -72,15 +71,13 @@
           <button class="secondary" onclick="location.href='./calendar.html'">日曆管理</button>
           <button class="secondary" onclick="location.href='./finance.html'">財務收支</button>
           <button class="secondary" onclick="location.href='./closing.html'">結案管理</button>
-          <button class="secondary" onclick="location.href='./vendors.html'">廠商</button>
-          <button class="ghost" onclick="location.href='./crm.html'">學員 CRM</button>
-          <button class="ghost" onclick="location.href='./users.html'">👥 成員管理</button>
+          <button class="secondary" onclick="location.href='./master-data.html'">基本資料</button>
+          <button class="secondary" onclick="location.href='./users.html'">成員管理</button>
         </div>
         <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
         <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
         <div class="btns" style="margin-top:8px">
           <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
-          <button class="secondary" onclick="location.href='./pre-launch-qa.html'" style="font-size:.78rem;padding:6px 12px">驗收頁面</button>
         </div>
       </section>
     </div>
@@ -259,8 +256,6 @@ async function loadSchedule(){
 }
 
 async function loadOverview(){const r=await ERPALIGNED.api({action:'getCases'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
-async function loadMarketing(){const r=await ERPALIGNED.api({action:'行銷名單'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
-async function loadReturn(){const r=await ERPALIGNED.api({action:'回流學員分析'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
 async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
 
 checkAuth();
