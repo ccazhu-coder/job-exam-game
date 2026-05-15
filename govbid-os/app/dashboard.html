@@ -109,6 +109,20 @@
         <div id="table" style="margin-top:10px"></div>
       </section>
 
+      <!-- 圖表列 -->
+      <section class="card span8" style="padding:16px 20px">
+        <h2 style="margin-bottom:12px">案件狀態分布</h2>
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <canvas id="caseDonut" width="160" height="160"></canvas>
+          <div id="caseDonutLegend" style="font-size:.82rem;line-height:2;color:var(--text-main,#ccd6f6)"></div>
+        </div>
+      </section>
+
+      <section class="card span4" style="padding:16px 20px">
+        <h2 style="margin-bottom:12px">財務摘要</h2>
+        <div id="finBarChart" style="font-size:.82rem"></div>
+      </section>
+
       <section class="card span4">
         <h2>快速操作</h2>
         <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
@@ -238,6 +252,51 @@ async function loadDashboard(){
   loadSchedule();
 }
 
+// ── 純 Canvas 圓餅圖 ─────────────────────────────────
+function drawDonut(canvasId, segments) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var cx = canvas.width / 2, cy = canvas.height / 2, r = 62, ir = 38;
+  var total = segments.reduce(function(s, seg) { return s + (seg.value || 0); }, 0);
+  if (!total) { ctx.fillStyle = '#2a4060'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); return; }
+  var angle = -Math.PI / 2;
+  segments.forEach(function(seg) {
+    var slice = (seg.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + slice);
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    angle += slice;
+  });
+  ctx.beginPath(); ctx.arc(cx, cy, ir, 0, Math.PI*2); ctx.fillStyle = '#0e1e31'; ctx.fill();
+  ctx.fillStyle = '#b8963e'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(total, cx, cy - 8);
+  ctx.fillStyle = '#7a9bc5'; ctx.font = '11px sans-serif';
+  ctx.fillText('案件', cx, cy + 12);
+}
+
+// ── 財務水平條形圖 ────────────────────────────────────
+function renderFinBar(income, expense) {
+  var el = document.getElementById('finBarChart');
+  if (!el) return;
+  var max = Math.max(income, expense, 1);
+  var fmt = function(n) { return (n || 0).toLocaleString(); };
+  var bar = function(v, color, label) {
+    var pct = Math.round((v / max) * 100);
+    return '<div style="margin-bottom:10px">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+      + '<span style="color:#aac">' + label + '</span><span style="color:' + color + ';font-weight:700">NT$' + fmt(v) + '</span></div>'
+      + '<div style="background:#162035;border-radius:4px;height:12px"><div style="width:' + pct + '%;background:' + color + ';height:12px;border-radius:4px;transition:width .5s"></div></div>'
+      + '</div>';
+  };
+  var profit = income - expense;
+  el.innerHTML = bar(income, '#22c55e', '總收入') + bar(expense, '#ef4444', '總支出')
+    + '<div style="border-top:1px solid #2a4060;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between">'
+    + '<span style="color:#aac">損益</span><span style="color:' + (profit >= 0 ? '#22c55e' : '#ef4444') + ';font-weight:700">NT$' + fmt(profit) + '</span></div>';
+}
+
 async function loadCaseStats(){
   const r=await ERPALIGNED.api({action:'getCaseStats'});
   if(!r.success) return;
@@ -258,6 +317,19 @@ async function loadCaseStats(){
   // 更新案件卡片內小 KPI
   const el=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
   el('dk_total',d.total||0); el('dk_active',d.active||0); el('dk_urgent',d.urgent||0); el('dk_closed',bs['已結案']||0);
+  // 圓餅圖
+  var segments=[
+    {label:'進行中', value:(bs['執行中']||0)+(bs['已簽約']||0)+(bs['洽談中']||0)+(bs['提案中']||0), color:'#2563eb'},
+    {label:'待處理', value:(bs['待請款']||0)+(bs['待收款']||0)+(bs['待結案']||0), color:'#b8963e'},
+    {label:'已結案', value:bs['已結案']||0, color:'#22c55e'},
+    {label:'草稿',   value:bs['草稿']||0,   color:'#64748b'},
+    {label:'暫停/取消', value:(bs['暫停']||0)+(bs['取消']||0), color:'#ef4444'}
+  ].filter(function(s){return s.value>0;});
+  drawDonut('caseDonut', segments);
+  var legend=document.getElementById('caseDonutLegend');
+  if(legend) legend.innerHTML=segments.map(function(s){
+    return '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+s.color+';margin-right:6px"></span>'+s.label+'<span style="color:#b8963e;font-weight:700;margin-left:8px">'+s.value+'</span></div>';
+  }).join('');
   // 顯示需行動案件清單
   const urgentList=['待請款','待收款','待結案'];
   const r2=await ERPALIGNED.api({action:'getCases',status:''});
@@ -277,8 +349,7 @@ async function loadFinanceSummary(){
   const r=await ERPALIGNED.api({action:'getFinanceSummary'});
   if(!r||!r.success) return;
   const d=r.data||{};
-  const fmt=n=>(n||0).toLocaleString()+'元';
-  // 在 KPI 最後更新財務數字（如有對應欄位）
+  renderFinBar(d.totalIncome||0, d.totalExpense||0);
 }
 
 async function loadSchedule(){
