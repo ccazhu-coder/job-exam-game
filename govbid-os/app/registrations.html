@@ -177,6 +177,7 @@
 
     <div id="regMsg" class="msg" style="display:none"></div>
     <div id="regTable"></div>
+    <div id="regsPager"></div>
   </section>
 </main>
 
@@ -254,6 +255,7 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./govops-pagination.js"></script>
 <script>
 var _reviewFilter = '';
 var _selectedIds = new Set();
@@ -261,6 +263,7 @@ var _searchTimer = null;
 var _currentCaseId = '';
 var _currentSessionId = '';
 var _allSessions = [];
+var _regsPager = null;
 
 function init() {
   var profile = safeJSON('govops_profile');
@@ -276,6 +279,7 @@ function init() {
     document.getElementById('ctxName').textContent = decodeURIComponent(ctxName);
     if (_currentCaseId) document.getElementById('ctxBack').href = './sessions.html?caseId=' + _currentCaseId;
   }
+  _regsPager = GovOpsPager.init({ containerId: 'regsPager', pageSize: 50, onPage: function() { loadRegs(); } });
   // 依序：先載入場次清單（設定篩選值），再載入統計和資料
   loadSessionList().then(function() {
     loadStats();
@@ -341,12 +345,15 @@ async function loadRegs() {
   var kw = document.getElementById('kwInput').value.trim();
   if (kw) params.keyword = kw;
   if (_reviewFilter) params.reviewStatus = _reviewFilter;
+  if (_regsPager) { params.limit = _regsPager.currentLimit(); params.offset = _regsPager.currentOffset(); }
 
   var r = await ERPALIGNED.api(params);
   msg.style.display = 'none';
   if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ ' + (r.message || '查詢失敗'); return; }
   var rows = r.data || [];
-  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆報名';
+  var total = r.total !== undefined ? r.total : rows.length;
+  document.getElementById('pageSubtitle').textContent = '共 ' + total + ' 筆報名';
+  if (_regsPager) _regsPager.setTotal(total);
   if (!rows.length) { tbl.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--gray-400)"><div style="font-size:2rem">📝</div><p>目前沒有報名資料</p></div>'; return; }
   renderTable(rows, tbl);
 }
