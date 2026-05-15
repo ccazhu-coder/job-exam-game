@@ -419,9 +419,9 @@ function renderCaseTable(rows, el) {
     html += '<button class="row-btn" onclick="openEditModal(\'' + id + '\')">編輯</button>';
     html += '<button class="row-btn" onclick="goSessions(\'' + id + '\',\'' + ERPALIGNED.esc(r['專案計畫名稱']||'') + '\')">場次</button>';
     html += '<button class="row-btn" onclick="goRegistrations(\'' + id + '\',\'' + ERPALIGNED.esc(r['專案計畫名稱']||'') + '\')">報名</button>';
-    html += '<button class="row-btn" onclick="goTasks(\''+id+'\')" style="background:var(--gold-pale)">任務</button>'
-    html += '<button class="row-btn" onclick="goOfficialDocs('' + id + '')" style="background:#e8f0fe">公文</button>';
-    html += '<button class="row-btn" onclick="goManpower('' + id + '')" style="background:#faf5ff;color:#6b21a8">人力</button>';;
+    html += '<button class="row-btn" onclick="goTasks(\''+id+'\')" style="background:var(--gold-pale)">任務</button>';
+    html += '<button class="row-btn" onclick="goOfficialDocs(\''+id+'\')" style="background:#e8f0fe">公文</button>';
+    html += '<button class="row-btn" onclick="goManpower(\''+id+'\')" style="background:#faf5ff;color:#6b21a8">人力</button>';
     html += '<button class="row-btn danger" onclick="confirmArchive(\'' + id + '\',\'' + name + '\')">封存</button>';
     html += '</div></td>';
     html += '</tr>';
