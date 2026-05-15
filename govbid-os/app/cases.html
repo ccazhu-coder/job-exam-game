@@ -102,7 +102,7 @@
       <h1>業務案件</h1>
       <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">載入中…</p>
     </div>
-    <div class="btns">
+    <div class="btns" id="casesToolbar">
       <button class="gold" onclick="openCreateModal()">＋ 新增案件</button>
       <button class="secondary" onclick="loadCases()">重新整理</button>
     </div>
@@ -298,6 +298,7 @@
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
 <script src="./govops-pagination.js"></script>
+<script src="./govops-export.js"></script>
 <script>
 // ── 狀態 ──────────────────────────────────────────────────
 var _statusFilter = '';
@@ -313,6 +314,14 @@ function init() {
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _casesPager = GovOpsPager.init({ containerId: 'casesPager', pageSize: 50, onPage: function() { loadCases(); } });
+  GovOpsExport.addBtn('casesToolbar', async function() {
+    var p = { action: 'getCases', limit: 9999, offset: 0 };
+    var kw = document.getElementById('kwInput').value.trim();
+    var tv = document.getElementById('typeFilter').value;
+    if (kw) p.keyword = kw; if (tv) p.type = tv; if (_statusFilter) p.status = _statusFilter;
+    var r = await ERPALIGNED.api(p);
+    return r.data || [];
+  }, '案件清單');
   loadStats();
   loadCases();
 }
