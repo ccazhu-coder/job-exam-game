@@ -17,7 +17,6 @@
     <div class="brand">GovOps OS <span style="font-size:.65rem;font-weight:500;background:rgba(184,150,62,.18);color:#b8963e;border-radius:4px;padding:2px 7px;margin-left:6px;vertical-align:middle">SaaS MVP</span></div>
     <div class="sub" id="dashSub">政府標案全流程營運系統</div>
     <nav id="nav"></nav>
-    <button id="logoutBtn" onclick="doLogout()" style="font-size:.75rem;padding:5px 12px;background:transparent;border:1px solid #2a4060;color:#7a9bc5;border-radius:4px;cursor:pointer;display:none">登出</button>
   </div></header>
 
   <main class="wrap">
@@ -111,9 +110,8 @@ function enterApp(auth){
   var name = auth.userName || auth.email || '使用者';
   var ws   = auth.workspaceName || auth.tenantId || '';
   var role = auth.role || '';
-  document.getElementById('dashSubtitle').textContent = ws + '　' + name + (role ? '　['+ROLE_LABELS[role]+']' : '');
+  document.getElementById('dashSubtitle').textContent = ws + '　' + name + (role ? '　[' + (ROLE_LABELS[role] || role) + ']' : '');
   document.getElementById('dashSub').textContent = '政府標案全流程營運系統｜SaaS 商業版 MVP';
-  document.getElementById('logoutBtn').style.display = '';
   ERPALIGNED.appendUserChip('#appScreen header .wrap');
   loadDashboard();
   healthCheck();
