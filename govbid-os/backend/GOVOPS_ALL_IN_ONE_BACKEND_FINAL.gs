@@ -1,11 +1,14 @@
 /**
- * GovOps OS｜ALL-IN-ONE Apps Script 正式後端
- * 目的：一次解決前端找不到 action 的問題。
- * 使用方式：
- * 1. Apps Script 新增一個檔案：GOVOPS_ALL_IN_ONE_BACKEND_FINAL.gs
- * 2. 將本檔完整貼上。
- * 3. 其他重複定義 doGet/doPost/jsonOutput 的檔案請先停用或刪除，避免衝突。
- * 4. 部署 → 管理部署作業 → 編輯 → 新增版本 → 部署。
+ * 重大修正：
+ * - govopsFilter_ 加入 tenantId 租戶隔離過濾（所有舊中文 API 一次修正）
+ * - VENDOR_HEADERS、INSTRUCTOR_HEADERS、STAFF_HEADERS 補 tenantId/workspaceId/createdBy
+ * - 講師/廠商/工作人員 create routes 寫入 tenantId
+ * - INSTRUCTOR_HEADERS 欄位對齊 master-data.html（服務單位、費率、身分證字號、地址）
+ * - 儲存講師 / 儲存工作人員 action 名稱支援（upsert 邏輯）
+ * - MPOWER 所有 headers 補 tenantId/workspaceId
+ * - 人力需求/支援人員查詢加入 tenantId 過濾，create 寫入 tenantId
+ * - 移除廢棄路由：govopsCourseOpsRoute_、govopsSopRoute_、govopsModifyRoute_、govopsArchiveDocRoute_、govopsFinanceRoute_、govopsSimpleFallbackRoute_
+ * 部署方式：貼上後 → 管理部署作業 → 新增版本 → 部署（所有人）
  */
 
 var GOVOPS_SHEET_ID = '1nNibsAkem2luiVe3iR64Q8GSSUQUQFwvaoiMPU-ZaeY';
@@ -31,10 +34,28 @@ function doPost(e) {
   }
 }
 
+// SaaS 不需要 session 的公開 action 清單
+var GOVOPS_PUBLIC_ACTIONS = ['registerTenant','loginUser','logoutUser','getPlans','getPlanDetail','devClearSaasData','正式平台初始化','正式平台健康檢查','健康檢查','initSaasSheets'];
+
 function govopsMainRouter_(params) {
   params = params || {};
   var action = String(params.action || '');
   var result = null;
+
+  // SaaS 路由（公開，優先）
+  result = govopsSaasRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  // Session 驗證 + 租戶上下文注入
+  var _sess = govopsValidateSession_(params);
+  if (_sess) {
+    params._tenantId    = _sess.tenantId;
+    params._workspaceId = _sess.workspaceId;
+    params._userId      = _sess.userId;
+    params._role        = _sess.role;
+  } else if (GOVOPS_PUBLIC_ACTIONS.indexOf(action) === -1) {
+    return jsonOutput({ success:false, error:'UNAUTHORIZED', message:'請先登入。如尚未有帳號，請先至 register.html 註冊。', timestamp:govopsNow_() });
+  }
 
   result = govopsVendorRoute_(params, action);
   if (result) return jsonOutput(result);
@@ -42,8 +63,7 @@ function govopsMainRouter_(params) {
   result = govopsEnrollmentRoute_(params, action);
   if (result) return jsonOutput(result);
 
-  result = govopsCourseOpsRoute_(params, action);
-  if (result) return jsonOutput(result);
+  // ── 移除廢棄路由：govopsCourseOpsRoute_, govopsSopRoute_, govopsModifyRoute_, govopsArchiveDocRoute_, govopsFinanceRoute_ ──
 
   result = govopsProjectActivityRoute_(params, action);
   if (result) return jsonOutput(result);
@@ -51,24 +71,10 @@ function govopsMainRouter_(params) {
   result = govopsProductionRoute_(params, action);
   if (result) return jsonOutput(result);
 
-  if (typeof govopsLineRoute_ === 'function') { result = govopsLineRoute_(params, action); if (result) return jsonOutput(result); }
-
-  result = govopsSopRoute_(params, action);
-  if (result) return jsonOutput(result);
-
   result = govopsTenderRoute_(params, action);
   if (result) return jsonOutput(result);
 
-  result = govopsModifyRoute_(params, action);
-  if (result) return jsonOutput(result);
-
   result = govopsResourceRoute_(params, action);
-  if (result) return jsonOutput(result);
-
-  result = govopsArchiveDocRoute_(params, action);
-  if (result) return jsonOutput(result);
-
-  result = govopsFinanceRoute_(params, action);
   if (result) return jsonOutput(result);
 
   result = govopsReviewNotifRoute_(params, action);
@@ -122,7 +128,13 @@ function govopsMainRouter_(params) {
   result = govopsNotifyRoute_(params, action);
   if (result) return jsonOutput(result);
 
-  result = govopsSimpleFallbackRoute_(params, action);
+  result = govopsPaymentRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsSettingsRoute_(params, action);
+  if (result) return jsonOutput(result);
+
+  result = govopsAuthRoute_(params, action);
   if (result) return jsonOutput(result);
 
   return jsonOutput({ success: false, message: '找不到對應功能：' + action, action: action });
@@ -208,22 +220,49 @@ function govopsClearSheet_(sheetName) {
 
 function govopsFilter_(rows, params) {
   params = params || {};
+  // 租戶隔離（最優先）：有 _tenantId 時只回傳同租戶資料
+  var _tid = String(params._tenantId || '').trim();
+  if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
   var kw = String(params.keyword || params.q || params['關鍵字'] || '').trim();
   if (kw) rows = rows.filter(function(r){ return JSON.stringify(r).indexOf(kw) >= 0; });
   return rows;
 }
 
-var VENDOR_HEADERS = ['廠商編號','名稱','類型','聯絡人','電話','地址','Email','支付方式','銀行','帳號','戶名','統編/身分證','是否開發票','是否扣繳','扣繳類型','預設單價','評價','常用','備註','建立時間','更新時間'];
+// ── CacheService 快取 (5分鐘) ─────────────────────────────────
+function govopsCache_() { return CacheService.getScriptCache(); }
+function govopsCacheKey_(sheetName) { return 'gs_rows_' + sheetName.replace(/\s/g,'_'); }
+function govopsRowsCached_(sheetName, headers) {
+  var key = govopsCacheKey_(sheetName);
+  var cached = govopsCache_().get(key);
+  if (cached) { try { return JSON.parse(cached); } catch(e) {} }
+  var rows = govopsRows_(sheetName, headers);
+  try { govopsCache_().put(key, JSON.stringify(rows), 300); } catch(e) {}
+  return rows;
+}
+function govopsCacheInvalidate_(sheetName) {
+  try { govopsCache_().remove(govopsCacheKey_(sheetName)); } catch(e) {}
+}
+
+// ── 分頁 helper ───────────────────────────────────────────────
+function govopsPaginate_(rows, params) {
+  var limit  = Math.max(1, Math.min(500, parseInt(params.limit  || params['每頁筆數'] || '200', 10) || 200));
+  var offset = Math.max(0, parseInt(params.offset || params['偏移'] || '0', 10) || 0);
+  var total  = rows.length;
+  var paged  = rows.slice(offset, offset + limit);
+  return { rows: paged, total: total, limit: limit, offset: offset, hasMore: offset + paged.length < total };
+}
+
+var VENDOR_HEADERS = ['廠商編號','名稱','類型','聯絡人','電話','地址','Email','支付方式','銀行','帳號','戶名','統編/身分證','是否開發票','是否扣繳','扣繳類型','預設單價','評價','常用','備註','建立時間','更新時間','tenantId','workspaceId','createdBy'];
 var PROJECT_HEADERS = ['專案ID','專案計畫名稱','專案類型','主辦單位','開始日期','結束日期','契約金額','狀態','專案說明','備註','建立時間','更新時間'];
 // CASE_HEADERS = PROJECT_HEADERS 原有12欄 + 擴充9欄（第13~21欄），govopsEnsureSheet_會自動補欄
-var CASE_HEADERS = ['專案ID','專案計畫名稱','專案類型','主辦單位','開始日期','結束日期','契約金額','狀態','專案說明','備註','建立時間','更新時間','承辦窗口','聯絡電話','Email','結案期限','預估成本','付款狀態','結案狀態','Drive連結','Calendar連結'];
+var CASE_HEADERS = ['專案ID','專案計畫名稱','專案類型','主辦單位','開始日期','結束日期','契約金額','狀態','專案說明','備註','建立時間','更新時間','承辦窗口','聯絡電話','Email','結案期限','預估成本','付款狀態','結案狀態','Drive連結','Calendar連結','tenantId','workspaceId','createdBy','visibility'];
 var ACTIVITY_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間'];
 // SESSION_HEADERS = ACTIVITY_HEADERS 原有17欄 + v0.1擴充14欄，govopsEnsureSheet_自動補欄
-var SESSION_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間','報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態'];
+var SESSION_HEADERS = ['活動ID','專案ID','專案計畫名稱','活動名稱','活動日期','活動類型','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註','建立時間','更新時間','報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態','tenantId','workspaceId','createdBy'];
 var CAMPAIGN_HEADERS = ['招生活動ID','專案ID','活動ID','課程名稱','招生狀態','報名開始日','報名截止日','開課日期','招生名額','候補名額','報名連結','招生渠道','主辦單位','聯絡人','聯絡電話','備註','建立時間','更新時間'];
 var REG_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間'];
 // REG_EXT_HEADERS = REG_HEADERS 原有20欄 + v0.1擴充13欄
-var REG_EXT_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間','案件ID','性別','出生日期','身分證字號','地址','職稱','資格審查狀態','審查結果','補件項目','補件期限','通知日期','錄取狀態','匯入批次ID'];
+var REG_EXT_HEADERS = ['報名ID','招生活動ID','活動ID','姓名','電話','Email','身分別','服務單位','用餐習慣','報名狀態','審核狀態','出席狀態','完訓狀態','報名來源','報名時間','通知狀態','備註','CRM_ID','建立時間','更新時間','案件ID','性別','出生日期','身分證字號','地址','職稱','資格審查狀態','審查結果','補件項目','補件期限','通知日期','錄取狀態','匯入批次ID','tenantId','workspaceId'];
 var CRM_HEADERS = ['CRM_ID','姓名','電話','Email','服務單位','身分別','標籤','最近參與活動','累積報名次數','累積出席次數','累積完訓次數','是否回流學員','行銷同意','備註','建立時間','更新時間'];
 var ATT_HEADERS = ['簽到ID','招生活動ID','活動ID','報名ID','CRM_ID','姓名','電話','Email','服務單位','簽到狀態','簽到時間','簽名連結','備註','建立時間','更新時間'];
 var ATT_LOG_HEADERS = ['紀錄ID','簽到ID','報名ID','活動ID','姓名','簽到狀態','操作時間','操作人','備註'];
@@ -246,6 +285,9 @@ function govopsVendorRoute_(params, action) {
       '類型': params['類型'] || params['廠商類型'] || '其他廠商',
       '聯絡人': params['聯絡人'] || '',
       '電話': params['電話'] || params['聯絡電話'] || '',
+      'tenantId': params._tenantId || '',
+      'workspaceId': params._workspaceId || '',
+      'createdBy': params._userId || '',
       'Email': params['Email'] || '',
       '支付方式': params['支付方式'] || params['付款方式'] || '匯款',
       '銀行': params['銀行'] || '',
@@ -295,7 +337,10 @@ function govopsProjectActivityRoute_(params, action) {
   // ── Case API v0.1 ─────────────────────────────────────────
   // getCases: 查詢案件（支援多條件篩選，預設排除封存）
   if (action === 'getCases') {
-    var rows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var rows = govopsRowsCached_('01_專案主檔', CASE_HEADERS);
+    // 租戶隔離：只回傳同租戶資料（無 tenantId 的舊資料為 legacy，不顯示）
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var incArch = String(params.includeArchived || '').toLowerCase() === 'true';
     if (!incArch) rows = rows.filter(function(r){ return String(r['狀態'] || '') !== '封存'; });
     var kw = String(params.keyword || params.q || '').trim();
@@ -311,15 +356,26 @@ function govopsProjectActivityRoute_(params, action) {
     var payF = String(params.payStatus || params['付款狀態'] || '').trim();
     if (payF) rows = rows.filter(function(r){ return String(r['付款狀態']) === payF; });
     var clean = rows.map(function(r){ var o = {}; Object.keys(r).forEach(function(k){ if (k !== '_row') o[k] = r[k]; }); return o; });
-    return { success: true, data: clean, message: '案件查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+    var pg = govopsPaginate_(clean, params);
+    return { success: true, data: pg.rows, total: pg.total, limit: pg.limit, offset: pg.offset, hasMore: pg.hasMore, message: '案件查詢完成，共 ' + pg.total + ' 筆（本頁 ' + pg.rows.length + ' 筆）', timestamp: govopsNow_() };
   }
 
-  // createCase: 新增案件（寫入擴充欄位）
+  // createCase: 新增案件（含方案用量檢查）
   if (action === 'createCase') {
     var cname = params['案件名稱'] || params['專案計畫名稱'] || params.name;
     if (!cname) return { success: false, error: 'MISSING_REQUIRED', message: '案件名稱為必填', timestamp: govopsNow_() };
     var ctype = params['案件類型'] || params['專案類型'] || '';
     if (!ctype) return { success: false, error: 'MISSING_REQUIRED', message: '案件類型為必填', timestamp: govopsNow_() };
+    // 方案用量執法：檢查 maxCases
+    if (params._tenantId) {
+      var tenantRow = (govopsRows_('S01_租戶', TENANT_HEADERS).filter(function(t){ return t['tenantId']===params._tenantId; })[0]) || {};
+      var planId = tenantRow['planId'] || 'free';
+      var plan = (GOVOPS_PLANS.filter(function(p){ return p.planId===planId; })[0]) || GOVOPS_PLANS[0];
+      var existingCases = govopsRows_('01_專案主檔', CASE_HEADERS).filter(function(r){ return String(r['tenantId']||'')===params._tenantId && String(r['狀態']||'')!=='封存'; });
+      if (existingCases.length >= plan.maxCases) {
+        return { success:false, error:'QUOTA_EXCEEDED', message:'已達方案案件數上限（'+plan.maxCases+' 件）。如需新增，請升級方案或封存舊案件。', timestamp:govopsNow_() };
+      }
+    }
     var cobj = {
       '專案ID': govopsId_('PROJ'),
       '專案計畫名稱': cname,
@@ -341,9 +397,14 @@ function govopsProjectActivityRoute_(params, action) {
       '付款狀態': params['付款狀態'] || '未請款',
       '結案狀態': params['結案狀態'] || '未結案',
       'Drive連結': params['Drive連結'] || '',
-      'Calendar連結': params['Calendar連結'] || ''
+      'Calendar連結': params['Calendar連結'] || '',
+      'tenantId': params._tenantId || '',
+      'workspaceId': params._workspaceId || '',
+      'createdBy': params._userId || '',
+      'visibility': 'workspace'
     };
     govopsAppend_('01_專案主檔', CASE_HEADERS, cobj);
+    govopsCacheInvalidate_('01_專案主檔');
     return { success: true, data: { caseId: cobj['專案ID'], row: cobj }, message: '案件已新增', timestamp: govopsNow_() };
   }
 
@@ -355,6 +416,7 @@ function govopsProjectActivityRoute_(params, action) {
     var found = null;
     for (var i = 0; i < allRows.length; i++) { if (allRows[i]['專案ID'] === caseId) { found = allRows[i]; break; } }
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到案件：' + caseId, timestamp: govopsNow_() };
+    if (params._tenantId && String(found['tenantId']||'') && String(found['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限修改此案件', timestamp:govopsNow_() };
     var patch = { '更新時間': govopsNow_() };
     var oldFields = ['專案計畫名稱','專案類型','主辦單位','契約金額','開始日期','結束日期','狀態','專案說明','備註'];
     var newFields = ['承辦窗口','聯絡電話','Email','結案期限','預估成本','付款狀態','結案狀態','Drive連結','Calendar連結'];
@@ -366,6 +428,7 @@ function govopsProjectActivityRoute_(params, action) {
     if (params['預估收入']) patch['契約金額'] = params['預估收入'];
     if (params['重要備註']) patch['專案說明'] = params['重要備註'];
     govopsUpdate_('01_專案主檔', CASE_HEADERS, found._row, patch);
+    govopsCacheInvalidate_('01_專案主檔');
     return { success: true, data: { caseId: caseId, updated: patch }, message: '案件已更新', timestamp: govopsNow_() };
   }
 
@@ -377,13 +440,17 @@ function govopsProjectActivityRoute_(params, action) {
     var found = null;
     for (var i = 0; i < allRows.length; i++) { if (allRows[i]['專案ID'] === caseId) { found = allRows[i]; break; } }
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到案件：' + caseId, timestamp: govopsNow_() };
+    if (params._tenantId && String(found['tenantId']||'') && String(found['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限封存此案件', timestamp:govopsNow_() };
     govopsUpdate_('01_專案主檔', CASE_HEADERS, found._row, { '狀態': '封存', '更新時間': govopsNow_() });
+    govopsCacheInvalidate_('01_專案主檔');
     return { success: true, data: { caseId: caseId, status: '封存' }, message: '案件已封存', timestamp: govopsNow_() };
   }
 
   // getCaseStats: 案件統計（供 Dashboard 使用）
   if (action === 'getCaseStats') {
     var allRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) allRows = allRows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var STATUS_LIST = ['草稿','洽談中','提案中','已簽約','執行中','待請款','待收款','待結案','已結案','暫停','取消','封存'];
     var byStatus = {};
     STATUS_LIST.forEach(function(s){ byStatus[s] = 0; });
@@ -431,26 +498,24 @@ function govopsProjectActivityRoute_(params, action) {
   // ── Session API v0.1 ──────────────────────────────────────
   // getSessions: 查詢場次（支援 caseId、keyword、status、日期篩選）
   if (action === 'getSessions') {
-    var rows = govopsRows_('02_場次活動', SESSION_HEADERS);
-    // caseId 篩選（最常用）
+    var rows = govopsRowsCached_('02_場次活動', SESSION_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var caseIdF = String(params.caseId || params['專案ID'] || '').trim();
     if (caseIdF) rows = rows.filter(function(r){ return String(r['專案ID']) === caseIdF; });
-    // keyword
     var kw = String(params.keyword || params.q || '').trim();
     if (kw) rows = rows.filter(function(r){ return String(r['活動名稱']).indexOf(kw) >= 0 || String(r['活動地點']).indexOf(kw) >= 0 || String(r['講師']).indexOf(kw) >= 0; });
-    // status
     var statusF = String(params.status || params['狀態'] || '').trim();
     if (statusF) rows = rows.filter(function(r){ return String(r['狀態']) === statusF; });
-    // dateFrom / dateTo（活動日期）
     var dateFrom = String(params.dateFrom || '').trim();
     var dateTo = String(params.dateTo || '').trim();
     if (dateFrom) rows = rows.filter(function(r){ return String(r['活動日期']) >= dateFrom; });
     if (dateTo) rows = rows.filter(function(r){ return String(r['活動日期']) <= dateTo; });
-    // 排除封存
     var incArch = String(params.includeArchived || '').toLowerCase() === 'true';
     if (!incArch) rows = rows.filter(function(r){ return String(r['狀態'] || '') !== '封存'; });
     var clean = rows.map(function(r){ var o = {}; Object.keys(r).forEach(function(k){ if (k !== '_row') o[k] = r[k]; }); return o; });
-    return { success: true, data: clean, message: '場次查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+    var pg = govopsPaginate_(clean, params);
+    return { success: true, data: pg.rows, total: pg.total, limit: pg.limit, offset: pg.offset, hasMore: pg.hasMore, message: '場次查詢完成，共 ' + pg.total + ' 筆（本頁 ' + pg.rows.length + ' 筆）', timestamp: govopsNow_() };
   }
 
   // createSession: 新增場次（寫入擴充欄位）
@@ -499,7 +564,11 @@ function govopsProjectActivityRoute_(params, action) {
       '日曆同步狀態': '',
       '變更狀態': ''
     };
+    sobj['tenantId']   = params._tenantId || '';
+    sobj['workspaceId'] = params._workspaceId || '';
+    sobj['createdBy']  = params._userId || '';
     govopsAppend_('02_場次活動', SESSION_HEADERS, sobj);
+    govopsCacheInvalidate_('02_場次活動');
     return { success: true, data: { sessionId: sobj['活動ID'], caseId: scaseId, row: sobj }, message: '場次已新增', timestamp: govopsNow_() };
   }
 
@@ -511,6 +580,7 @@ function govopsProjectActivityRoute_(params, action) {
     var foundSes = null;
     for (var i = 0; i < allSes.length; i++) { if (allSes[i]['活動ID'] === sesId) { foundSes = allSes[i]; break; } }
     if (!foundSes) return { success: false, error: 'NOT_FOUND', message: '找不到場次：' + sesId, timestamp: govopsNow_() };
+    if (params._tenantId && String(foundSes['tenantId']||'') && String(foundSes['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限修改此場次', timestamp:govopsNow_() };
     var sesPatch = { '更新時間': govopsNow_() };
     var sesAllowedOld = ['活動名稱','活動類型','活動日期','開始時間','結束時間','活動地點','講師','聯絡電話','聯絡人','工作人員','狀態','備註'];
     var sesAllowedNew = ['報名截止日','預計人數','實際人數','是否需簽到表','是否需簽退表','是否需便當','是否需保險','是否需問卷','是否需成果照片','是否需講師領據','是否需工作人員','CalendarEventID','CalendarLink','已同步日曆','日曆同步狀態','變更狀態'];
@@ -522,6 +592,7 @@ function govopsProjectActivityRoute_(params, action) {
     if (params['場次狀態']) sesPatch['狀態'] = params['場次狀態'];
     if (params['場次地點']) sesPatch['活動地點'] = params['場次地點'];
     govopsUpdate_('02_場次活動', SESSION_HEADERS, foundSes._row, sesPatch);
+    govopsCacheInvalidate_('02_場次活動');
     return { success: true, data: { sessionId: sesId, updated: sesPatch }, message: '場次已更新', timestamp: govopsNow_() };
   }
 
@@ -533,7 +604,9 @@ function govopsProjectActivityRoute_(params, action) {
     var foundSes = null;
     for (var i = 0; i < allSes.length; i++) { if (allSes[i]['活動ID'] === sesId) { foundSes = allSes[i]; break; } }
     if (!foundSes) return { success: false, error: 'NOT_FOUND', message: '找不到場次：' + sesId, timestamp: govopsNow_() };
+    if (params._tenantId && String(foundSes['tenantId']||'') && String(foundSes['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限封存此場次', timestamp:govopsNow_() };
     govopsUpdate_('02_場次活動', SESSION_HEADERS, foundSes._row, { '狀態': '封存', '更新時間': govopsNow_() });
+    govopsCacheInvalidate_('02_場次活動');
     return { success: true, data: { sessionId: sesId, status: '封存' }, message: '場次已封存', timestamp: govopsNow_() };
   }
 
@@ -735,7 +808,9 @@ function govopsEnrollmentRoute_(params, action) {
   // ── Registration API v0.1 ─────────────────────────────────
   // getRegistrations: 多條件查詢報名資料
   if (action === 'getRegistrations') {
-    var rows = govopsRows_('報名資料庫', REG_EXT_HEADERS);
+    var rows = govopsRowsCached_('報名資料庫', REG_EXT_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var sessionIdF = String(params.sessionId || params['活動ID'] || '').trim();
     var caseIdF = String(params.caseId || params['案件ID'] || '').trim();
     var statusF = String(params.status || params['審核狀態'] || '').trim();
@@ -747,7 +822,8 @@ function govopsEnrollmentRoute_(params, action) {
     if (reviewF) rows = rows.filter(function(r){ return String(r['資格審查狀態']) === reviewF; });
     if (kw) rows = rows.filter(function(r){ return String(r['姓名']).indexOf(kw) >= 0 || String(r['電話']).indexOf(kw) >= 0 || String(r['Email']).indexOf(kw) >= 0 || String(r['服務單位']).indexOf(kw) >= 0; });
     var clean = rows.map(function(r){ var o = {}; Object.keys(r).forEach(function(k){ if (k !== '_row') o[k] = r[k]; }); return o; });
-    return { success: true, data: clean, message: '報名查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+    var pg = govopsPaginate_(clean, params);
+    return { success: true, data: pg.rows, total: pg.total, limit: pg.limit, offset: pg.offset, hasMore: pg.hasMore, message: '報名查詢完成，共 ' + pg.total + ' 筆（本頁 ' + pg.rows.length + ' 筆）', timestamp: govopsNow_() };
   }
 
   // createRegistration: 手動新增報名
@@ -791,7 +867,10 @@ function govopsEnrollmentRoute_(params, action) {
       '錄取狀態': params['錄取狀態'] || '',
       '匯入批次ID': params['匯入批次ID'] || ''
     };
+    robj['tenantId']    = params._tenantId || '';
+    robj['workspaceId'] = params._workspaceId || '';
     govopsAppend_('報名資料庫', REG_EXT_HEADERS, robj);
+    govopsCacheInvalidate_('報名資料庫');
     return { success: true, data: { regId: robj['報名ID'], row: robj }, message: '報名已新增', timestamp: govopsNow_() };
   }
 
@@ -803,10 +882,12 @@ function govopsEnrollmentRoute_(params, action) {
     var foundReg = null;
     for (var i = 0; i < allRegs.length; i++) { if (allRegs[i]['報名ID'] === regId) { foundReg = allRegs[i]; break; } }
     if (!foundReg) return { success: false, error: 'NOT_FOUND', message: '找不到報名資料：' + regId, timestamp: govopsNow_() };
+    if (params._tenantId && String(foundReg['tenantId']||'') && String(foundReg['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限修改此報名資料', timestamp:govopsNow_() };
     var regPatch = { '更新時間': govopsNow_() };
     var regUpdatable = ['審核狀態','報名狀態','資格審查狀態','審查結果','補件項目','補件期限','錄取狀態','出席狀態','完訓狀態','通知狀態','通知日期','備註','用餐習慣','身分別','服務單位','職稱'];
     regUpdatable.forEach(function(f){ if (params[f] !== undefined && params[f] !== '') regPatch[f] = params[f]; });
     govopsUpdate_('報名資料庫', REG_EXT_HEADERS, foundReg._row, regPatch);
+    govopsCacheInvalidate_('報名資料庫');
     return { success: true, data: { regId: regId, updated: regPatch }, message: '報名狀態已更新', timestamp: govopsNow_() };
   }
 
@@ -827,6 +908,7 @@ function govopsEnrollmentRoute_(params, action) {
         updated++;
       }
     });
+    govopsCacheInvalidate_('報名資料庫');
     return { success: true, data: { updated: updated, total: regIds.length }, message: '批次更新完成：' + updated + ' 筆', timestamp: govopsNow_() };
   }
 
@@ -1461,10 +1543,12 @@ function govopsCalendarRoute_(params, action) {
 // ════════════════════════════════════════════════════════
 // Finance v1 Route — 擴充財務收支（v0.1 基礎）
 // ════════════════════════════════════════════════════════
-var FINANCE_HEADERS = ['收支ID','案件ID','場次ID','類型','科目','對象名稱','金額','付款方式','預計收付日','實際收付日','收付狀態','憑證連結','備註','建立時間','更新時間'];
+var FINANCE_HEADERS = ['收支ID','案件ID','場次ID','類型','科目','對象名稱','金額','付款方式','預計收付日','實際收付日','收付狀態','憑證連結','備註','建立時間','更新時間','tenantId','workspaceId'];
 function govopsFinanceV1Route_(params, action) {
   if (action === 'getFinanceRecords') {
-    var rows = govopsRows_('財務收支', FINANCE_HEADERS);
+    var rows = govopsRowsCached_('財務收支', FINANCE_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var caseId = params.caseId || '';
     var type = params.type || '';
     var status = params.status || '';
@@ -1472,7 +1556,8 @@ function govopsFinanceV1Route_(params, action) {
     if (type) rows = rows.filter(function(r){ return String(r['類型']) === type; });
     if (status) rows = rows.filter(function(r){ return String(r['收付狀態']) === status; });
     var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){if(k!=='_row')o[k]=r[k];}); return o; });
-    return { success: true, data: clean, message: '財務查詢完成，共 ' + clean.length + ' 筆', timestamp: govopsNow_() };
+    var pg = govopsPaginate_(clean, params);
+    return { success: true, data: pg.rows, total: pg.total, limit: pg.limit, offset: pg.offset, hasMore: pg.hasMore, message: '財務查詢完成，共 ' + pg.total + ' 筆（本頁 ' + pg.rows.length + ' 筆）', timestamp: govopsNow_() };
   }
   if (action === 'createFinanceRecord') {
     var amount = params['金額'] || params.amount;
@@ -1494,7 +1579,10 @@ function govopsFinanceV1Route_(params, action) {
       '建立時間': govopsNow_(),
       '更新時間': govopsNow_()
     };
+    obj['tenantId']    = params._tenantId || '';
+    obj['workspaceId'] = params._workspaceId || '';
     govopsAppend_('財務收支', FINANCE_HEADERS, obj);
+    govopsCacheInvalidate_('財務收支');
     return { success: true, data: { finId: obj['收支ID'], row: obj }, message: '財務紀錄已新增', timestamp: govopsNow_() };
   }
   if (action === 'updateFinanceRecord') {
@@ -1504,11 +1592,69 @@ function govopsFinanceV1Route_(params, action) {
     var found = null;
     for (var i = 0; i < rows.length; i++) { if (rows[i]['收支ID'] === finId) { found = rows[i]; break; } }
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到財務紀錄', timestamp: govopsNow_() };
+    if (params._tenantId && String(found['tenantId']||'') && String(found['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限修改此財務紀錄', timestamp:govopsNow_() };
     var patch = { '更新時間': govopsNow_() };
     ['類型','科目','對象名稱','金額','付款方式','預計收付日','實際收付日','收付狀態','憑證連結','備註'].forEach(function(f){ if (params[f] !== undefined && params[f] !== '') patch[f] = params[f]; });
     govopsUpdate_('財務收支', FINANCE_HEADERS, found._row, patch);
+    govopsCacheInvalidate_('財務收支');
     return { success: true, data: { finId: finId, updated: patch }, message: '財務紀錄已更新', timestamp: govopsNow_() };
   }
+  // ── 舊財務系統一鍵遷移 ─────────────────────────────────
+  if (action === 'migrateOldFinanceData') {
+    govopsEnsureSheet_('財務收支', FINANCE_HEADERS);
+    var batchId = 'MIGRATE-' + Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyyMMddHHmm');
+    var now = govopsNow_();
+    var created = 0;
+    var skipped = 0;
+    var existingNew = govopsRows_('財務收支', FINANCE_HEADERS);
+    var existingBatchIds = existingNew.map(function(r){ return String(r['備註']); });
+
+    // 1. 16_應收帳款 → 收入
+    try {
+      var arRows = govopsRows_('16_應收帳款', AR_HEADERS);
+      arRows.forEach(function(r) {
+        var marker = 'AR:' + String(r['應收ID'] || '');
+        if (existingBatchIds.indexOf(marker) >= 0) { skipped++; return; }
+        var obj = {
+          '收支ID': govopsId_('FIN'), '案件ID': String(r['活動ID'] || ''),
+          '場次ID': String(r['活動ID'] || ''), '類型': '收入',
+          '科目': String(r['應收項目'] || '應收款'), '對象名稱': String(r['對象名稱'] || ''),
+          '金額': parseFloat(String(r['應收金額']).replace(/,/g,'')) || 0,
+          '付款方式': '匯款', '預計收付日': String(r['預計收款日'] || ''),
+          '實際收付日': String(r['狀態'] === '已收款' ? r['預計收款日'] : ''),
+          '收付狀態': String(r['狀態'] === '已收款' ? '已收款' : '未收款'),
+          '憑證連結': '', '備註': marker, '建立時間': now, '更新時間': now
+        };
+        govopsAppend_('財務收支', FINANCE_HEADERS, obj);
+        created++;
+      });
+    } catch(e) {}
+
+    // 2. 18_支出明細 → 支出
+    try {
+      var expRows = govopsRows_('18_支出明細', EXP_HEADERS);
+      expRows.forEach(function(r) {
+        var marker = 'EXP:' + String(r['支出ID'] || '');
+        if (existingBatchIds.indexOf(marker) >= 0) { skipped++; return; }
+        var obj = {
+          '收支ID': govopsId_('FIN'), '案件ID': String(r['活動ID'] || ''),
+          '場次ID': String(r['活動ID'] || ''), '類型': '支出',
+          '科目': String(r['支出類型'] || '其他支出'), '對象名稱': String(r['廠商'] || ''),
+          '金額': parseFloat(String(r['支出金額']).replace(/,/g,'')) || 0,
+          '付款方式': String(r['付款方式'] || '匯款'),
+          '預計收付日': String(r['支出日期'] || ''), '實際收付日': String(r['支出日期'] || ''),
+          '收付狀態': '已付款', '憑證連結': '',
+          '備註': marker, '建立時間': now, '更新時間': now
+        };
+        govopsAppend_('財務收支', FINANCE_HEADERS, obj);
+        created++;
+      });
+    } catch(e) {}
+
+    govopsCacheInvalidate_('財務收支');
+    return { success: true, data: { created: created, skipped: skipped, batchId: batchId }, message: '遷移完成，新增 ' + created + ' 筆（跳過重複 ' + skipped + ' 筆）', timestamp: govopsNow_() };
+  }
+
   if (action === 'getFinanceSummary') {
     var caseId = params.caseId || '';
     // 新系統：財務收支
@@ -1635,12 +1781,14 @@ var TASK_HEADERS = ['任務ID','案件ID','場次ID','任務名稱','任務類�
 // ════════════════════════════════════════════════════════
 // Official Doc Route v0.1 — 收發公文管理
 // ════════════════════════════════════════════════════════
-var ODOC_HEADERS = ['公文ID','公文類型','案件ID','公文編號','主旨','發文單位','收文單位','承辦窗口','聯絡電話','來文日期','發文日期','辦理期限','是否需回覆','回覆期限','是否需補件','公文摘要','附件連結','處理狀態','負責人','備註','建立時間','更新時間'];
+var ODOC_HEADERS = ['公文ID','公文類型','案件ID','公文編號','主旨','發文單位','收文單位','承辦窗口','聯絡電話','來文日期','發文日期','辦理期限','是否需回覆','回覆期限','是否需補件','公文摘要','附件連結','處理狀態','負責人','備註','建立時間','更新時間','tenantId','workspaceId'];
 
 function govopsOfficialDocRoute_(params, action) {
   if (action === 'getOfficialDocs') {
     govopsEnsureSheet_('收發公文', ODOC_HEADERS);
-    var rows = govopsRows_('收發公文', ODOC_HEADERS);
+    var rows = govopsRowsCached_('收發公文', ODOC_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'') === _tid; });
     var caseId = String(params.caseId || '').trim();
     var type = String(params.type || params['公文類型'] || '').trim();
     var status = String(params.status || params['處理狀態'] || '').trim();
@@ -1650,7 +1798,8 @@ function govopsOfficialDocRoute_(params, action) {
     if (status) rows = rows.filter(function(r){ return String(r['處理狀態']) === status; });
     if (kw) rows = rows.filter(function(r){ return String(r['主旨']).indexOf(kw)>=0 || String(r['公文編號']).indexOf(kw)>=0 || String(r['發文單位']).indexOf(kw)>=0; });
     var clean = rows.map(function(r){ var o={}; Object.keys(r).forEach(function(k){ if(k!=='_row')o[k]=r[k]; }); return o; });
-    return { success: true, data: clean, message: '公文查詢完成，共 '+clean.length+' 筆', timestamp: govopsNow_() };
+    var pg = govopsPaginate_(clean, params);
+    return { success: true, data: pg.rows, total: pg.total, limit: pg.limit, offset: pg.offset, hasMore: pg.hasMore, message: '公文查詢完成，共 '+pg.total+' 筆（本頁 '+pg.rows.length+' 筆）', timestamp: govopsNow_() };
   }
   if (action === 'createOfficialDoc') {
     var subj = params['主旨'] || params.subject;
@@ -1680,7 +1829,10 @@ function govopsOfficialDocRoute_(params, action) {
       '建立時間': govopsNow_(),
       '更新時間': govopsNow_()
     };
+    obj['tenantId']    = params._tenantId || '';
+    obj['workspaceId'] = params._workspaceId || '';
     govopsAppend_('收發公文', ODOC_HEADERS, obj);
+    govopsCacheInvalidate_('收發公文');
     return { success: true, data: { docId: obj['公文ID'], row: obj }, message: '公文已新增', timestamp: govopsNow_() };
   }
   if (action === 'updateOfficialDoc') {
@@ -1691,9 +1843,11 @@ function govopsOfficialDocRoute_(params, action) {
     var found = null;
     for (var i=0;i<rows.length;i++){ if(rows[i]['公文ID']===docId){found=rows[i];break;} }
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到公文：'+docId, timestamp: govopsNow_() };
+    if (params._tenantId && String(found['tenantId']||'') && String(found['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限修改此公文', timestamp:govopsNow_() };
     var patch = { '更新時間': govopsNow_() };
     ['公文類型','公文編號','主旨','發文單位','收文單位','承辦窗口','聯絡電話','來文日期','發文日期','辦理期限','是否需回覆','回覆期限','是否需補件','公文摘要','附件連結','處理狀態','負責人','備註'].forEach(function(f){ if(params[f]!==undefined&&params[f]!=='')patch[f]=params[f]; });
     govopsUpdate_('收發公文', ODOC_HEADERS, found._row, patch);
+    govopsCacheInvalidate_('收發公文');
     return { success: true, data: { docId: docId, updated: patch }, message: '公文已更新', timestamp: govopsNow_() };
   }
   if (action === 'deleteOfficialDoc') {
@@ -1704,7 +1858,9 @@ function govopsOfficialDocRoute_(params, action) {
     var found = null;
     for (var i=0;i<rows.length;i++){ if(rows[i]['公文ID']===docId){found=rows[i];break;} }
     if (!found) return { success: false, error: 'NOT_FOUND', message: '找不到公文：'+docId, timestamp: govopsNow_() };
+    if (params._tenantId && String(found['tenantId']||'') && String(found['tenantId']||'') !== params._tenantId) return { success:false, error:'FORBIDDEN', message:'無權限刪除此公文', timestamp:govopsNow_() };
     govopsDeleteRow_('收發公文', found._row);
+    govopsCacheInvalidate_('收發公文');
     return { success: true, data: { docId: docId }, message: '公文已刪除', timestamp: govopsNow_() };
   }
   if (action === 'getOfficialDocStats') {
@@ -1925,10 +2081,10 @@ function govopsTaskRoute_(params, action) {
 }
 
 // ── Manpower Route v2 — 支援人力管理 ─────────────────────
-var MPOWER_NEED_HEADERS  = ['需求ID','案件ID','場次ID','需求名稱','人力類型','需求人數','工作說明','工作日期','開始時間','結束時間','工作地點','時薪','招募截止日','狀態','建立時間','更新時間'];
-var MPOWER_STAFF_HEADERS = ['人員ID','需求ID','案件ID','場次ID','姓名','電話','Email','身分別','銀行','帳號','戶名','身分證','應徵日期','審核狀態','備註','建立時間','更新時間'];
-var MPOWER_HOURS_HEADERS = ['工時ID','人員ID','需求ID','場次ID','案件ID','姓名','工作日期','開始時間','結束時間','工時','工作狀態','備註','建立時間','更新時間'];
-var MPOWER_PAY_HEADERS   = ['付款ID','人員ID','需求ID','場次ID','案件ID','姓名','付款類型','應付金額','實際付款金額','付款方式','付款狀態','付款日期','戶名','帳號','憑證連結','備註','建立時間','更新時間'];
+var MPOWER_NEED_HEADERS  = ['需求ID','案件ID','場次ID','需求名稱','人力類型','需求人數','工作說明','工作日期','開始時間','結束時間','工作地點','時薪','招募截止日','狀態','建立時間','更新時間','tenantId','workspaceId'];
+var MPOWER_STAFF_HEADERS = ['人員ID','需求ID','案件ID','場次ID','姓名','電話','Email','身分別','銀行','帳號','戶名','身分證','應徵日期','審核狀態','備註','建立時間','更新時間','tenantId','workspaceId'];
+var MPOWER_HOURS_HEADERS = ['工時ID','人員ID','需求ID','場次ID','案件ID','姓名','工作日期','開始時間','結束時間','工時','工作狀態','備註','建立時間','更新時間','tenantId'];
+var MPOWER_PAY_HEADERS   = ['付款ID','人員ID','需求ID','場次ID','案件ID','姓名','付款類型','應付金額','實際付款金額','付款方式','付款狀態','付款日期','戶名','帳號','憑證連結','備註','建立時間','更新時間','tenantId'];
 
 function govopsManpowerRoute_(params, action) {
 
@@ -1937,9 +2093,11 @@ function govopsManpowerRoute_(params, action) {
     govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
     govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
     govopsEnsureSheet_('支援人員付款', MPOWER_PAY_HEADERS);
+    var _tid = String(params._tenantId || '');
     var needs  = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS);
     var staffs = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
     var pays   = govopsRows_('支援人員付款', MPOWER_PAY_HEADERS);
+    if (_tid) { needs=needs.filter(function(r){return String(r['tenantId']||'')===_tid;}); staffs=staffs.filter(function(r){return String(r['tenantId']||'')===_tid;}); pays=pays.filter(function(r){return String(r['tenantId']||'')===_tid;}); }
     var totalNeeds = needs.reduce(function(s,r){ return s + (parseInt(r['需求人數'])||0); }, 0);
     var recruiting = needs.filter(function(r){ return r['狀態']==='招募中'; }).reduce(function(s,r){ return s+(parseInt(r['需求人數'])||0); },0);
     var applied  = staffs.length;
@@ -1953,6 +2111,8 @@ function govopsManpowerRoute_(params, action) {
   if (action === 'getManpowerNeeds') {
     govopsEnsureSheet_('人力需求清單', MPOWER_NEED_HEADERS);
     var rows = govopsRows_('人力需求清單', MPOWER_NEED_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'')===_tid; });
     if (params.caseId)   rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
     if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
     if (params.status)   rows = rows.filter(function(r){ return r['狀態']===params.status; });
@@ -1976,7 +2136,8 @@ function govopsManpowerRoute_(params, action) {
       '時薪': parseFloat(params.hourlyRate) || 0,
       '招募截止日': params.deadline || '',
       '狀態': '招募中',
-      '建立時間': now, '更新時間': now
+      '建立時間': now, '更新時間': now,
+      'tenantId': params._tenantId||'', 'workspaceId': params._workspaceId||''
     };
     govopsAppend_('人力需求清單', MPOWER_NEED_HEADERS, obj);
     return { success: true, data: obj, message: '人力需求已建立', timestamp: now };
@@ -1999,6 +2160,8 @@ function govopsManpowerRoute_(params, action) {
   if (action === 'getStaffList') {
     govopsEnsureSheet_('支援人員名單', MPOWER_STAFF_HEADERS);
     var rows = govopsRows_('支援人員名單', MPOWER_STAFF_HEADERS);
+    var _tid = String(params._tenantId || '');
+    if (_tid) rows = rows.filter(function(r){ return String(r['tenantId']||'')===_tid; });
     if (params.needId)   rows = rows.filter(function(r){ return String(r['需求ID'])===params.needId; });
     if (params.caseId)   rows = rows.filter(function(r){ return String(r['案件ID'])===params.caseId; });
     if (params.sessionId) rows = rows.filter(function(r){ return String(r['場次ID'])===params.sessionId; });
@@ -2019,7 +2182,8 @@ function govopsManpowerRoute_(params, action) {
       '身分證': params.idNumber || '',
       '應徵日期': params.applyDate || now.substring(0,10),
       '審核狀態': '待審', '備註': params.remark || '',
-      '建立時間': now, '更新時間': now
+      '建立時間': now, '更新時間': now,
+      'tenantId': params._tenantId||'', 'workspaceId': params._workspaceId||''
     };
     govopsAppend_('支援人員名單', MPOWER_STAFF_HEADERS, obj);
     return { success: true, data: obj, message: '人員已新增', timestamp: now };
@@ -2474,8 +2638,15 @@ function govopsDriveRoute_(params, action) {
 
   function getOrCreateRootFolder() {
     var rootId = params.rootFolderId || '';
+    if (!rootId) {
+      // Auto-read from 28_系統設定 Sheet
+      try {
+        var settingsRows = govopsRows_('28_系統設定', ['設定鍵', '設定值', '說明', '更新時間']);
+        var found = settingsRows.filter(function(r){ return String(r['設定鍵']) === 'driveFolderId'; })[0];
+        if (found) rootId = String(found['設定值'] || '');
+      } catch(e) {}
+    }
     if (rootId) { try { return DriveApp.getFolderById(rootId); } catch(e) {} }
-    // Use My Drive root
     return DriveApp.getRootFolder();
   }
 
@@ -2909,6 +3080,40 @@ function govopsDocGenRoute_(params, action) {
     return { success: true, data: { url: url, docId: doc.getId(), chapters: 5, note: '伍、執行檢討與後續建議章節需在 Google Doc 中手動補充' }, message: '結案報告已產生，請開啟連結補充伍章內容', timestamp: govopsNow_() };
   }
 
+  // ── 將 Google Doc 匯出為 PDF 並存回 Drive ─────────────
+  if (action === 'exportDocAsPDF') {
+    var docId = params.docId;
+    var caseId = params.caseId || '';
+    var fileName = params.fileName || '文件';
+    if (!docId) return { success: false, error: 'MISSING_PARAM', message: '缺少 docId', timestamp: govopsNow_() };
+    try {
+      var docFile = DriveApp.getFileById(docId);
+      var pdfBlob = docFile.getAs('application/pdf');
+      pdfBlob.setName(fileName + '.pdf');
+      // 尋找案件資料夾，優先放到 10_成果報告，其次放根資料夾
+      var targetFolder = null;
+      if (caseId) {
+        var caseRows = govopsRows_('01_專案主檔', CASE_HEADERS);
+        var ci = caseRows.filter(function(r){ return String(r['專案ID'])===caseId; })[0] || {};
+        var caseName = ci['專案計畫名稱'] || caseId;
+        targetFolder = getCaseFolderByName(caseName, caseId, '10_成果報告');
+      }
+      if (!targetFolder) {
+        var rootFolderId = params.rootFolderId || '';
+        targetFolder = rootFolderId ? DriveApp.getFolderById(rootFolderId) : DriveApp.getRootFolder();
+      }
+      var pdfFile = targetFolder.createFile(pdfBlob);
+      var pdfUrl = pdfFile.getUrl();
+      // 記錄產出
+      govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
+      govopsAppend_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態'],
+        {'產出ID':govopsId_('PDF'),'案件ID':caseId,'場次ID':'','文件類型':'PDF','文件名稱':fileName+'.pdf','產出日期':govopsNow_(),'檔案連結':pdfUrl,'狀態':'已產生'});
+      return { success: true, data: { pdfUrl: pdfUrl, pdfId: pdfFile.getId(), fileName: fileName+'.pdf' }, message: 'PDF 已產生並存至 Google Drive', timestamp: govopsNow_() };
+    } catch(e) {
+      return { success: false, error: 'PDF_EXPORT_FAILED', message: 'PDF 產生失敗：' + e.message, timestamp: govopsNow_() };
+    }
+  }
+
   // ── 取得文件產出紀錄 ──────────────────────────────────
   if (action === 'getDocumentRecords') {
     govopsEnsureSheet_('22_文件產出紀錄', ['產出ID','案件ID','場次ID','文件類型','文件名稱','產出日期','檔案連結','狀態']);
@@ -3273,18 +3478,41 @@ function govopsFinanceRoute_(params, action) {
 // ════════════════════════════════════════════════════════
 // 講師主檔 & 工作人員主檔 路由
 // ════════════════════════════════════════════════════════
-var INSTRUCTOR_HEADERS = ['講師ID','姓名','電話','地址','Email','專業領域','時薪','銀行','帳號','戶名','統編/身分證','是否扣繳','扣繳類型','評價','備註','建立時間','更新時間'];
-var STAFF_HEADERS     = ['人員ID','姓名','電話','地址','Email','職務類型','時薪','銀行','帳號','戶名','統編/身分證','是否扣繳','評價','備註','建立時間','更新時間'];
+var INSTRUCTOR_HEADERS = ['講師ID','姓名','電話','Email','服務單位','專業領域','費率','銀行','帳號','戶名','身分證字號','地址','備註','建立時間','更新時間','tenantId','workspaceId','createdBy'];
+var STAFF_HEADERS     = ['人員ID','姓名','電話','Email','身分別','身分證字號','銀行','帳號','戶名','備註','建立時間','更新時間','tenantId','workspaceId','createdBy'];
 
 function govopsResourceRoute_(params, action) {
   if (action === '初始化講師主檔') {
     govopsEnsureSheet_('24_講師主檔', INSTRUCTOR_HEADERS);
     return { success: true, message: '24_講師主檔 初始化完成' };
   }
-  if (action === '新增講師') {
+  if (action === '新增講師' || action === '儲存講師') {
     var name = params['姓名'] || '';
     if (!name) return { success: false, message: '講師姓名必填' };
-    var obj = { '講師ID': govopsId_('LEC'), '姓名': name, '電話': params['電話'] || '', 'Email': params['Email'] || '', '專業領域': params['專業領域'] || '', '時薪': params['時薪'] || '', '銀行': params['銀行'] || '', '帳號': params['帳號'] || '', '戶名': params['戶名'] || '', '統編/身分證': params['統編/身分證'] || '', '是否扣繳': params['是否扣繳'] || '', '扣繳類型': params['扣繳類型'] || '執行業務所得', '評價': params['評價'] || '', '備註': params['備註'] || '', '建立時間': govopsNow_(), '更新時間': govopsNow_() };
+    var lecId = params['講師ID'] || '';
+    // 若有 講師ID 且存在 → 更新
+    if (lecId) {
+      var rows2 = govopsRows_('24_講師主檔', INSTRUCTOR_HEADERS);
+      var found2 = rows2.find(function(r){ return r['講師ID'] === lecId; });
+      if (found2) {
+        if (params._tenantId && String(found2['tenantId']||'') && String(found2['tenantId']||'') !== params._tenantId) return { success:false, message:'無權限修改此講師', error:'FORBIDDEN' };
+        var patch2 = { '更新時間': govopsNow_() };
+        ['姓名','電話','Email','服務單位','專業領域','費率','銀行','帳號','戶名','身分證字號','地址','備註'].forEach(function(k){ if (params[k]!==undefined && params[k]!=='') patch2[k]=params[k]; });
+        govopsUpdate_('24_講師主檔', INSTRUCTOR_HEADERS, found2._row, patch2);
+        return { success: true, message: '講師資料已更新', data: { 講師ID: lecId } };
+      }
+    }
+    var obj = {
+      '講師ID': lecId || govopsId_('LEC'),
+      '姓名': name, '電話': params['電話']||'', 'Email': params['Email']||'',
+      '服務單位': params['服務單位']||'', '專業領域': params['專業領域']||'',
+      '費率': params['費率']||params['時薪']||'',
+      '銀行': params['銀行']||'', '帳號': params['帳號']||'', '戶名': params['戶名']||'',
+      '身分證字號': params['身分證字號']||params['統編/身分證']||'',
+      '地址': params['地址']||'', '備註': params['備註']||'',
+      '建立時間': govopsNow_(), '更新時間': govopsNow_(),
+      'tenantId': params._tenantId||'', 'workspaceId': params._workspaceId||'', 'createdBy': params._userId||''
+    };
     govopsAppend_('24_講師主檔', INSTRUCTOR_HEADERS, obj);
     return { success: true, message: '講師新增完成', data: { 講師ID: obj['講師ID'], 姓名: obj['姓名'] } };
   }
@@ -3292,42 +3520,39 @@ function govopsResourceRoute_(params, action) {
     var rows = govopsFilter_(govopsRows_('24_講師主檔', INSTRUCTOR_HEADERS), params);
     return { success: true, message: '講師查詢完成', data: { rows: rows, count: rows.length } };
   }
-  if (action === '修改講師') {
-    var id = params['講師ID'];
-    if (!id) return { success: false, message: '講師ID 必填' };
-    var rows2 = govopsRows_('24_講師主檔', INSTRUCTOR_HEADERS);
-    var found = rows2.find(function(r){ return r['講師ID'] === id; });
-    if (!found) return { success: false, message: '找不到講師：' + id };
-    var patch = { '更新時間': govopsNow_() };
-    ['姓名','電話','Email','專業領域','時薪','銀行','帳號','戶名','統編/身分證','是否扣繳','扣繳類型','評價','備註'].forEach(function(k){ if (params[k] !== undefined && params[k] !== '') patch[k] = params[k]; });
-    govopsUpdate_('24_講師主檔', INSTRUCTOR_HEADERS, found._row, patch);
-    return { success: true, message: '講師資料已更新', data: { 講師ID: id } };
-  }
   if (action === '初始化工作人員主檔') {
     govopsEnsureSheet_('25_工作人員主檔', STAFF_HEADERS);
     return { success: true, message: '25_工作人員主檔 初始化完成' };
   }
-  if (action === '新增工作人員') {
+  if (action === '新增工作人員' || action === '儲存工作人員') {
     var sname = params['姓名'] || '';
     if (!sname) return { success: false, message: '姓名必填' };
-    var sobj = { '人員ID': govopsId_('STF'), '姓名': sname, '電話': params['電話'] || '', 'Email': params['Email'] || '', '職務類型': params['職務類型'] || '', '時薪': params['時薪'] || '', '銀行': params['銀行'] || '', '帳號': params['帳號'] || '', '戶名': params['戶名'] || '', '統編/身分證': params['統編/身分證'] || '', '是否扣繳': params['是否扣繳'] || '', '評價': params['評價'] || '', '備註': params['備註'] || '', '建立時間': govopsNow_(), '更新時間': govopsNow_() };
+    var sId = params['人員ID'] || '';
+    if (sId) {
+      var srows2 = govopsRows_('25_工作人員主檔', STAFF_HEADERS);
+      var sfound2 = srows2.find(function(r){ return r['人員ID']===sId; });
+      if (sfound2) {
+        if (params._tenantId && String(sfound2['tenantId']||'') && String(sfound2['tenantId']||'')!==params._tenantId) return { success:false, message:'無權限修改此工作人員', error:'FORBIDDEN' };
+        var spatch2 = { '更新時間': govopsNow_() };
+        ['姓名','電話','Email','身分別','身分證字號','銀行','帳號','戶名','備註'].forEach(function(k){ if(params[k]!==undefined && params[k]!=='') spatch2[k]=params[k]; });
+        govopsUpdate_('25_工作人員主檔', STAFF_HEADERS, sfound2._row, spatch2);
+        return { success: true, message: '工作人員資料已更新', data: { 人員ID: sId } };
+      }
+    }
+    var sobj = {
+      '人員ID': sId || govopsId_('STF'),
+      '姓名': sname, '電話': params['電話']||'', 'Email': params['Email']||'',
+      '身分別': params['身分別']||'', '身分證字號': params['身分證字號']||params['統編/身分證']||'',
+      '銀行': params['銀行']||'', '帳號': params['帳號']||'', '戶名': params['戶名']||'',
+      '備註': params['備註']||'', '建立時間': govopsNow_(), '更新時間': govopsNow_(),
+      'tenantId': params._tenantId||'', 'workspaceId': params._workspaceId||'', 'createdBy': params._userId||''
+    };
     govopsAppend_('25_工作人員主檔', STAFF_HEADERS, sobj);
     return { success: true, message: '工作人員新增完成', data: { 人員ID: sobj['人員ID'], 姓名: sobj['姓名'] } };
   }
   if (action === '查詢工作人員') {
     var srows = govopsFilter_(govopsRows_('25_工作人員主檔', STAFF_HEADERS), params);
     return { success: true, message: '工作人員查詢完成', data: { rows: srows, count: srows.length } };
-  }
-  if (action === '修改工作人員') {
-    var sid = params['人員ID'];
-    if (!sid) return { success: false, message: '人員ID 必填' };
-    var srows2 = govopsRows_('25_工作人員主檔', STAFF_HEADERS);
-    var sfound = srows2.find(function(r){ return r['人員ID'] === sid; });
-    if (!sfound) return { success: false, message: '找不到工作人員：' + sid };
-    var spatch = { '更新時間': govopsNow_() };
-    ['姓名','電話','Email','職務類型','時薪','銀行','帳號','戶名','統編/身分證','是否扣繳','評價','備註'].forEach(function(k){ if (params[k] !== undefined && params[k] !== '') spatch[k] = params[k]; });
-    govopsUpdate_('25_工作人員主檔', STAFF_HEADERS, sfound._row, spatch);
-    return { success: true, message: '工作人員資料已更新', data: { 人員ID: sid } };
   }
   return null;
 }
@@ -3692,6 +3917,136 @@ function govopsReviewNotifRoute_(params, action) {
   return null;
 }
 
+// ─────────────────────────────────────────────────────
+// govopsSettingsRoute_ — 系統設定 (saveSetting / getSetting)
+// ─────────────────────────────────────────────────────
+function govopsSettingsRoute_(params, action) {
+  var SETTINGS_HEADERS = ['設定鍵', '設定值', '說明', '更新時間'];
+  if (action === 'saveSetting') {
+    var key = String(params.key || '').trim();
+    var val = String(params.value || '').trim();
+    if (!key) return { success: false, message: '缺少 key', timestamp: govopsNow_() };
+    govopsEnsureSheet_('28_系統設定', SETTINGS_HEADERS);
+    var rows = govopsRows_('28_系統設定', SETTINGS_HEADERS);
+    var existing = rows.filter(function(r){ return String(r['設定鍵']) === key; })[0];
+    if (existing && existing._row) {
+      govopsUpdate_('28_系統設定', SETTINGS_HEADERS, existing._row, { '設定值': val, '更新時間': govopsNow_() });
+    } else {
+      govopsAppend_('28_系統設定', SETTINGS_HEADERS, { '設定鍵': key, '設定值': val, '說明': params.description || '', '更新時間': govopsNow_() });
+    }
+    return { success: true, message: '設定已儲存', timestamp: govopsNow_() };
+  }
+  if (action === 'getSetting') {
+    var key = String(params.key || '').trim();
+    if (!key) return { success: false, message: '缺少 key', timestamp: govopsNow_() };
+    var rows = govopsRows_('28_系統設定', SETTINGS_HEADERS);
+    var found = rows.filter(function(r){ return String(r['設定鍵']) === key; })[0];
+    return { success: true, data: { key: key, value: found ? String(found['設定值'] || '') : null }, timestamp: govopsNow_() };
+  }
+  return null;
+}
+
+// ─────────────────────────────────────────────────────
+// govopsAuthRoute_ — 初始化 / 登入 / 使用者管理
+// ─────────────────────────────────────────────────────
+function govopsAuthRoute_(params, action) {
+  var SETTINGS_HEADERS = ['設定鍵', '設定值', '說明', '更新時間'];
+  var WORKSPACE_HEADERS = ['工作室ID', '工作室名稱', '負責人姓名', 'Email', '預設主辦單位', '系統初始化狀態', '建立時間', '更新時間'];
+  var USER_HEADERS = ['使用者ID', '工作室ID', '姓名', 'Email', '角色', '帳號狀態', '最後登入時間', '建立時間', '更新時間'];
+
+  function isInitialized() {
+    try {
+      var rows = govopsRows_('28_系統設定', SETTINGS_HEADERS);
+      return rows.some(function(r){ return String(r['設定鍵']) === 'isInitialized' && String(r['設定值']) === 'true'; });
+    } catch(e) { return false; }
+  }
+
+  function getWorkspaceName(wsId) {
+    try {
+      var ws = govopsRows_('30_工作室設定', WORKSPACE_HEADERS);
+      var found = ws.filter(function(r){ return String(r['工作室ID']) === wsId; })[0];
+      return found ? (String(found['工作室名稱'] || '')) : '';
+    } catch(e) { return ''; }
+  }
+
+  function roleLabel(role) {
+    return { owner:'負責人', admin:'管理者', finance:'財務', staff:'行政', viewer:'檢視者' }[role] || role || '使用者';
+  }
+
+  if (action === 'checkInitStatus') {
+    var inited = isInitialized();
+    var wsName = '';
+    var defaultOrg = '';
+    if (inited) {
+      try {
+        var ws = govopsRows_('30_工作室設定', WORKSPACE_HEADERS);
+        if (ws.length) { wsName = String(ws[0]['工作室名稱'] || ''); defaultOrg = String(ws[0]['預設主辦單位'] || ''); }
+      } catch(e) {}
+    }
+    return { success: true, data: { initialized: inited, workspaceName: wsName, defaultOrg: defaultOrg }, timestamp: govopsNow_() };
+  }
+
+  if (action === 'initWorkspace') {
+    if (isInitialized()) {
+      return { success: false, alreadyInitialized: true, message: '系統已初始化，請直接登入', timestamp: govopsNow_() };
+    }
+    var wsName = String(params.workspaceName || params['工作室名稱'] || '').trim();
+    var ownerName = String(params.ownerName || params['負責人姓名'] || '').trim();
+    var email = String(params.email || '').trim().toLowerCase();
+    var defaultOrg = String(params.defaultOrg || params['預設主辦單位'] || '').trim();
+    if (!wsName || !email) return { success: false, message: '工作室名稱和 Email 為必填', timestamp: govopsNow_() };
+    govopsEnsureSheet_('31_使用者管理', USER_HEADERS);
+    var users = govopsRows_('31_使用者管理', USER_HEADERS);
+    var existing = users.filter(function(r){ return String(r['Email'] || '').toLowerCase() === email; })[0];
+    if (existing) {
+      // Mark initialized if needed, then return existing user
+      if (!isInitialized()) {
+        govopsEnsureSheet_('28_系統設定', SETTINGS_HEADERS);
+        govopsAppend_('28_系統設定', SETTINGS_HEADERS, { '設定鍵': 'isInitialized', '設定值': 'true', '說明': '系統已初始化', '更新時間': govopsNow_() });
+      }
+      return { success: false, emailExists: true, message: '此 Email 已建立帳號，請直接登入', timestamp: govopsNow_() };
+    }
+    var wsId = 'WS_' + Date.now();
+    var uid = 'U_' + Utilities.getUuid().replace(/-/g,'').substring(0, 12);
+    govopsEnsureSheet_('30_工作室設定', WORKSPACE_HEADERS);
+    govopsAppend_('30_工作室設定', WORKSPACE_HEADERS, { '工作室ID': wsId, '工作室名稱': wsName, '負責人姓名': ownerName||wsName, 'Email': email, '預設主辦單位': defaultOrg, '系統初始化狀態': 'true', '建立時間': govopsNow_(), '更新時間': govopsNow_() });
+    govopsAppend_('31_使用者管理', USER_HEADERS, { '使用者ID': uid, '工作室ID': wsId, '姓名': ownerName||wsName, 'Email': email, '角色': 'owner', '帳號狀態': '啟用', '最後登入時間': govopsNow_(), '建立時間': govopsNow_(), '更新時間': govopsNow_() });
+    govopsEnsureSheet_('28_系統設定', SETTINGS_HEADERS);
+    govopsAppend_('28_系統設定', SETTINGS_HEADERS, { '設定鍵': 'isInitialized', '設定值': 'true', '說明': '系統已初始化', '更新時間': govopsNow_() });
+    return { success: true, data: { userId: uid, tenantId: wsId, userName: ownerName||wsName, email: email, role: 'owner', roleLabel: '負責人', orgName: wsName, defaultHost: defaultOrg, plan: 'enterprise', status: 'active' }, message: '初始化成功', timestamp: govopsNow_() };
+  }
+
+  if (action === 'login') {
+    var email = String(params.email || '').trim().toLowerCase();
+    if (!email) return { success: false, message: '請輸入 Email', timestamp: govopsNow_() };
+    if (!isInitialized()) return { success: false, message: '系統尚未初始化，請先完成設定', timestamp: govopsNow_() };
+    var users = govopsRows_('31_使用者管理', USER_HEADERS);
+    var user = users.filter(function(r){ return String(r['Email'] || '').toLowerCase() === email && r['帳號狀態'] === '啟用'; })[0];
+    if (!user) return { success: false, message: '此 Email 尚未建立帳號，或帳號已停用', timestamp: govopsNow_() };
+    try { if (user._row) govopsUpdate_('31_使用者管理', USER_HEADERS, user._row, { '最後登入時間': govopsNow_() }); } catch(e) {}
+    var ws = govopsRows_('30_工作室設定', WORKSPACE_HEADERS);
+    var wsInfo = ws.filter(function(r){ return String(r['工作室ID']) === String(user['工作室ID']); })[0] || {};
+    return { success: true, data: {
+      userId: user['使用者ID'], tenantId: user['工作室ID'],
+      userName: user['姓名'], email: user['Email'],
+      role: user['角色'], roleLabel: roleLabel(user['角色']),
+      orgName: wsInfo['工作室名稱'] || '', defaultHost: wsInfo['預設主辦單位'] || '',
+      plan: 'enterprise', status: 'active'
+    }, timestamp: govopsNow_() };
+  }
+
+  if (action === 'getCurrentUser') {
+    var uid = String(params.userId || '').trim();
+    if (!uid) return { success: false, message: '缺少 userId', timestamp: govopsNow_() };
+    var users = govopsRows_('31_使用者管理', USER_HEADERS);
+    var user = users.filter(function(r){ return String(r['使用者ID']) === uid && r['帳號狀態'] === '啟用'; })[0];
+    if (!user) return { success: false, message: '找不到使用者或帳號已停用', timestamp: govopsNow_() };
+    return { success: true, data: user, timestamp: govopsNow_() };
+  }
+
+  return null;
+}
+
 function govopsDefaultNotifContent_(type, reg) {
   var name = reg['姓名'] || '學員';
   if (type === '資格審查通知' || type === '審查通知') return name + ' 您好，您的報名申請已送出，我們將盡快進行資格審查，請耐心等候通知。';
@@ -3700,4 +4055,597 @@ function govopsDefaultNotifContent_(type, reg) {
   if (type === '開課通知') return name + ' 您好，課程即將開始！請準時出席，期待在課堂上見到您。';
   if (type === '簽到提醒') return name + ' 您好，提醒您今日有課程活動，請記得簽到，謝謝。';
   return name + ' 您好，' + type + '相關通知，如有疑問請聯繫主辦單位。';
+}
+
+// ════════════════════════════════════════════════════════
+// SaaS Core @40 — 多租戶、帳號、資料隔離
+// ════════════════════════════════════════════════════════
+
+var TENANT_HEADERS     = ['tenantId','tenantName','orgType','primaryEmail','primaryContact','planId','status','driveRootFolder','planStartDate','planEndDate','reminderSent','createdAt','updatedAt'];
+var WORKSPACE_HEADERS  = ['workspaceId','tenantId','workspaceName','defaultOrgName','status','createdAt','updatedAt'];
+var SAAS_USER_HEADERS  = ['userId','tenantId','workspaceId','userName','email','passwordHash','salt','role','status','lastLoginAt','loginCount','createdAt','updatedAt'];
+var SESS_LOG_HEADERS   = ['sessionId','sessionToken','userId','tenantId','workspaceId','role','loginAt','expireAt','status'];
+var PLAN_HEADERS_SAAS  = ['planId','planName','maxCases','maxUsers','maxDocGen','maxImports','features','monthlyPrice','createdAt'];
+var MODULE_HDR         = ['moduleId','tenantId','moduleName','isEnabled','updatedAt'];
+var USAGE_HDR          = ['usageId','tenantId','workspaceId','metric','value','period','recordedAt'];
+var OP_LOG_HDR         = ['opId','tenantId','userId','action','targetType','targetId','summary','timestamp'];
+
+var GOVOPS_PLANS = [
+  {planId:'free',     planName:'Free 試用',  maxCases:5,    maxUsers:2,  maxDocGen:10,  maxImports:5,   features:'基本功能',        monthlyPrice:0},
+  {planId:'basic',    planName:'Basic',      maxCases:20,   maxUsers:5,  maxDocGen:50,  maxImports:20,  features:'基本+文件產出',     monthlyPrice:990},
+  {planId:'pro',      planName:'Pro',        maxCases:50,   maxUsers:10, maxDocGen:200, maxImports:100, features:'全功能',           monthlyPrice:2490},
+  {planId:'team',     planName:'Team',       maxCases:200,  maxUsers:30, maxDocGen:500, maxImports:500, features:'全功能+多工作空間', monthlyPrice:5990},
+  {planId:'enterprise',planName:'Enterprise',maxCases:9999, maxUsers:9999,maxDocGen:9999,maxImports:9999,features:'無限制',          monthlyPrice:0}
+];
+
+// ── 密碼雜湊 ──────────────────────────────────────────
+function saasHash_(pwd, salt) {
+  var s = pwd + '|' + salt + '|GOVOPS_SAAS_2026';
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, s, Utilities.Charset.UTF_8);
+  return b.map(function(x){ return ('0'+(x&0xff).toString(16)).slice(-2); }).join('');
+}
+function saasGenSalt_()  { return Utilities.getUuid().replace(/-/g,''); }
+function saasGenToken_() { return Utilities.getUuid().replace(/-/g,'')+Utilities.getUuid().replace(/-/g,''); }
+
+// ── Session 驗證（含 5 分鐘快取） ─────────────────────
+function govopsParseDate_(v) {
+  // Google Sheets 會把日期字串自動轉成 Date 物件，直接處理
+  if (v instanceof Date) return isNaN(v.getTime()) ? NaN : v.getTime();
+  if (!v) return NaN;
+  var s = String(v);
+  // 嘗試解析 'yyyy/MM/dd HH:mm:ss' 或 'yyyy-MM-dd HH:mm:ss'
+  var m = s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})[\sT](\d{1,2}):(\d{1,2}):(\d{1,2})/);
+  if (m) return new Date(parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]), parseInt(m[4]), parseInt(m[5]), parseInt(m[6])).getTime();
+  // fallback: 讓 JS 自行解析
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? NaN : d.getTime();
+}
+
+function govopsValidateSession_(params) {
+  var token = String(params.sessionToken || params.token || '').trim();
+  if (!token || token.length < 8) return null;
+  var cacheKey = 'sess_' + token.substring(0,32);
+  var cached = null;
+  try { cached = govopsCache_().get(cacheKey); } catch(e) {}
+  if (cached) { try { return JSON.parse(cached); } catch(e) {} }
+  govopsEnsureSheet_('S08_登入紀錄', SESS_LOG_HEADERS);
+  var rows = govopsRows_('S08_登入紀錄', SESS_LOG_HEADERS);
+  var s = null;
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i]['sessionToken'] === token && rows[i]['status'] === 'active') { s = rows[i]; break; }
+  }
+  if (!s) return null;
+  // 使用穩健日期解析，避免 V8 date string 格式問題
+  var loginAtMs = govopsParseDate_(s['loginAt']);
+  if (!loginAtMs || (Date.now() - loginAtMs) > 86400000) {
+    try { govopsUpdate_('S08_登入紀錄', SESS_LOG_HEADERS, s._row, { 'status':'expired' }); } catch(e) {}
+    return null;
+  }
+  var sess = { sessionToken:token, userId:String(s['userId']||''), tenantId:String(s['tenantId']||''), workspaceId:String(s['workspaceId']||''), role:String(s['role']||'viewer') };
+  try { govopsCache_().put(cacheKey, JSON.stringify(sess), 300); } catch(e) {}
+  return sess;
+}
+
+// ── 用量記錄（fire-and-forget） ────────────────────────
+function saasLogUsage_(tid, wid, metric) {
+  try {
+    govopsEnsureSheet_('S07_使用量紀錄', USAGE_HDR);
+    govopsAppend_('S07_使用量紀錄', USAGE_HDR, { 'usageId':govopsId_('USG'), 'tenantId':tid, 'workspaceId':wid, 'metric':metric, 'value':1, 'period':Utilities.formatDate(new Date(),'Asia/Taipei','yyyy-MM'), 'recordedAt':govopsNow_() });
+  } catch(e) {}
+}
+
+// ── SaaS 主路由 ───────────────────────────────────────
+function govopsSaasRoute_(params, action) {
+
+  // 取得方案清單（公開）
+  if (action === 'getPlans') {
+    return { success:true, data:GOVOPS_PLANS, message:'方案清單', timestamp:govopsNow_() };
+  }
+
+  // ── 租戶註冊 ──────────────────────────────────────
+  if (action === 'registerTenant') {
+    var tenantName = String(params.tenantName||params.orgName||'').trim();
+    var userName   = String(params.userName||'').trim();
+    var email      = String(params.email||'').trim().toLowerCase();
+    var password   = String(params.password||'').trim();
+    if (!tenantName) return {success:false,error:'MISSING_FIELD',message:'請填寫公司／工作室名稱',timestamp:govopsNow_()};
+    if (!userName)   return {success:false,error:'MISSING_FIELD',message:'請填寫使用者姓名',timestamp:govopsNow_()};
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return {success:false,error:'INVALID_EMAIL',message:'請填寫有效 Email',timestamp:govopsNow_()};
+    if (password.length < 6) return {success:false,error:'WEAK_PASSWORD',message:'密碼至少 6 個字元',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var existing = govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    if (existing.some(function(u){ return String(u['email']).toLowerCase()===email; })) {
+      return {success:false,error:'EMAIL_EXISTS',message:'此 Email 已被使用，請直接登入',timestamp:govopsNow_()};
+    }
+    var now=govopsNow_(), tenantId='T-'+Utilities.getUuid().replace(/-/g,'').substring(0,16);
+    var workspaceId='W-'+Utilities.getUuid().replace(/-/g,'').substring(0,16);
+    var userId='U-'+Utilities.getUuid().replace(/-/g,'').substring(0,16);
+    var salt=saasGenSalt_(), passwordHash=saasHash_(password,salt);
+    var planId=params.planId||'free';
+    govopsEnsureSheet_('S01_租戶', TENANT_HEADERS);
+    govopsAppend_('S01_租戶', TENANT_HEADERS, { 'tenantId':tenantId,'tenantName':tenantName,'orgType':params.orgType||'顧問工作室','primaryEmail':email,'primaryContact':userName,'planId':planId,'status':'active','driveRootFolder':'','createdAt':now,'updatedAt':now });
+    govopsEnsureSheet_('S02_工作空間', WORKSPACE_HEADERS);
+    govopsAppend_('S02_工作空間', WORKSPACE_HEADERS, { 'workspaceId':workspaceId,'tenantId':tenantId,'workspaceName':tenantName,'defaultOrgName':tenantName,'status':'active','createdAt':now,'updatedAt':now });
+    govopsAppend_('S03_使用者', SAAS_USER_HEADERS, { 'userId':userId,'tenantId':tenantId,'workspaceId':workspaceId,'userName':userName,'email':email,'passwordHash':passwordHash,'salt':salt,'role':'tenant_owner','status':'active','lastLoginAt':now,'loginCount':1,'createdAt':now,'updatedAt':now });
+    govopsEnsureSheet_('S08_登入紀錄', SESS_LOG_HEADERS);
+    var tok=saasGenToken_(), expire=Utilities.formatDate(new Date(Date.now()+86400000),'Asia/Taipei','yyyy/MM/dd HH:mm:ss');
+    govopsAppend_('S08_登入紀錄', SESS_LOG_HEADERS, { 'sessionId':govopsId_('SES'),'sessionToken':tok,'userId':userId,'tenantId':tenantId,'workspaceId':workspaceId,'role':'tenant_owner','loginAt':now,'expireAt':expire,'status':'active' });
+    saasLogUsage_(tenantId,workspaceId,'register');
+    return { success:true, data:{ sessionToken:tok,userId:userId,tenantId:tenantId,workspaceId:workspaceId,workspaceName:tenantName,userName:userName,email:email,role:'tenant_owner',planId:planId,planName:'Free 試用',isLoggedIn:true,loginTime:now,expireTime:expire }, message:'帳號建立成功，歡迎使用 GovOps OS SaaS 商業版！', timestamp:govopsNow_() };
+  }
+
+  // ── 登入 ──────────────────────────────────────────
+  if (action === 'loginUser') {
+    var email=String(params.email||'').trim().toLowerCase();
+    var password=String(params.password||'').trim();
+    if (!email||!password) return {success:false,error:'MISSING_FIELD',message:'Email 和密碼為必填',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var users=govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    var user=null;
+    for (var i=0;i<users.length;i++) { if (String(users[i]['email']).toLowerCase()===email&&users[i]['status']==='active') { user=users[i]; break; } }
+    if (!user) return {success:false,error:'NOT_FOUND',message:'Email 不存在或帳號已停用',timestamp:govopsNow_()};
+    if (saasHash_(password,String(user['salt']||''))!==String(user['passwordHash']||'')) return {success:false,error:'WRONG_PASSWORD',message:'密碼錯誤，請確認後再試',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶', TENANT_HEADERS);
+    govopsEnsureSheet_('S02_工作空間', WORKSPACE_HEADERS);
+    var tenant=(govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){return t['tenantId']===user['tenantId'];})[0])||{};
+    var ws=(govopsRows_('S02_工作空間',WORKSPACE_HEADERS).filter(function(w){return w['workspaceId']===user['workspaceId'];})[0])||{};
+    var planId=tenant['planId']||'free';
+    var plan=(GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0])||GOVOPS_PLANS[0];
+    var now=govopsNow_(), tok=saasGenToken_(), expire=Utilities.formatDate(new Date(Date.now()+86400000),'Asia/Taipei','yyyy/MM/dd HH:mm:ss');
+    govopsEnsureSheet_('S08_登入紀錄', SESS_LOG_HEADERS);
+    govopsAppend_('S08_登入紀錄', SESS_LOG_HEADERS, { 'sessionId':govopsId_('LOG'),'sessionToken':tok,'userId':user['userId'],'tenantId':user['tenantId'],'workspaceId':user['workspaceId'],'role':user['role'],'loginAt':now,'expireAt':expire,'status':'active' });
+    govopsUpdate_('S03_使用者', SAAS_USER_HEADERS, user._row, { 'lastLoginAt':now,'loginCount':(parseInt(user['loginCount'])||0)+1,'updatedAt':now });
+    saasLogUsage_(user['tenantId'],user['workspaceId'],'login');
+    return { success:true, data:{ sessionToken:tok,userId:user['userId'],tenantId:user['tenantId'],workspaceId:user['workspaceId'],workspaceName:ws['workspaceName']||tenant['tenantName']||'',userName:user['userName'],email:email,role:user['role'],planId:planId,planName:plan.planName,isLoggedIn:true,loginTime:now,expireTime:expire }, message:'登入成功', timestamp:govopsNow_() };
+  }
+
+  // ── 登出 ──────────────────────────────────────────
+  if (action === 'logoutUser') {
+    var tok=String(params.sessionToken||'').trim();
+    if (tok) {
+      govopsEnsureSheet_('S08_登入紀錄', SESS_LOG_HEADERS);
+      var sessions=govopsRows_('S08_登入紀錄', SESS_LOG_HEADERS);
+      sessions.forEach(function(s){ if (s['sessionToken']===tok&&s['status']==='active') govopsUpdate_('S08_登入紀錄', SESS_LOG_HEADERS, s._row, {'status':'logged_out'}); });
+      try { govopsCache_().remove('sess_'+tok.substring(0,32)); } catch(e) {}
+    }
+    return {success:true, message:'已安全登出', timestamp:govopsNow_()};
+  }
+
+  // ── 取得目前 session 資訊 ─────────────────────────
+  if (action === 'getMe') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入或 session 已過期，請重新登入',timestamp:govopsNow_()};
+    var tenant=(govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){return t['tenantId']===sess.tenantId;})[0])||{};
+    var planId=tenant['planId']||'free', plan=(GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0])||GOVOPS_PLANS[0];
+    return {success:true,data:Object.assign({},sess,{tenantName:tenant['tenantName']||'',planId:planId,planName:plan.planName,maxCases:plan.maxCases,maxUsers:plan.maxUsers}),message:'session 有效',timestamp:govopsNow_()};
+  }
+
+  // ── 初始化 SaaS 資料表（sys_admin 用）────────────
+  if (action === 'initSaasSheets') {
+    ['S01_租戶','S02_工作空間','S03_使用者','S04_方案','S06_模組開關','S07_使用量紀錄','S08_登入紀錄','S09_操作日誌'].forEach(function(n){
+      govopsEnsureSheet_(n, n==='S01_租戶'?TENANT_HEADERS:n==='S02_工作空間'?WORKSPACE_HEADERS:n==='S03_使用者'?SAAS_USER_HEADERS:n==='S08_登入紀錄'?SESS_LOG_HEADERS:n==='S06_模組開關'?MODULE_HDR:n==='S07_使用量紀錄'?USAGE_HDR:n==='S09_操作日誌'?OP_LOG_HDR:PLAN_HEADERS_SAAS);
+    });
+    var existingPlans=govopsRows_('S04_方案',PLAN_HEADERS_SAAS);
+    if (!existingPlans.length) GOVOPS_PLANS.forEach(function(p){ govopsAppend_('S04_方案',PLAN_HEADERS_SAAS,Object.assign({'createdAt':govopsNow_()},p)); });
+    return {success:true,message:'SaaS 資料表初始化完成（S01~S09）',timestamp:govopsNow_()};
+  }
+
+  // ── 租戶成員管理 ──────────────────────────────────
+  if (action === 'getTenantUsers') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var users=govopsRows_('S03_使用者', SAAS_USER_HEADERS).filter(function(u){ return u['tenantId']===sess.tenantId; });
+    var safe=users.map(function(u){ return { userId:u['userId'],userName:u['userName'],email:u['email'],role:u['role'],status:u['status'],lastLoginAt:u['lastLoginAt'],createdAt:u['createdAt'] }; });
+    return {success:true,data:{users:safe,count:safe.length},message:'成員清單載入完成',timestamp:govopsNow_()};
+  }
+
+  if (action === 'inviteUser') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入',timestamp:govopsNow_()};
+    if (!['tenant_owner','admin'].includes(sess.role)) return {success:false,error:'FORBIDDEN',message:'僅管理者以上可邀請成員',timestamp:govopsNow_()};
+    var email=String(params.email||'').trim().toLowerCase();
+    var userName=String(params.userName||'').trim();
+    var role=String(params.role||'viewer');
+    var password=String(params.password||'temp1234');
+    if (!email||!userName) return {success:false,error:'MISSING_FIELD',message:'Email 和姓名為必填',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var existing=govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    if (existing.some(function(u){ return String(u['email']).toLowerCase()===email; })) return {success:false,error:'EMAIL_EXISTS',message:'此 Email 已有帳號',timestamp:govopsNow_()};
+    // 方案用量：檢查 maxUsers
+    var tenantUsers=existing.filter(function(u){ return u['tenantId']===sess.tenantId&&u['status']==='active'; });
+    var tenantRow=(govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){ return t['tenantId']===sess.tenantId; })[0])||{};
+    var plan=(GOVOPS_PLANS.filter(function(p){ return p.planId===(tenantRow['planId']||'free'); })[0])||GOVOPS_PLANS[0];
+    if (tenantUsers.length >= plan.maxUsers) return {success:false,error:'QUOTA_EXCEEDED',message:'已達方案成員數上限（'+plan.maxUsers+' 人）',timestamp:govopsNow_()};
+    var now=govopsNow_(), userId='U-'+Utilities.getUuid().replace(/-/g,'').substring(0,16);
+    var salt=saasGenSalt_();
+    govopsAppend_('S03_使用者', SAAS_USER_HEADERS, { 'userId':userId,'tenantId':sess.tenantId,'workspaceId':sess.workspaceId,'userName':userName,'email':email,'passwordHash':saasHash_(password,salt),'salt':salt,'role':role,'status':'active','lastLoginAt':'','loginCount':0,'createdAt':now,'updatedAt':now });
+    saasLogUsage_(sess.tenantId,sess.workspaceId,'invite_user');
+    return {success:true,data:{userId:userId,email:email,userName:userName,role:role,tempPassword:password},message:'成員已邀請（臨時密碼：'+password+'，請提醒其登入後修改）',timestamp:govopsNow_()};
+  }
+
+  if (action === 'updateUserRole') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入',timestamp:govopsNow_()};
+    if (!['tenant_owner','admin'].includes(sess.role)) return {success:false,error:'FORBIDDEN',message:'僅管理者以上可修改角色',timestamp:govopsNow_()};
+    var targetId=String(params.targetUserId||params.userId||'');
+    var newRole=String(params.role||'viewer');
+    if (!targetId) return {success:false,error:'MISSING_ID',message:'缺少目標使用者ID',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var users=govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    var target=null;
+    for (var i=0;i<users.length;i++) { if (users[i]['userId']===targetId&&users[i]['tenantId']===sess.tenantId) { target=users[i]; break; } }
+    if (!target) return {success:false,error:'NOT_FOUND',message:'找不到此成員',timestamp:govopsNow_()};
+    govopsUpdate_('S03_使用者', SAAS_USER_HEADERS, target._row, {'role':newRole,'updatedAt':govopsNow_()});
+    return {success:true,data:{userId:targetId,role:newRole},message:'角色已更新',timestamp:govopsNow_()};
+  }
+
+  if (action === 'disableUser') {
+    var sess=govopsValidateSession_(params);
+    if (!sess||sess.role!=='tenant_owner') return {success:false,error:'FORBIDDEN',message:'僅租戶擁有者可停用成員',timestamp:govopsNow_()};
+    var targetId=String(params.targetUserId||params.userId||'');
+    if (!targetId||targetId===sess.userId) return {success:false,error:'INVALID',message:'不能停用自己的帳號',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var users=govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    var target=null;
+    for (var i=0;i<users.length;i++) { if (users[i]['userId']===targetId&&users[i]['tenantId']===sess.tenantId) { target=users[i]; break; } }
+    if (!target) return {success:false,error:'NOT_FOUND',message:'找不到此成員',timestamp:govopsNow_()};
+    govopsUpdate_('S03_使用者', SAAS_USER_HEADERS, target._row, {'status':'disabled','updatedAt':govopsNow_()});
+    return {success:true,data:{userId:targetId,status:'disabled'},message:'成員已停用',timestamp:govopsNow_()};
+  }
+
+  if (action === 'changePassword') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入',timestamp:govopsNow_()};
+    var oldPwd=String(params.oldPassword||'');
+    var newPwd=String(params.newPassword||'');
+    if (!oldPwd||!newPwd||newPwd.length<6) return {success:false,error:'INVALID',message:'請填寫舊密碼及新密碼（至少6字元）',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var users=govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    var user=null;
+    for (var i=0;i<users.length;i++) { if (users[i]['userId']===sess.userId) { user=users[i]; break; } }
+    if (!user) return {success:false,error:'NOT_FOUND',message:'帳號不存在',timestamp:govopsNow_()};
+    if (saasHash_(oldPwd,String(user['salt']||''))!==String(user['passwordHash']||'')) return {success:false,error:'WRONG_PASSWORD',message:'舊密碼錯誤',timestamp:govopsNow_()};
+    var newSalt=saasGenSalt_();
+    govopsUpdate_('S03_使用者', SAAS_USER_HEADERS, user._row, {'passwordHash':saasHash_(newPwd,newSalt),'salt':newSalt,'updatedAt':govopsNow_()});
+    return {success:true,message:'密碼已更新',timestamp:govopsNow_()};
+  }
+
+  // ── 取得租戶設定 ──────────────────────────────────
+  if (action === 'getTenantSettings') {
+    var sess=govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'未登入',timestamp:govopsNow_()};
+    var tenant=(govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){return t['tenantId']===sess.tenantId;})[0])||{};
+    var planId=tenant['planId']||'free', plan=(GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0])||GOVOPS_PLANS[0];
+    govopsEnsureSheet_('S06_模組開關',MODULE_HDR);
+    var modules=govopsRows_('S06_模組開關',MODULE_HDR).filter(function(m){return m['tenantId']===sess.tenantId;});
+    return {success:true,data:{tenant:tenant,plan:plan,modules:modules},message:'租戶設定載入完成',timestamp:govopsNow_()};
+  }
+
+  // ── 平台管理（用 masterKey 驗證，不需租戶 session）──
+
+  // 取得 masterKey（存在 Script Properties 或用預設）
+  function getMasterKey_() {
+    try { return PropertiesService.getScriptProperties().getProperty('GOVOPS_MASTER_KEY') || 'GOVOPS_ADMIN_2026'; } catch(e) { return 'GOVOPS_ADMIN_2026'; }
+  }
+  function checkMasterKey_(params) {
+    return String(params.masterKey||'') === getMasterKey_();
+  }
+
+  if (action === 'adminListTenants') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶', TENANT_HEADERS);
+    govopsEnsureSheet_('S03_使用者', SAAS_USER_HEADERS);
+    var tenants = govopsRows_('S01_租戶', TENANT_HEADERS);
+    var users   = govopsRows_('S03_使用者', SAAS_USER_HEADERS);
+    var result  = tenants.map(function(t){
+      var owner = users.filter(function(u){ return u['tenantId']===t['tenantId']&&u['role']==='tenant_owner'; })[0] || {};
+      var memberCount = users.filter(function(u){ return u['tenantId']===t['tenantId']&&u['status']==='active'; }).length;
+      return { tenantId:t['tenantId'], tenantName:t['tenantName'], planId:t['planId'], status:t['status'], primaryEmail:t['primaryEmail'], createdAt:t['createdAt'], ownerName:owner['userName']||'', memberCount:memberCount };
+    });
+    return {success:true,data:{tenants:result,count:result.length},message:'租戶清單載入完成',timestamp:govopsNow_()};
+  }
+
+  if (action === 'adminUpgradePlan') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    var tid = String(params.tenantId||'').trim();
+    var newPlan = String(params.planId||'').trim();
+    if (!tid||!newPlan) return {success:false,error:'MISSING_FIELD',message:'tenantId 和 planId 為必填',timestamp:govopsNow_()};
+    if (!GOVOPS_PLANS.some(function(p){return p.planId===newPlan;})) return {success:false,error:'INVALID_PLAN',message:'無效的方案 ID：'+newPlan,timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶', TENANT_HEADERS);
+    var tenants = govopsRows_('S01_租戶', TENANT_HEADERS);
+    var found = null;
+    for (var i=0;i<tenants.length;i++){if(tenants[i]['tenantId']===tid){found=tenants[i];break;}}
+    if (!found) return {success:false,error:'NOT_FOUND',message:'找不到租戶：'+tid,timestamp:govopsNow_()};
+    var plan = GOVOPS_PLANS.filter(function(p){return p.planId===newPlan;})[0];
+    govopsUpdate_('S01_租戶', TENANT_HEADERS, found._row, {'planId':newPlan,'maxCases':plan.maxCases,'maxUsers':plan.maxUsers,'updatedAt':govopsNow_()});
+    govopsCacheInvalidate_('S01_租戶');
+    return {success:true,data:{tenantId:tid,tenantName:found['tenantName'],newPlan:newPlan,planName:plan.planName,maxCases:plan.maxCases,maxUsers:plan.maxUsers},message:'方案已升級：'+found['tenantName']+' → '+plan.planName,timestamp:govopsNow_()};
+  }
+
+  if (action === 'adminDisableTenant') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    var tid = String(params.tenantId||'').trim();
+    if (!tid) return {success:false,error:'MISSING_FIELD',message:'tenantId 為必填',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶', TENANT_HEADERS);
+    var tenants = govopsRows_('S01_租戶', TENANT_HEADERS);
+    var found = null;
+    for (var i=0;i<tenants.length;i++){if(tenants[i]['tenantId']===tid){found=tenants[i];break;}}
+    if (!found) return {success:false,error:'NOT_FOUND',message:'找不到租戶：'+tid,timestamp:govopsNow_()};
+    govopsUpdate_('S01_租戶', TENANT_HEADERS, found._row, {'status':'disabled','updatedAt':govopsNow_()});
+    return {success:true,data:{tenantId:tid,status:'disabled'},message:'租戶已停用：'+found['tenantName'],timestamp:govopsNow_()};
+  }
+
+  // ── 開發用：清除所有 SaaS 帳號資料（重置測試環境）──
+  if (action === 'devClearSaasData') {
+    var key = String(params.confirmKey || '');
+    if (key !== 'RESET_SAAS_2026') return {success:false,error:'FORBIDDEN',message:'需要正確的 confirmKey',timestamp:govopsNow_()};
+    var cleared = [];
+    ['S01_租戶','S02_工作空間','S03_使用者','S08_登入紀錄','S07_使用量紀錄'].forEach(function(sheet){
+      var n = govopsClearSheet_(sheet);
+      cleared.push(sheet + '(' + n + '筆)');
+    });
+    // 清除 session 快取
+    try { CacheService.getScriptCache().removeAll([]); } catch(e) {}
+    return {success:true,message:'SaaS 帳號資料已清除：' + cleared.join('、'),timestamp:govopsNow_()};
+  }
+
+  return null;
+}
+
+// ════════════════════════════════════════════════════════
+// 訂閱 / 付款 / 到期提醒系統
+// ════════════════════════════════════════════════════════
+
+var ORDER_HEADERS = ['orderId','tenantId','tenantName','email','planId','planName','amount','payMethod','status','paidAt','activatedAt','expireAt','note','createdAt','updatedAt'];
+
+// ── 取得 Script Properties 設定 ──────────────────────
+function saasGetProp_(key, def) {
+  try { return PropertiesService.getScriptProperties().getProperty(key) || def; } catch(e) { return def; }
+}
+
+// LINE Pay 商家 API 簽章（申請到 Channel ID/Secret 後啟用）
+function linePaySign_(channelSecret, uri, body, nonce) {
+  var msg = channelSecret + uri + body + nonce;
+  var sig = Utilities.computeHmacSha256Signature(msg, channelSecret, Utilities.Charset.UTF_8);
+  return Utilities.base64Encode(sig);
+}
+
+function govopsPaymentRoute_(params, action) {
+
+  // ── 取得方案資訊（公開）────────────────────────────
+  if (action === 'getPlanDetail') {
+    var planId = String(params.planId || '').trim();
+    var plan = GOVOPS_PLANS.filter(function(p){ return p.planId === planId; })[0];
+    if (!plan) return {success:false,error:'NOT_FOUND',message:'找不到方案',timestamp:govopsNow_()};
+    return {success:true,data:plan,message:'方案資訊',timestamp:govopsNow_()};
+  }
+
+  // ── 客戶申請升級方案（掃 QR 付款後填表通知）─────────
+  if (action === 'requestPlanUpgrade') {
+    var sess = govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'請先登入',timestamp:govopsNow_()};
+    var planId  = String(params.planId || '').trim();
+    var payNote = String(params.payNote || '').trim();  // 付款備註或末5碼
+    var plan = GOVOPS_PLANS.filter(function(p){ return p.planId===planId; })[0];
+    if (!plan) return {success:false,error:'INVALID_PLAN',message:'無效方案',timestamp:govopsNow_()};
+    if (planId === 'free') return {success:false,error:'INVALID',message:'Free 方案不需要付款',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶',TENANT_HEADERS);
+    var tenant = (govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){return t['tenantId']===sess.tenantId;})[0])||{};
+    govopsEnsureSheet_('S03_使用者',SAAS_USER_HEADERS);
+    var owner  = (govopsRows_('S03_使用者',SAAS_USER_HEADERS).filter(function(u){return u['userId']===sess.userId;})[0])||{};
+    var email  = owner['email'] || tenant['primaryEmail'] || '';
+    var now    = govopsNow_();
+    var orderId = govopsId_('ORD');
+    // 寫入訂單
+    govopsEnsureSheet_('S05_訂單', ORDER_HEADERS);
+    govopsAppend_('S05_訂單', ORDER_HEADERS, {
+      'orderId':orderId, 'tenantId':sess.tenantId, 'tenantName':tenant['tenantName']||'',
+      'email':email, 'planId':planId, 'planName':plan.planName,
+      'amount':plan.monthlyPrice, 'payMethod':'LINE Pay QR',
+      'status':'pending', 'paidAt':'', 'activatedAt':'', 'expireAt':'',
+      'note':payNote, 'createdAt':now, 'updatedAt':now
+    });
+    // 發 Email 通知你（平台管理員）
+    var adminEmail = saasGetProp_('ADMIN_EMAIL', 'ccazhu@gmail.com');
+    var subject    = '【GovOps OS】新訂閱申請：' + (tenant['tenantName']||'') + ' → ' + plan.planName;
+    var body_      = '新訂閱申請\n\n'
+      + '租戶名稱：' + (tenant['tenantName']||'') + '\n'
+      + 'tenantId：' + sess.tenantId + '\n'
+      + 'Email：' + email + '\n'
+      + '申請方案：' + plan.planName + '（NT$' + plan.monthlyPrice + '/月）\n'
+      + '付款備註：' + (payNote || '無') + '\n'
+      + '訂單編號：' + orderId + '\n'
+      + '申請時間：' + now + '\n\n'
+      + '請至管理後台確認付款並升級方案：\n'
+      + 'file:///C:/Users/lll/.local/bin/政府標案管理系統/GovOps_管理後台.html';
+    try { GmailApp.sendEmail(adminEmail, subject, body_); } catch(e) {}
+    return {success:true, data:{orderId:orderId, planName:plan.planName, amount:plan.monthlyPrice}, message:'申請已送出！我們確認付款後（通常1小時內）將為您升級，並寄送確認 Email。', timestamp:govopsNow_()};
+  }
+
+  // ── 管理員確認付款並升級（admin 用，同時通知客戶）──────
+  if (action === 'adminConfirmAndUpgrade') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    var orderId = String(params.orderId || '').trim();
+    var tid     = String(params.tenantId || '').trim();
+    var planId  = String(params.planId || '').trim();
+    if (!tid || !planId) return {success:false,error:'MISSING_FIELD',message:'tenantId 和 planId 為必填',timestamp:govopsNow_()};
+    var plan = GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0];
+    if (!plan) return {success:false,error:'INVALID_PLAN',message:'無效方案',timestamp:govopsNow_()};
+    // 升級方案
+    govopsEnsureSheet_('S01_租戶',TENANT_HEADERS);
+    var tenants = govopsRows_('S01_租戶',TENANT_HEADERS);
+    var found = null;
+    for (var i=0;i<tenants.length;i++){if(tenants[i]['tenantId']===tid){found=tenants[i];break;}}
+    if (!found) return {success:false,error:'NOT_FOUND',message:'找不到租戶：'+tid,timestamp:govopsNow_()};
+    var now=govopsNow_();
+    var startDate = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd');
+    var expireMs  = new Date().getTime() + 31*24*60*60*1000;
+    var expireDate = Utilities.formatDate(new Date(expireMs), 'Asia/Taipei', 'yyyy/MM/dd');
+    govopsUpdate_('S01_租戶',TENANT_HEADERS, found._row, {
+      'planId':planId,'maxCases':plan.maxCases,'maxUsers':plan.maxUsers,
+      'planStartDate':startDate,'planEndDate':expireDate,'reminderSent':'','updatedAt':now
+    });
+    govopsCacheInvalidate_('S01_租戶');
+    // 更新訂單狀態
+    if (orderId) {
+      govopsEnsureSheet_('S05_訂單',ORDER_HEADERS);
+      var orders = govopsRows_('S05_訂單',ORDER_HEADERS);
+      orders.forEach(function(o){ if(o['orderId']===orderId) govopsUpdate_('S05_訂單',ORDER_HEADERS,o._row,{'status':'activated','activatedAt':now,'expireAt':expireDate,'updatedAt':now}); });
+    }
+    // 發 Email 通知客戶
+    var custEmail = found['primaryEmail'] || '';
+    if (custEmail) {
+      try {
+        GmailApp.sendEmail(custEmail,
+          '【GovOps OS】您的方案已升級：'+plan.planName,
+          '親愛的 '+found['tenantName']+' 用戶，\n\n'
+          +'您的 GovOps OS 方案已成功升級！\n\n'
+          +'方案名稱：'+plan.planName+'\n'
+          +'案件上限：'+plan.maxCases+' 件\n'
+          +'成員上限：'+plan.maxUsers+' 位\n'
+          +'有效期限：'+expireDate+'\n\n'
+          +'感謝您的支持！如有任何問題請直接回覆此信。\n\nGovOps OS 團隊'
+        );
+      } catch(e) {}
+    }
+    return {success:true,data:{tenantId:tid,planName:plan.planName,expireDate:expireDate},message:'方案已升級並通知客戶：'+found['tenantName']+' → '+plan.planName+' 有效至 '+expireDate,timestamp:govopsNow_()};
+  }
+
+  // ── 查詢待處理訂單（管理員）─────────────────────────
+  if (action === 'adminGetPendingOrders') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S05_訂單',ORDER_HEADERS);
+    var orders = govopsRows_('S05_訂單',ORDER_HEADERS);
+    var pending = orders.filter(function(o){ return o['status']==='pending'; });
+    var clean = pending.map(function(o){ var r={}; Object.keys(o).forEach(function(k){if(k!=='_row')r[k]=o[k];}); return r; });
+    return {success:true,data:{orders:clean,count:clean.length},message:'待處理訂單：'+clean.length+' 筆',timestamp:govopsNow_()};
+  }
+
+  // ── LINE Pay 商家 API（申請到 Channel ID/Secret 後啟用）──
+  if (action === 'createLinePayOrder') {
+    var sess = govopsValidateSession_(params);
+    if (!sess) return {success:false,error:'UNAUTHORIZED',message:'請先登入',timestamp:govopsNow_()};
+    var channelId     = saasGetProp_('LINEPAY_CHANNEL_ID', '');
+    var channelSecret = saasGetProp_('LINEPAY_CHANNEL_SECRET', '');
+    if (!channelId || !channelSecret) {
+      return {success:false,error:'NOT_CONFIGURED',message:'LINE Pay 商家 API 尚未設定。請至 Script Properties 設定 LINEPAY_CHANNEL_ID 和 LINEPAY_CHANNEL_SECRET。目前請使用 QR Code 手動付款流程。',timestamp:govopsNow_()};
+    }
+    var planId = String(params.planId||'').trim();
+    var plan = GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0];
+    if (!plan||!plan.monthlyPrice) return {success:false,error:'INVALID_PLAN',message:'此方案不需付款',timestamp:govopsNow_()};
+    var orderId  = govopsId_('ORD');
+    var nonce    = Utilities.getUuid().replace(/-/g,'');
+    var isSandbox = saasGetProp_('LINEPAY_SANDBOX','true') === 'true';
+    var baseUrl   = isSandbox ? 'https://sandbox-api-pay.line.me' : 'https://api-pay.line.me';
+    var uri       = '/v3/payments/request';
+    var confirmUrl= 'https://ccazhu-coder.github.io/job-exam-game/govbid-os/app/payment-result.html?orderId='+orderId+'&tenantId='+sess.tenantId;
+    var cancelUrl = 'https://ccazhu-coder.github.io/job-exam-game/govbid-os/app/pricing.html?canceled=1';
+    var reqBody = JSON.stringify({
+      amount: plan.monthlyPrice, currency: 'TWD', orderId: orderId,
+      packages: [{id:'pkg1',amount:plan.monthlyPrice,products:[{name:'GovOps OS '+plan.planName+'（1個月）',quantity:1,price:plan.monthlyPrice}]}],
+      redirectUrls: {confirmUrl:confirmUrl,cancelUrl:cancelUrl}
+    });
+    var sig = linePaySign_(channelSecret, uri, reqBody, nonce);
+    var resp = UrlFetchApp.fetch(baseUrl+uri, {
+      method:'post',contentType:'application/json',payload:reqBody,
+      headers:{'X-LINE-ChannelId':channelId,'X-LINE-Authorization-Nonce':nonce,'X-LINE-Authorization':sig,'Content-Type':'application/json'}
+    });
+    var result = JSON.parse(resp.getContentText());
+    if (result.returnCode !== '0000') return {success:false,error:'LINEPAY_ERROR',message:result.returnMessage,timestamp:govopsNow_()};
+    govopsEnsureSheet_('S05_訂單',ORDER_HEADERS);
+    var tenant=(govopsRows_('S01_租戶',TENANT_HEADERS).filter(function(t){return t['tenantId']===sess.tenantId;})[0])||{};
+    govopsAppend_('S05_訂單',ORDER_HEADERS,{
+      'orderId':orderId,'tenantId':sess.tenantId,'tenantName':tenant['tenantName']||'','email':tenant['primaryEmail']||'',
+      'planId':planId,'planName':plan.planName,'amount':plan.monthlyPrice,'payMethod':'LINE Pay API',
+      'status':'awaiting_payment','paidAt':'','activatedAt':'','expireAt':'',
+      'note':result.info.transactionId||'','createdAt':govopsNow_(),'updatedAt':govopsNow_()
+    });
+    return {success:true,data:{paymentUrl:result.info.paymentUrl.web,transactionId:result.info.transactionId,orderId:orderId},message:'LINE Pay 付款連結已建立',timestamp:govopsNow_()};
+  }
+
+  if (action === 'confirmLinePayOrder') {
+    var transactionId = String(params.transactionId||'').trim();
+    var orderId       = String(params.orderId||'').trim();
+    if (!transactionId||!orderId) return {success:false,error:'MISSING_FIELD',message:'缺少 transactionId 或 orderId',timestamp:govopsNow_()};
+    var channelId     = saasGetProp_('LINEPAY_CHANNEL_ID','');
+    var channelSecret = saasGetProp_('LINEPAY_CHANNEL_SECRET','');
+    if (!channelId||!channelSecret) return {success:false,error:'NOT_CONFIGURED',message:'LINE Pay 未設定',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S05_訂單',ORDER_HEADERS);
+    var orders = govopsRows_('S05_訂單',ORDER_HEADERS);
+    var order  = orders.filter(function(o){return o['orderId']===orderId;})[0];
+    if (!order) return {success:false,error:'NOT_FOUND',message:'找不到訂單',timestamp:govopsNow_()};
+    var planId  = order['planId'];
+    var plan    = GOVOPS_PLANS.filter(function(p){return p.planId===planId;})[0];
+    var isSandbox=saasGetProp_('LINEPAY_SANDBOX','true')==='true';
+    var baseUrl=isSandbox?'https://sandbox-api-pay.line.me':'https://api-pay.line.me';
+    var uri='/v3/payments/'+transactionId+'/confirm';
+    var nonce=Utilities.getUuid().replace(/-/g,'');
+    var reqBody=JSON.stringify({amount:plan.monthlyPrice,currency:'TWD'});
+    var sig=linePaySign_(channelSecret,uri,reqBody,nonce);
+    var resp=UrlFetchApp.fetch(baseUrl+uri,{method:'post',contentType:'application/json',payload:reqBody,headers:{'X-LINE-ChannelId':channelId,'X-LINE-Authorization-Nonce':nonce,'X-LINE-Authorization':sig,'Content-Type':'application/json'}});
+    var result=JSON.parse(resp.getContentText());
+    if (result.returnCode!=='0000') return {success:false,error:'CONFIRM_FAILED',message:result.returnMessage,timestamp:govopsNow_()};
+    // 升級方案
+    var now=govopsNow_(),startDate=Utilities.formatDate(new Date(),'Asia/Taipei','yyyy/MM/dd');
+    var expireDate=Utilities.formatDate(new Date(new Date().getTime()+31*24*60*60*1000),'Asia/Taipei','yyyy/MM/dd');
+    var tenants=govopsRows_('S01_租戶',TENANT_HEADERS);
+    var tenant=tenants.filter(function(t){return t['tenantId']===order['tenantId'];})[0];
+    if (tenant) govopsUpdate_('S01_租戶',TENANT_HEADERS,tenant._row,{'planId':planId,'maxCases':plan.maxCases,'maxUsers':plan.maxUsers,'planStartDate':startDate,'planEndDate':expireDate,'updatedAt':now});
+    govopsUpdate_('S05_訂單',ORDER_HEADERS,order._row,{'status':'activated','paidAt':now,'activatedAt':now,'expireAt':expireDate,'updatedAt':now});
+    govopsCacheInvalidate_('S01_租戶');
+    return {success:true,data:{planName:plan.planName,expireDate:expireDate},message:'付款確認成功，方案已升級至 '+plan.planName,timestamp:govopsNow_()};
+  }
+
+  // ── 到期提醒（每月由 Time-driven Trigger 自動執行）──
+  if (action === 'checkRenewalReminders') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    govopsEnsureSheet_('S01_租戶',TENANT_HEADERS);
+    var tenants=govopsRows_('S01_租戶',TENANT_HEADERS);
+    var today=new Date(), todayStr=Utilities.formatDate(today,'Asia/Taipei','yyyy/MM/dd');
+    var day7=new Date(today.getTime()+7*24*60*60*1000);
+    var day7Str=Utilities.formatDate(day7,'Asia/Taipei','yyyy/MM/dd');
+    var notified=0, alreadySent=0;
+    tenants.forEach(function(t){
+      if (t['planId']==='free'||t['planId']==='enterprise') return;
+      if (!t['planEndDate']||t['status']!=='active') return;
+      if (t['reminderSent']==='true') { alreadySent++; return; }
+      if (t['planEndDate']<=day7Str && t['planEndDate']>=todayStr) {
+        var email=t['primaryEmail']||'';
+        if (email) {
+          try {
+            GmailApp.sendEmail(email,
+              '【GovOps OS】您的方案即將到期',
+              '親愛的 '+t['tenantName']+' 用戶，\n\n'
+              +'您的 '+(GOVOPS_PLANS.filter(function(p){return p.planId===t['planId'];})[0]||{}).planName+' 方案將於 '+t['planEndDate']+' 到期。\n\n'
+              +'請盡快至方案頁面續約，以免功能受限：\n'
+              +'https://ccazhu-coder.github.io/job-exam-game/govbid-os/app/pricing.html\n\n'
+              +'如有任何問題，歡迎直接回覆此信。\n\nGovOps OS 團隊'
+            );
+            govopsUpdate_('S01_租戶',TENANT_HEADERS,t._row,{'reminderSent':'true','updatedAt':govopsNow_()});
+            notified++;
+          } catch(e) {}
+        }
+      }
+    });
+    return {success:true,data:{notified:notified,alreadySent:alreadySent},message:'到期提醒檢查完成，發送 '+notified+' 封提醒',timestamp:govopsNow_()};
+  }
+
+  // ── 安裝每月到期提醒排程（只需執行一次）──────────────
+  if (action === 'installRenewalTrigger') {
+    if (!checkMasterKey_(params)) return {success:false,error:'FORBIDDEN',message:'需要 masterKey',timestamp:govopsNow_()};
+    try {
+      ScriptApp.getProjectTriggers().forEach(function(t){ if(t.getHandlerFunction()==='govopsRenewalTriggerRun') ScriptApp.deleteTrigger(t); });
+      ScriptApp.newTrigger('govopsRenewalTriggerRun').timeBased().onMonthDay(25).atHour(9).create();
+      return {success:true,message:'✅ 每月 25 日 09:00 自動發送到期提醒已設定',timestamp:govopsNow_()};
+    } catch(e) { return {success:false,message:'排程設定失敗：'+e.message,timestamp:govopsNow_()}; }
+  }
+
+  return null;
+}
+
+// ── 每月到期提醒 Trigger 執行函式 ────────────────────
+function govopsRenewalTriggerRun() {
+  var masterKey = saasGetProp_('GOVOPS_MASTER_KEY','GOVOPS_ADMIN_2026');
+  govopsPaymentRoute_({masterKey:masterKey}, 'checkRenewalReminders');
 }
