@@ -4376,6 +4376,48 @@ function govopsSaasRoute_(params, action) {
     return {success:true,data:{tenantId:tid,status:'disabled'},message:'租戶已停用：'+found['tenantName'],timestamp:govopsNow_()};
   }
 
+  // ── 列出所有工作表（管理用）──
+  if (action === 'listSheets') {
+    var ss = govopsSS_();
+    var sheets = ss.getSheets().map(function(s){ return s.getName(); });
+    return {success:true, data:{sheets:sheets, count:sheets.length}, message:'共 '+sheets.length+' 個工作表', timestamp:govopsNow_()};
+  }
+
+  // ── 清除舊版/未使用工作表（管理用）──
+  if (action === 'cleanupSheets') {
+    var key = String(params.confirmKey || '');
+    if (key !== 'CLEANUP_2026') return {success:false,error:'FORBIDDEN',message:'需要正確的 confirmKey',timestamp:govopsNow_()};
+    var KEEP = [
+      'S01_租戶','S02_工作空間','S03_使用者','S04_方案','S05_訂單','S06_模組開關','S07_使用量紀錄','S08_登入紀錄','S09_操作日誌',
+      '01_專案主檔','02_場次活動','03_案件需求摘要','03b_驗收條件','05_場次變更紀錄','09_成果附件',
+      '16_應收帳款','17_收款紀錄','18_支出明細','20_提醒中心','22_文件產出紀錄',
+      '23_合作廠商主檔','24_講師主檔','25_工作人員主檔','25_上傳檔案管理',
+      '28_Google表單設定','28_報名審查紀錄','28_系統設定','29_資料匯入批次紀錄','29_通知紀錄',
+      '30_工作室設定','30_開課前SOP','31_使用者管理','31_標案池',
+      '人力需求清單','報名資料庫','學員CRM','招生活動管理','支援人員付款','支援人員名單','支援人員工時',
+      '收發公文','核銷檢查中心','案件任務清單','案件預算明細','簽到表','簽到表紀錄','結案檢核','財務收支'
+    ];
+    var ss = govopsSS_();
+    var allSheets = ss.getSheets();
+    if (allSheets.length <= 1) return {success:false,message:'只剩一個工作表，無法刪除',timestamp:govopsNow_()};
+    var deleted = [], kept = [];
+    allSheets.forEach(function(s){
+      var n = s.getName();
+      if (KEEP.indexOf(n) === -1) { deleted.push(n); }
+      else { kept.push(n); }
+    });
+    // 確保刪除後至少剩1張
+    if (kept.length === 0) return {success:false,message:'保留清單為空，取消刪除',timestamp:govopsNow_()};
+    var actualDeleted = [];
+    deleted.forEach(function(name){
+      try {
+        var s = ss.getSheetByName(name);
+        if (s && ss.getSheets().length > 1) { ss.deleteSheet(s); actualDeleted.push(name); }
+      } catch(e) { /* skip */ }
+    });
+    return {success:true, data:{deleted:actualDeleted, kept:kept.length}, message:'已刪除 '+actualDeleted.length+' 個舊工作表，保留 '+kept.length+' 個', timestamp:govopsNow_()};
+  }
+
   // ── 開發用：清除所有 SaaS 帳號資料（重置測試環境）──
   if (action === 'devClearSaasData') {
     var key = String(params.confirmKey || '');
