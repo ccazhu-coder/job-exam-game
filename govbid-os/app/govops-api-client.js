@@ -1,10 +1,10 @@
-/* GovOps OS Shared API Client v1.0.4
- * 目的：統一前端 API 呼叫、SaaS session 注入、JSON 防呆、錯誤中文化與 timeout。
- * 產品化更新：整合 Product Core actions，不另外建立第二套 API client。
+/* GovOps OS Shared API Client v2.0.0 - SaaS MVP @40
+ * 更新：修正 API URL、加入 UNAUTHORIZED 自動跳轉、登出清除、sessionToken 自動注入。
  */
 (function(){
   const DEFAULT_TIMEOUT_MS=25000;
-  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxazsoFaFUvfAeF3hVCNXaax04qsctQrHCocwKZXKbEj4Kt6T0kKmdw7YRHybz_DOJlfg/exec';
+  // 正式後端 URL（@40 SaaS 多租戶版本）
+  const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxGSf_wVrwBHKpJigE3Azh0_gouy84BZnhYG5KioBtPw0FRCVTAiIYmh_u0smzb6ZxPxA/exec';
   function getDefaultApiUrl(){
     if(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)return window.GOVOPS_CONFIG.API_URL;
     return window.GOVOPS_API_URL || window.API_URL || DEFAULT_API_URL;
@@ -15,14 +15,30 @@
   function getAuth(){
     try{return JSON.parse(localStorage.getItem('govops_auth')||'{}')}catch(e){return{}}
   }
+  // 登出：清除所有 session 資料並跳轉登入頁
+  function doLogout(){
+    var auth=getAuth();
+    if(auth.sessionToken){
+      try{ fetch(getDefaultApiUrl()+'?action=logoutUser&sessionToken='+encodeURIComponent(auth.sessionToken)); }catch(e){}
+    }
+    ['govops_auth','govops_profile','govops_conn_settings','govops_root_folder'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+    window.location.href='./login.html';
+  }
+  // UNAUTHORIZED 回應處理：清除 session 並跳轉登入頁
+  function handleUnauthorized(){
+    ['govops_auth','govops_profile'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
+    if(!window.location.pathname.includes('login.html')&&!window.location.pathname.includes('register.html')){
+      window.location.href='./login.html';
+    }
+  }
   function runtimeParams(params){
     const profile=getProfile();
     const auth=getAuth();
     const base={
-      tenantId:params&&params.tenantId || profile.tenantId || auth.tenantId || 'TENANT-DEMO',
-      userId:params&&params.userId || profile.userId || auth.userId || 'USR-DEMO',
-      userRole:params&&params.userRole || profile.userRole || profile.role || auth.userRole || auth.role || 'owner',
-      plan:params&&params.plan || profile.plan || auth.plan || 'pro',
+      tenantId:params&&params.tenantId || auth.tenantId || profile.tenantId || '',
+      userId:params&&params.userId || auth.userId || profile.userId || '',
+      userRole:params&&params.userRole || auth.role || profile.role || 'viewer',
+      plan:params&&params.plan || auth.planId || profile.plan || 'free',
       sessionToken:params&&params.sessionToken || auth.sessionToken || auth.token || '',
       clientVersion:window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.VERSION || '',
       env:window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.ENV || 'production'
@@ -52,6 +68,7 @@
       let data;
       try{data=JSON.parse(text)}catch(e){return {success:false,message:'API 回傳格式不是有效 JSON，請檢查 Apps Script 部署。',data:{reason:'INVALID_JSON',status:res.status,raw:text.slice(0,300)}}}
       if(!res.ok){return {success:false,message:data.message||'API 連線失敗，請稍後再試。',data:data.data||{status:res.status}}}
+      if(data&&data.error==='UNAUTHORIZED'){handleUnauthorized();return data;}
       return data;
     }catch(e){
       clearTimeout(timer);
@@ -72,6 +89,7 @@
       let data;
       try{data=JSON.parse(text)}catch(e){return {success:false,message:'API 回傳格式不是有效 JSON，請檢查 Apps Script 部署。',data:{reason:'INVALID_JSON',status:res.status,raw:text.slice(0,300)}}}
       if(!res.ok){return {success:false,message:data.message||'API 連線失敗，請稍後再試。',data:data.data||{status:res.status}}}
+      if(data&&data.error==='UNAUTHORIZED'){handleUnauthorized();return data;}
       return data;
     }catch(e){
       clearTimeout(timer);
@@ -115,6 +133,6 @@
     queryTender:function(data){return request(Object.assign({action:'tender.query'},data||{}));},
     updateTenderStatus:function(data){return request(Object.assign({action:'tender.updateStatus'},data||{}));}
   };
-  window.GovOpsAPI={request,post,bindMessageRequest,formatResult,extractRows,toQuery,runtimeParams,getProfile,getAuth,getDefaultApiUrl,ProductCore,DEFAULT_API_URL};
+  window.GovOpsAPI={request,post,bindMessageRequest,formatResult,extractRows,toQuery,runtimeParams,getProfile,getAuth,getDefaultApiUrl,doLogout,handleUnauthorized,ProductCore,DEFAULT_API_URL};
   window.GovOpsApi=window.GovOpsAPI;
 })();
