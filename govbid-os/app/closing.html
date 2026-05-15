@@ -104,8 +104,8 @@ var _currentCaseId = '';
 var _checkItems = [];
 
 function init() {
-  var profile = safeJSON('govops_profile');
-  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  var _auth = safeJSON('govops_auth');
+  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   loadCases();
