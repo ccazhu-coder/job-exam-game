@@ -585,8 +585,9 @@ async function generateToDrive(opts){
   if(btn){btn.textContent='產生中…';btn.disabled=true;}
   if(el)el.innerHTML='<span style="color:var(--gray-400)">正在 Google Drive 產生文件，請稍候…</span>';
   var conn=safeJSON('govops_conn_settings')||{};
+  var rootFolderId=conn.driveFolder||localStorage.getItem('govops_root_folder')||'';
   var p=Object.assign({},opts,{caseId:_caseId,sessionId:_sessionId||''});
-  if(conn.driveFolder)p.rootFolderId=conn.driveFolder;
+  if(rootFolderId)p.rootFolderId=rootFolderId;
   if(opts.action==='autoGenerateLecturerReceipt'){
     p.hours=(document.getElementById('lec_hours')||{}).value||'';
     p.hourlyRate=(document.getElementById('lec_rate')||{}).value||'';
@@ -595,13 +596,23 @@ async function generateToDrive(opts){
   if(opts.action==='autoGenerateStaffReceipts'){
     p.hourlyRate=(document.getElementById('staff_rate')||{}).value||'190';
   }
+  // 核銷清單不需要 sessionId
+  if(opts.action==='autoGenerateReimbursementSheet') delete p.sessionId;
   var r=await ERPALIGNED.api(p);
   if(btn){btn.textContent='📂 產生到 Google Drive';btn.disabled=false;}
   if(r.success){
     var d=r.data||{};
-    var url=d.sheetUrl||d.docUrl||d.fileUrl||'';
-    if(el)el.innerHTML='<span style="color:#166534">✅ 已產生到 Google Drive　'+(d.fileName||'')+'</span>'
-      +(url?'　<a href="'+url+'" target="_blank" style="color:var(--navy);font-weight:700">開啟檔案 →</a>':'');
+    // 工作人員領據：批次多筆
+    if(opts.action==='autoGenerateStaffReceipts' && Array.isArray(d.results)){
+      var links=d.results.map(function(x){
+        return x.url?'<a href="'+x.url+'" target="_blank" style="color:var(--navy);margin-right:8px">'+esc(x.name||'—')+'</a>':'<span style="color:var(--danger)">'+esc(x.name||'—')+'（失敗）</span>';
+      }).join('');
+      if(el)el.innerHTML='<span style="color:#166534">✅ 已產生 '+d.results.length+' 份工作人員領據到 Google Drive</span><br>'+links;
+    } else {
+      var url=d.url||d.sheetUrl||d.docUrl||d.fileUrl||'';
+      if(el)el.innerHTML='<span style="color:#166534">✅ 已產生到 Google Drive　'+(d.fileName||'')+'</span>'
+        +(url?'　<a href="'+url+'" target="_blank" style="color:var(--navy);font-weight:700">開啟檔案 →</a>':'');
+    }
   } else {
     if(el)el.innerHTML='<span style="color:var(--danger)">❌ 產生失敗：'+esc(r.message||r.error||'未知錯誤')+'</span>';
   }
