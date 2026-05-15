@@ -99,6 +99,7 @@
     </div>
     <div id="finMsg" class="msg" style="display:none"></div>
     <div id="finTable"></div>
+    <div id="finPager"></div>
   </section>
 </main>
 
@@ -140,14 +141,17 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./govops-pagination.js"></script>
 <script>
 var _cases = [];
+var _finPager = null;
 
 function init() {
   var profile = safeJSON('govops_profile');
   if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
+  _finPager = GovOpsPager.init({ containerId: 'finPager', pageSize: 50, onPage: function() { loadRecords(); } });
   loadCases();
   loadAll();
 }
@@ -189,11 +193,14 @@ async function loadRecords() {
   if (caseId) params.caseId = caseId;
   if (type) params.type = type;
   if (status) params.status = status;
+  if (_finPager) { params.limit = _finPager.currentLimit(); params.offset = _finPager.currentOffset(); }
   var r = await ERPALIGNED.api(params);
   msg.style.display='none';
   if (!r.success) { msg.style.display=''; msg.textContent='⚠ 查詢失敗'; return; }
   var rows = r.data || [];
-  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆財務紀錄';
+  var total = r.total !== undefined ? r.total : rows.length;
+  document.getElementById('pageSubtitle').textContent = '共 ' + total + ' 筆財務紀錄';
+  if (_finPager) _finPager.setTotal(total);
   if (!rows.length) { tbl.innerHTML='<div style="color:var(--gray-400);padding:40px;text-align:center">查無財務紀錄</div>'; return; }
   var html='<div style="overflow-x:auto"><table class="erp-table" style="min-width:760px"><thead><tr><th>類型</th><th>科目</th><th>對象</th><th style="text-align:right">金額</th><th>付款方式</th><th>預計日</th><th>狀態</th><th>備註</th></tr></thead><tbody>';
   rows.forEach(function(r){
