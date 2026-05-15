@@ -86,9 +86,7 @@
 <script src="./erp-aligned-core.js"></script>
 <script>
 function init() {
-  var _auth = safeJSON('govops_auth');
-  if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   loadCases();
   loadAll();
