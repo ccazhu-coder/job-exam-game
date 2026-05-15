@@ -225,8 +225,8 @@ var _today = new Date().toISOString().substring(0,10);
 var _soon = new Date(new Date().getTime() + 7*86400000).toISOString().substring(0,10);
 
 function init() {
-  var profile = safeJSON('govops_profile');
-  if (!profile || !profile.userId) { location.href = './dashboard.html'; return; }
+  var _auth = safeJSON('govops_auth');
+  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   // URL params
