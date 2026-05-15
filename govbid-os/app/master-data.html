@@ -83,7 +83,7 @@ var TAB_CONFIG={
     fields:[['姓名','text'],['電話','text'],['Email','email'],['身分別','text'],['身分證字號','text'],['銀行','text'],['帳號','text'],['戶名','text'],['備註','textarea']]}
 };
 function init(){
-  var p=safeJSON('govops_profile');if(!p||!p.userId){location.href='./dashboard.html';return;}
+  var _auth=safeJSON('govops_auth');if(!_auth||!_auth.sessionToken||!_auth.isLoggedIn){location.href='./login.html';return;}
   document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
   loadData();
 }
