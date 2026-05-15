@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜付款結果</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+body{min-height:100vh;background:linear-gradient(135deg,#0d1f37 0%,#0a1220 100%);display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#0e1e31;border:1.5px solid #1e3a5c;border-radius:16px;padding:40px 36px;max-width:480px;width:100%;text-align:center}
+.icon{font-size:3rem;margin-bottom:16px}
+.title{font-size:1.3rem;font-weight:700;color:#b8963e;margin-bottom:8px}
+.sub{font-size:.88rem;color:#7a9bc5;margin-bottom:24px}
+.plan-badge{display:inline-block;background:rgba(184,150,62,.15);border:1px solid rgba(184,150,62,.4);color:#b8963e;border-radius:6px;font-size:.85rem;padding:6px 16px;margin-bottom:16px}
+.info{background:#0a1628;border-radius:8px;padding:14px;font-size:.83rem;color:#7a9bc5;margin-bottom:20px;text-align:left}
+.info-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #162035}
+.info-row:last-child{border:none}
+.info-val{color:#ccd6f6;font-weight:600}
+.btn{display:block;padding:12px;background:#b8963e;color:#000;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;margin-bottom:8px}
+.btn.sec{background:transparent;border:1.5px solid #2a4060;color:#7a9bc5}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid #1e3a5c;border-top-color:#b8963e;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pending-note{font-size:.82rem;color:#b8963e;background:rgba(184,150,62,.08);border:1px solid rgba(184,150,62,.25);border-radius:6px;padding:10px 14px;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="spinner" id="spinner"></div>
+  <div class="title" id="title">確認付款中…</div>
+  <div class="sub" id="sub">請稍候，我們正在確認您的付款</div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script>
+var params = new URLSearchParams(location.search);
+var transactionId = params.get('transactionId') || '';
+var orderId       = params.get('orderId') || '';
+var isManual      = params.get('manual') === '1';   // 手動付款通知成功後跳轉
+
+async function init() {
+  // 手動付款通知成功（從 pricing.html 提交後跳轉）
+  if (isManual) {
+    showPending();
+    return;
+  }
+
+  // LINE Pay API 自動確認
+  if (transactionId && orderId) {
+    var r = await GovOpsAPI.post({ action:'confirmLinePayOrder', transactionId:transactionId, orderId:orderId });
+    if (r.success) {
+      showSuccess(r.data);
+    } else {
+      showFail(r.message || '付款確認失敗');
+    }
+    return;
+  }
+
+  // 無參數：一般成功通知頁
+  showPending();
+}
+
+function showSuccess(data) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('card').innerHTML = `
+    <div class="icon">🎉</div>
+    <div class="title">付款成功！方案已升級</div>
+    <div class="sub">感謝您的訂閱，祝您使用愉快</div>
+    <div class="plan-badge">${data.planName || ''}</div>
+    <div class="info">
+      <div class="info-row"><span>方案</span><span class="info-val">${data.planName||'—'}</span></div>
+      <div class="info-row"><span>有效期限</span><span class="info-val">${data.expireDate||'—'}</span></div>
+    </div>
+    <a href="./dashboard.html" class="btn">進入系統 →</a>
+    <a href="./pricing.html" class="btn sec">查看方案</a>
+  `;
+}
+
+function showPending() {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('card').innerHTML = `
+    <div class="icon">📬</div>
+    <div class="title">申請已收到！</div>
+    <div class="sub">我們將於確認付款後（通常 1 小時內）升級您的方案，並寄送確認 Email。</div>
+    <div class="pending-note">
+      ⏰ 如超過 2 小時仍未收到通知，請直接回覆確認 Email 或聯絡 ccazhu@gmail.com
+    </div>
+    <br>
+    <a href="./dashboard.html" class="btn">返回系統</a>
+    <a href="./pricing.html" class="btn sec">查看方案</a>
+  `;
+}
+
+function showFail(msg) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('card').innerHTML = `
+    <div class="icon">❌</div>
+    <div class="title">付款確認失敗</div>
+    <div class="sub">${msg}</div>
+    <a href="./pricing.html" class="btn">重新選擇方案</a>
+    <a href="./dashboard.html" class="btn sec">返回系統</a>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
