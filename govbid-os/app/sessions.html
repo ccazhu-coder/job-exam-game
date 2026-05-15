@@ -132,6 +132,7 @@
 
     <div id="sesMsg" class="msg" style="display:none"></div>
     <div id="sesTable"></div>
+    <div id="sesPager"></div>
   </section>
 </main>
 
@@ -248,12 +249,14 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./govops-pagination.js"></script>
 <script>
 var _statusFilter = '';
 var _pendingArchiveId = '';
 var _searchTimer = null;
 var _currentCaseId = '';
 var _currentCaseName = '';
+var _sesPager = null;
 
 function init() {
   var profile = safeJSON('govops_profile');
@@ -268,6 +271,7 @@ function init() {
     document.getElementById('caseBar').style.display = 'flex';
     document.getElementById('caseBarName').textContent = decodeURIComponent(_currentCaseName);
   }
+  _sesPager = GovOpsPager.init({ containerId: 'sesPager', pageSize: 50, onPage: function() { loadSessions(); } });
   loadStats();
   loadSessions();
 }
@@ -305,15 +309,18 @@ async function loadSessions() {
   var kw = document.getElementById('kwInput').value.trim();
   if (kw) params.keyword = kw;
   if (_statusFilter) params.status = _statusFilter;
+  if (_sesPager) { params.limit = _sesPager.currentLimit(); params.offset = _sesPager.currentOffset(); }
 
   var r = await ERPALIGNED.api(params);
   msg.style.display = 'none';
   if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ 查詢失敗：' + (r.message || ''); return; }
 
   var rows = r.data || [];
-  var subtitle = '共 ' + rows.length + ' 筆場次';
+  var total = r.total !== undefined ? r.total : rows.length;
+  var subtitle = '共 ' + total + ' 筆場次';
   if (_currentCaseName) subtitle += '（' + decodeURIComponent(_currentCaseName) + '）';
   document.getElementById('pageSubtitle').textContent = subtitle;
+  if (_sesPager) _sesPager.setTotal(total);
 
   if (!rows.length) {
     tbl.innerHTML = '<div class="empty-state" style="text-align:center;padding:50px 20px;color:var(--gray-400)"><div style="font-size:2rem;margin-bottom:8px">📅</div><p>目前沒有場次資料</p></div>';
