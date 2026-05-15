@@ -120,7 +120,7 @@
       <h1>報名管理</h1>
       <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
     </div>
-    <div class="btns">
+    <div class="btns" id="regsToolbar">
       <button class="gold" onclick="openAddModal()">＋ 新增報名</button>
       <button class="secondary" onclick="loadRegs()">重新整理</button>
     </div>
@@ -256,6 +256,7 @@
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
 <script src="./govops-pagination.js"></script>
+<script src="./govops-export.js"></script>
 <script>
 var _reviewFilter = '';
 var _selectedIds = new Set();
@@ -280,6 +281,17 @@ function init() {
     if (_currentCaseId) document.getElementById('ctxBack').href = './sessions.html?caseId=' + _currentCaseId;
   }
   _regsPager = GovOpsPager.init({ containerId: 'regsPager', pageSize: 50, onPage: function() { loadRegs(); } });
+  GovOpsExport.addBtn('regsToolbar', async function() {
+    var p = { action: 'getRegistrations', limit: 9999, offset: 0 };
+    if (_currentCaseId) p.caseId = _currentCaseId;
+    if (_currentSessionId) p.sessionId = _currentSessionId;
+    var sesF = document.getElementById('sessionFilter').value;
+    if (sesF) p.sessionId = sesF;
+    var kw = document.getElementById('kwInput').value.trim();
+    if (kw) p.keyword = kw; if (_reviewFilter) p.reviewStatus = _reviewFilter;
+    var r = await ERPALIGNED.api(p);
+    return r.data || [];
+  }, '報名資料');
   // 依序：先載入場次清單（設定篩選值），再載入統計和資料
   loadSessionList().then(function() {
     loadStats();
