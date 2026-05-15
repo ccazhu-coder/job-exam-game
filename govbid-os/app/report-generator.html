@@ -404,12 +404,30 @@ async function generateReport(){
   btn.textContent='產生結案報告到 Google Drive';btn.disabled=false;
   if(r.success){
     var d=r.data||{};
+    var docUrl = d.url || d.docUrl || '';
+    var docId  = d.docId || '';
+    var pdfBtn = docId
+      ? ' <button class="secondary" style="margin-left:8px" onclick="exportPDF(\''+docId+'\',\'結案報告_\'+_caseId)">📄 匯出 PDF</button>'
+      : '';
     el.innerHTML='<span style="color:#166534">✅ 結案報告已產生到 Google Drive</span>'
-      +(d.docUrl?'　<a href="'+d.docUrl+'" target="_blank" style="color:var(--navy);font-weight:700">在 Google Docs 開啟 →</a>':'');
+      +(docUrl?'　<a href="'+docUrl+'" target="_blank" style="color:var(--navy);font-weight:700">在 Google Docs 開啟 →</a>':'')+pdfBtn;
     setStep(5);
     previewReport();
   } else {
     el.innerHTML='<span style="color:var(--danger)">❌ 產生失敗：'+esc(r.message||r.error||'未知錯誤')+'</span>';
+  }
+}
+
+async function exportPDF(docId, fileName) {
+  var el = document.getElementById('genResult');
+  el.innerHTML += ' <span style="color:var(--gray-400);font-size:.8rem">PDF 產生中…</span>';
+  var rootFolderId = localStorage.getItem('govops_root_folder') || '';
+  var r = await ERPALIGNED.api({ action:'exportDocAsPDF', docId:docId, caseId:_caseId, fileName:fileName, rootFolderId:rootFolderId });
+  if(r.success){
+    var pdfUrl = r.data.pdfUrl || '';
+    el.innerHTML += pdfUrl ? ' <a href="'+pdfUrl+'" target="_blank" style="color:#166534;font-weight:700">📥 開啟 PDF →</a>' : '';
+  } else {
+    el.innerHTML += ' <span style="color:var(--danger);font-size:.8rem">PDF 失敗：'+(r.message||'')+'</span>';
   }
 }
 
