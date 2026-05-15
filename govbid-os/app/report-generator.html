@@ -159,8 +159,8 @@ function shortDate(v){if(!v)return'—';return String(v).replace(/(\d{4})[\/\-](
 var _caseId='', _reportData={};
 
 function init(){
-  var p=safeJSON('govops_profile');
-  if(!p||!p.userId){location.href='./dashboard.html';return;}
+  var _auth = safeJSON('govops_auth');
+  if (!_auth || !_auth.sessionToken || !_auth.isLoggedIn) { location.href = './login.html'; return; }
   document.getElementById('nav').innerHTML=ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   var sp=new URLSearchParams(location.search);
