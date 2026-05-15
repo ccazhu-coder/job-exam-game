@@ -2,10 +2,61 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0;url=./dashboard.html">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GovOps OS｜登入</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+<style>
+body{min-height:100vh;background:linear-gradient(135deg,#0d1f37 0%,#1a3a6c 100%);display:flex;align-items:center;justify-content:center;padding:20px}
+.card{background:#0e1e31;border:1.5px solid #1e3a5c;border-radius:16px;padding:40px 36px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.brand{font-size:1.4rem;font-weight:700;color:#b8963e;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.brand::before{content:'';display:block;width:5px;height:1.4em;background:#b8963e;border-radius:3px}
+.tagline{font-size:.82rem;color:#7a9bc5;margin-bottom:28px}
+.fi label{display:block;font-size:.8rem;font-weight:600;color:#7a9bc5;margin:0 0 5px}
+.fi{margin-bottom:14px}
+.fi input{width:100%;padding:10px 13px;background:#0a1628;border:1.5px solid #1e3a5c;border-radius:6px;color:#ccd6f6;font-size:.9rem;font-family:inherit;box-sizing:border-box}
+.fi input:focus{outline:none;border-color:#b8963e;box-shadow:0 0 0 3px rgba(184,150,62,.12)}
+.btn{width:100%;padding:13px;background:#b8963e;color:#000;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;margin-top:6px}
+.btn:hover{background:#d4a84e}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;border:1.5px solid #1e3a5c;color:#7a9bc5;margin-top:8px}
+.btn.ghost:hover{border-color:#b8963e;color:#b8963e}
+.err{background:rgba(192,57,43,.12);color:#e74c3c;border:1px solid rgba(192,57,43,.3);border-radius:6px;padding:10px 14px;font-size:.83rem;margin-top:10px;display:none}
+.sep{text-align:center;font-size:.78rem;color:#2a4060;margin:16px 0;position:relative}
+.sep::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:#1e3a5c}
+.sep span{background:#0e1e31;padding:0 12px;position:relative}
+.saved-box{background:rgba(184,150,62,.07);border:1px solid rgba(184,150,62,.3);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:none}
+.saved-name{font-size:.95rem;font-weight:700;color:#ccd6f6}
+.saved-sub{font-size:.78rem;color:#7a9bc5;margin-top:2px}
+</style>
 </head>
 <body>
-<p>正在跳轉至系統入口… <a href="./dashboard.html">點此前往</a></p>
+<div class="card">
+  <div class="brand">GovOps OS</div>
+  <div class="tagline">政府標案全流程營運系統 SaaS 商業版 MVP</div>
+  <div class="saved-box" id="savedBox">
+    <div class="saved-name" id="savedName">—</div>
+    <div class="saved-sub" id="savedSub"></div>
+    <button class="btn" id="quickBtn" onclick="doQuickLogin()">繼續以此帳號進入</button>
+    <button class="btn ghost" onclick="showLoginForm()">使用其他帳號</button>
+  </div>
+  <div id="loginForm">
+    <div class="fi"><label>Email</label><input id="l_email" type="email" placeholder="your@email.com" autocomplete="email"></div>
+    <div class="fi"><label>密碼</label><input id="l_pwd" type="password" placeholder="●●●●●●" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="err" id="errMsg"></div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">登入</button>
+  </div>
+  <div class="sep"><span>還沒有帳號？</span></div>
+  <button class="btn ghost" onclick="location.href='./register.html'">建立新帳號 →</button>
+</div>
+<script src="./govops-api-client.js"></script>
+<script>
+function saveSession(d){localStorage.setItem('govops_auth',JSON.stringify({sessionToken:d.sessionToken,userId:d.userId,tenantId:d.tenantId,workspaceId:d.workspaceId,workspaceName:d.workspaceName,userName:d.userName,email:d.email,role:d.role,planId:d.planId,planName:d.planName,isLoggedIn:true,loginTime:d.loginTime,expireTime:d.expireTime}));localStorage.setItem('govops_profile',JSON.stringify({userId:d.userId,userName:d.userName,email:d.email,role:d.role,tenantId:d.tenantId,workspaceId:d.workspaceId,orgName:d.workspaceName,plan:d.planId,isLoggedIn:true}));}
+function showErr(msg){var e=document.getElementById('errMsg');e.textContent=msg;e.style.display='';}
+function showLoginForm(){document.getElementById('savedBox').style.display='none';document.getElementById('loginForm').style.display='';}
+async function doQuickLogin(){var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');if(!auth.sessionToken){showLoginForm();return;}var r=await GovOpsAPI.post({action:'getMe',sessionToken:auth.sessionToken});if(r.success){window.location.href='./dashboard.html';}else{localStorage.removeItem('govops_auth');localStorage.removeItem('govops_profile');showLoginForm();}}
+async function doLogin(){var email=document.getElementById('l_email').value.trim();var pwd=document.getElementById('l_pwd').value;if(!email||!pwd){showErr('請填寫 Email 和密碼');return;}var btn=document.getElementById('loginBtn');btn.textContent='登入中…';btn.disabled=true;document.getElementById('errMsg').style.display='none';var r=await GovOpsAPI.post({action:'loginUser',email:email,password:pwd});btn.textContent='登入';btn.disabled=false;if(!r.success){showErr(r.message||'登入失敗，請確認 Email 和密碼');return;}saveSession(r.data);window.location.href='./dashboard.html';}
+(function(){try{var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');if(auth.sessionToken&&auth.isLoggedIn&&auth.userName){document.getElementById('savedName').textContent=auth.userName+'（'+(auth.workspaceName||auth.tenantId||'')+'）';document.getElementById('savedSub').textContent=auth.email+'　方案：'+(auth.planName||auth.planId||'');document.getElementById('savedBox').style.display='';document.getElementById('loginForm').style.display='none';}}catch(e){}})();
+</script>
 </body>
 </html>
