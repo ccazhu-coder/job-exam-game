@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GovOps OS｜成員管理</title>
+<link rel="stylesheet" href="./erp-page-style.css">
+<script src="./config.js"></script>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">GovOps OS <span style="font-size:.65rem;background:rgba(184,150,62,.18);color:#b8963e;border-radius:4px;padding:2px 7px;margin-left:6px">SaaS MVP</span></div>
+  <nav id="nav"></nav>
+  <button onclick="doLogout()" style="font-size:.75rem;padding:5px 12px;background:transparent;border:1px solid #2a4060;color:#7a9bc5;border-radius:4px;cursor:pointer">登出</button>
+</div></header>
+
+<main class="wrap">
+  <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h1>成員管理</h1>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
+    </div>
+    <div class="btns">
+      <button class="gold" onclick="openInviteModal()">＋ 邀請成員</button>
+      <button class="secondary" onclick="loadUsers()">重新整理</button>
+    </div>
+  </div>
+
+  <!-- 方案資訊 -->
+  <div id="planBar" style="background:#0e1e31;border:1px solid #1e3a5c;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:.83rem;color:#7a9bc5;display:flex;gap:24px;flex-wrap:wrap"></div>
+
+  <!-- 成員列表 -->
+  <section class="card">
+    <div id="usersMsg" class="msg" style="display:none"></div>
+    <div id="usersTable"></div>
+  </section>
+
+  <!-- 我的帳號 -->
+  <section class="card" style="margin-top:16px">
+    <h2>我的帳號設定</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px">
+      <div class="fi"><label style="font-size:.8rem;color:var(--gray-500)">舊密碼</label><input id="oldPwd" type="password" placeholder="目前密碼"></div>
+      <div class="fi"><label style="font-size:.8rem;color:var(--gray-500)">新密碼（至少 6 字元）</label><input id="newPwd" type="password" placeholder="新密碼"></div>
+      <div class="fi"><label style="font-size:.8rem;color:var(--gray-500)">確認新密碼</label><input id="newPwd2" type="password" placeholder="再輸入一次"></div>
+    </div>
+    <div id="pwdMsg" style="font-size:.82rem;margin-top:6px;display:none"></div>
+    <button class="secondary" style="margin-top:10px" onclick="changePassword()">更新密碼</button>
+  </section>
+</main>
+
+<!-- 邀請成員 Modal -->
+<div class="modal-overlay" id="inviteModal" style="display:none" onclick="closeBg(event)">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-header"><h2>邀請成員</h2><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="fr c2">
+        <div class="fi"><label>姓名 *</label><input id="inv_name" placeholder="成員姓名"></div>
+        <div class="fi"><label>Email *</label><input id="inv_email" type="email" placeholder="成員 Email"></div>
+      </div>
+      <div class="fr c2">
+        <div class="fi"><label>角色</label>
+          <select id="inv_role">
+            <option value="admin">管理者</option>
+            <option value="project">專案人員</option>
+            <option value="admin_staff">行政人員</option>
+            <option value="finance">財務人員</option>
+            <option value="viewer" selected>檢視者</option>
+          </select>
+        </div>
+        <div class="fi"><label>臨時密碼（預設 temp1234）</label><input id="inv_pwd" placeholder="temp1234" value="temp1234"></div>
+      </div>
+      <div style="background:rgba(184,150,62,.08);border:1px solid rgba(184,150,62,.3);border-radius:6px;padding:10px 12px;font-size:.8rem;color:#b8963e;margin-top:8px">
+        成員收到邀請後，請提醒其使用 Email + 臨時密碼登入，並立即修改密碼。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="gold" id="inviteBtn" onclick="submitInvite()">邀請</button>
+      <button class="secondary" onclick="closeModal()">取消</button>
+    </div>
+    <div id="inviteMsg" style="font-size:.82rem;padding:6px 16px;display:none"></div>
+  </div>
+</div>
+
+<script src="./govops-api-client.js"></script>
+<script src="./erp-aligned-core.js"></script>
+<script>
+var _auth = null;
+var _users = [];
+
+const ROLE_LABELS = {
+  'sys_admin':'系統管理者','tenant_owner':'租戶擁有者','admin':'管理者',
+  'project':'專案人員','admin_staff':'行政人員','finance':'財務人員','viewer':'檢視者'
+};
+const EDITABLE_ROLES = ['admin','project','admin_staff','finance','viewer'];
+
+function safeJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+function esc(v){ return ERPALIGNED ? ERPALIGNED.esc(v) : String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function init() {
+  _auth = safeJSON('govops_auth');
+  if (!_auth || !_auth.sessionToken) { window.location.href = './login.html'; return; }
+  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
+  loadUsers();
+  loadPlanInfo();
+}
+
+async function loadPlanInfo() {
+  var r = await ERPALIGNED.api({ action: 'getTenantSettings' });
+  if (!r.success) return;
+  var plan = r.data.plan || {};
+  var tenant = r.data.tenant || {};
+  document.getElementById('planBar').innerHTML =
+    '<span>方案：<strong style="color:#b8963e">' + esc(plan.planName||'—') + '</strong></span>' +
+    '<span>案件上限：<strong>' + (plan.maxCases||'—') + '</strong></span>' +
+    '<span>成員上限：<strong>' + (plan.maxUsers||'—') + '</strong></span>' +
+    '<span>文件產出：<strong>' + (plan.maxDocGen||'—') + '</strong> 次</span>' +
+    '<span>租戶：<strong>' + esc(tenant.tenantName||'—') + '</strong></span>';
+}
+
+async function loadUsers() {
+  var msg = document.getElementById('usersMsg');
+  var tbl = document.getElementById('usersTable');
+  msg.style.display = ''; msg.textContent = '載入中…';
+  tbl.innerHTML = '';
+  var r = await ERPALIGNED.api({ action: 'getTenantUsers' });
+  msg.style.display = 'none';
+  if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ ' + (r.message||'載入失敗'); return; }
+  _users = (r.data && r.data.users) || [];
+  document.getElementById('pageSubtitle').textContent = '共 ' + _users.length + ' 位成員';
+  renderUsers(_users, tbl);
+}
+
+function renderUsers(users, el) {
+  if (!users.length) { el.innerHTML = '<div class="empty-state"><div class="ico">👥</div><p>目前只有您一位成員</p></div>'; return; }
+  var isMgr = (_auth.role === 'tenant_owner' || _auth.role === 'admin');
+  var html = '<div style="overflow-x:auto"><table class="erp-table"><thead><tr><th>姓名</th><th>Email</th><th>角色</th><th>狀態</th><th>最後登入</th><th>操作</th></tr></thead><tbody>';
+  users.forEach(function(u) {
+    var isMe = u.userId === _auth.userId;
+    var roleLabel = ROLE_LABELS[u.role] || u.role || '—';
+    var status = u.status === 'active' ? '<span class="badge s-已錄取">啟用</span>' : '<span class="badge s-封存">停用</span>';
+    html += '<tr' + (isMe?' style="background:rgba(184,150,62,.05)"':'') + '>';
+    html += '<td><strong>' + esc(u.userName||'—') + (isMe?'　<span style="font-size:.72rem;color:#b8963e">（我）</span>':'') + '</strong></td>';
+    html += '<td style="font-size:.83rem">' + esc(u.email||'—') + '</td>';
+    html += '<td>';
+    if (isMgr && !isMe && u.role !== 'tenant_owner') {
+      html += '<select onchange="updateRole(\'' + esc(u.userId) + '\',this)" style="background:#0a1628;border:1px solid #2a4060;color:#ccd6f6;border-radius:4px;padding:3px 6px;font-size:.78rem">';
+      EDITABLE_ROLES.forEach(function(r){ html += '<option value="'+r+'"'+(r===u.role?' selected':'')+'>'+ROLE_LABELS[r]+'</option>'; });
+      html += '</select>';
+    } else { html += '<span class="badge">' + roleLabel + '</span>'; }
+    html += '</td>';
+    html += '<td>' + status + '</td>';
+    html += '<td style="font-size:.78rem;color:var(--gray-500)">' + (u.lastLoginAt ? String(u.lastLoginAt).substring(0,16) : '未登入') + '</td>';
+    html += '<td>';
+    if (isMgr && !isMe && u.status === 'active' && u.role !== 'tenant_owner') {
+      html += '<button class="row-btn danger" onclick="disableUser(\'' + esc(u.userId) + '\',\'' + esc(u.userName||'') + '\')">停用</button>';
+    }
+    html += '</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+async function updateRole(userId, selectEl) {
+  var newRole = selectEl.value;
+  var r = await ERPALIGNED.api({ action: 'updateUserRole', targetUserId: userId, role: newRole });
+  if (!r.success) { alert('更新失敗：' + (r.message||'')); selectEl.value = _users.find(function(u){ return u.userId===userId; })&&_users.find(function(u){ return u.userId===userId; }).role||'viewer'; }
+  else loadUsers();
+}
+
+async function disableUser(userId, name) {
+  if (!confirm('確定停用成員「' + name + '」？停用後該成員將無法登入。')) return;
+  var r = await ERPALIGNED.api({ action: 'disableUser', targetUserId: userId });
+  if (r.success) loadUsers();
+  else alert('停用失敗：' + (r.message||''));
+}
+
+function openInviteModal() { document.getElementById('inviteModal').style.display=''; document.getElementById('inviteMsg').style.display='none'; }
+function closeModal() { document.getElementById('inviteModal').style.display='none'; }
+function closeBg(e) { if(e.target===document.getElementById('inviteModal')) closeModal(); }
+
+async function submitInvite() {
+  var name  = document.getElementById('inv_name').value.trim();
+  var email = document.getElementById('inv_email').value.trim();
+  var role  = document.getElementById('inv_role').value;
+  var pwd   = document.getElementById('inv_pwd').value.trim() || 'temp1234';
+  var msg   = document.getElementById('inviteMsg');
+  if (!name || !email) { msg.style.display=''; msg.style.color='var(--danger)'; msg.textContent='請填寫姓名和 Email'; return; }
+  var btn = document.getElementById('inviteBtn');
+  btn.textContent = '邀請中…'; btn.disabled = true;
+  var r = await ERPALIGNED.api({ action: 'inviteUser', userName: name, email: email, role: role, password: pwd });
+  btn.textContent = '邀請'; btn.disabled = false;
+  msg.style.display = '';
+  if (r.success) {
+    msg.style.color = '#22c55e';
+    msg.textContent = '✅ ' + (r.message||'邀請成功');
+    setTimeout(function(){ closeModal(); loadUsers(); }, 1500);
+  } else {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '❌ ' + (r.message||'邀請失敗');
+  }
+}
+
+async function changePassword() {
+  var oldPwd = document.getElementById('oldPwd').value;
+  var newPwd = document.getElementById('newPwd').value;
+  var newPwd2 = document.getElementById('newPwd2').value;
+  var msg = document.getElementById('pwdMsg');
+  if (!oldPwd || !newPwd) { msg.style.display=''; msg.style.color='var(--danger)'; msg.textContent='請填寫舊密碼和新密碼'; return; }
+  if (newPwd !== newPwd2) { msg.style.display=''; msg.style.color='var(--danger)'; msg.textContent='兩次新密碼不一致'; return; }
+  if (newPwd.length < 6) { msg.style.display=''; msg.style.color='var(--danger)'; msg.textContent='新密碼至少 6 個字元'; return; }
+  var r = await ERPALIGNED.api({ action: 'changePassword', oldPassword: oldPwd, newPassword: newPwd });
+  msg.style.display = '';
+  if (r.success) { msg.style.color='#22c55e'; msg.textContent='✅ 密碼已更新'; document.getElementById('oldPwd').value=''; document.getElementById('newPwd').value=''; document.getElementById('newPwd2').value=''; }
+  else { msg.style.color='var(--danger)'; msg.textContent='❌ ' + (r.message||'更新失敗'); }
+}
+
+function doLogout() {
+  if (window.GovOpsAPI && GovOpsAPI.doLogout) GovOpsAPI.doLogout();
+  else { ['govops_auth','govops_profile'].forEach(function(k){ localStorage.removeItem(k); }); window.location.href='./login.html'; }
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
