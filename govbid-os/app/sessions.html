@@ -101,7 +101,7 @@
       <h1>場次管理</h1>
       <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">載入中…</p>
     </div>
-    <div class="btns">
+    <div class="btns" id="sesToolbar">
       <button class="gold" onclick="openCreateModal()">＋ 新增場次</button>
       <button class="secondary" onclick="loadSessions()">重新整理</button>
     </div>
@@ -250,6 +250,7 @@
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
 <script src="./govops-pagination.js"></script>
+<script src="./govops-export.js"></script>
 <script>
 var _statusFilter = '';
 var _pendingArchiveId = '';
@@ -272,6 +273,14 @@ function init() {
     document.getElementById('caseBarName').textContent = decodeURIComponent(_currentCaseName);
   }
   _sesPager = GovOpsPager.init({ containerId: 'sesPager', pageSize: 50, onPage: function() { loadSessions(); } });
+  GovOpsExport.addBtn('sesToolbar', async function() {
+    var p = { action: 'getSessions', limit: 9999, offset: 0 };
+    if (_currentCaseId) p.caseId = _currentCaseId;
+    var kw = document.getElementById('kwInput').value.trim();
+    if (kw) p.keyword = kw; if (_statusFilter) p.status = _statusFilter;
+    var r = await ERPALIGNED.api(p);
+    return r.data || [];
+  }, '場次清單');
   loadStats();
   loadSessions();
 }
