@@ -117,6 +117,7 @@
 
     <div id="docMsg" class="msg" style="display:none"></div>
     <div id="docTable"></div>
+    <div id="docsPager"></div>
   </section>
 </main>
 
@@ -206,18 +207,21 @@
 
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
+<script src="./govops-pagination.js"></script>
 <script>
 var _statusFilter = '';
 var _typeFilter = '';
 var _searchTimer = null;
 var _today = new Date().toISOString().substring(0,10);
 var _cases = [];
+var _docsPager = null;
 
 function init() {
   var p = safeJSON('govops_profile');
   if (!p || !p.userId) { location.href = './dashboard.html'; return; }
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
+  _docsPager = GovOpsPager.init({ containerId: 'docsPager', pageSize: 50, onPage: function() { loadDocs(); } });
   var sp = new URLSearchParams(location.search);
   var caseId = sp.get('caseId') || '';
   loadCases().then(function() {
@@ -262,11 +266,14 @@ async function loadDocs() {
   if (caseId) params.caseId = caseId;
   if (_statusFilter) params.status = _statusFilter;
   if (_typeFilter) params.type = _typeFilter;
+  if (_docsPager) { params.limit = _docsPager.currentLimit(); params.offset = _docsPager.currentOffset(); }
   var r = await ERPALIGNED.api(params);
   msg.style.display='none';
   if (!r.success) { msg.style.display=''; msg.textContent='⚠ '+r.message; return; }
   var rows = r.data || [];
-  document.getElementById('pageSubtitle').textContent = '共 ' + rows.length + ' 筆公文';
+  var total = r.total !== undefined ? r.total : rows.length;
+  document.getElementById('pageSubtitle').textContent = '共 ' + total + ' 筆公文';
+  if (_docsPager) _docsPager.setTotal(total);
   if (!rows.length) { tbl.innerHTML='<div style="text-align:center;padding:50px;color:var(--gray-400)"><div style="font-size:2rem">📋</div><p>查無公文資料</p></div>'; return; }
   renderDocTable(rows, tbl);
   window.__docRows__ = rows;
