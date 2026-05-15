@@ -99,7 +99,7 @@
   <div class="page-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
     <div>
       <h1>場次管理</h1>
-      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">載入中…</p>
+      <p id="pageSubtitle" style="color:var(--gray-500);font-size:.85rem;margin:0">連線中，請稍候…</p>
     </div>
     <div class="btns" id="sesToolbar">
       <button class="gold" onclick="openCreateModal()">＋ 新增場次</button>
@@ -296,9 +296,9 @@ function safeJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'
 
 // ── 統計 ─────────────────────────────────────────────────
 async function loadStats() {
-  var params = { action: 'getSessionStats' };
-  if (_currentCaseId) params.caseId = _currentCaseId;
-  var r = await ERPALIGNED.api(params);
+  var p = { action: 'getSessionStats' };
+  if (_currentCaseId) p.caseId = _currentCaseId;
+  var r = window.GovOpsAPI ? await GovOpsAPI.request(p,{timeoutMs:45000}) : await ERPALIGNED.api(p);
   if (!r.success) return;
   var d = r.data || {};
   var bs = d.byStatus || {};
@@ -327,9 +327,14 @@ async function loadSessions() {
   if (_statusFilter) params.status = _statusFilter;
   if (_sesPager) { params.limit = _sesPager.currentLimit(); params.offset = _sesPager.currentOffset(); }
 
-  var r = await ERPALIGNED.api(params);
+  var r = window.GovOpsAPI ? await GovOpsAPI.request(params,{timeoutMs:45000}) : await ERPALIGNED.api(params);
   msg.style.display = 'none';
-  if (!r.success) { msg.style.display = ''; msg.textContent = '⚠ 查詢失敗：' + (r.message || ''); return; }
+  if (!r.success) {
+    var errMsg = r.message || (r.data&&r.data.reason) || '查詢失敗';
+    document.getElementById('pageSubtitle').textContent = '⚠ ' + errMsg;
+    msg.style.display = ''; msg.textContent = '⚠ ' + errMsg + '　（請重新整理或重新登入）';
+    return;
+  }
 
   var rows = r.data || [];
   var total = r.total !== undefined ? r.total : rows.length;
