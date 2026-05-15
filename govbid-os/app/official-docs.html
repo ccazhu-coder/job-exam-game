@@ -82,7 +82,7 @@
       <h1>收發公文管理</h1>
       <p id="pageSubtitle" style="color:var(--gray-500);font-size:.84rem;margin:0">載入中…</p>
     </div>
-    <div class="btns">
+    <div class="btns" id="docsToolbar">
       <button class="gold" onclick="openAddModal('來文')">＋ 登錄來文</button>
       <button class="secondary" onclick="openAddModal('發文')">＋ 登錄發文</button>
       <button class="ghost" onclick="loadAll()">重新整理</button>
@@ -208,6 +208,7 @@
 <script src="./govops-api-client.js"></script>
 <script src="./erp-aligned-core.js"></script>
 <script src="./govops-pagination.js"></script>
+<script src="./govops-export.js"></script>
 <script>
 var _statusFilter = '';
 var _typeFilter = '';
@@ -222,6 +223,15 @@ function init() {
   document.getElementById('nav').innerHTML = ERPALIGNED.nav();
   ERPALIGNED.appendUserChip('header .wrap');
   _docsPager = GovOpsPager.init({ containerId: 'docsPager', pageSize: 50, onPage: function() { loadDocs(); } });
+  GovOpsExport.addBtn('docsToolbar', async function() {
+    var p = { action: 'getOfficialDocs', limit: 9999, offset: 0 };
+    var kw = document.getElementById('kwInput').value.trim();
+    var caseId = document.getElementById('caseFilter').value;
+    if (kw) p.keyword = kw; if (caseId) p.caseId = caseId;
+    if (_statusFilter) p.status = _statusFilter; if (_typeFilter) p.type = _typeFilter;
+    var r = await ERPALIGNED.api(p);
+    return r.data || [];
+  }, '收發公文');
   var sp = new URLSearchParams(location.search);
   var caseId = sp.get('caseId') || '';
   loadCases().then(function() {
