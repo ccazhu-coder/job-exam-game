@@ -148,6 +148,15 @@
 
       <div class="form-section">
         <div class="form-section-title">基本資訊</div>
+        <!-- 案件選擇（非必填當已有 caseId 參數時隱藏） -->
+        <div class="form-row" id="caseSelectRow">
+          <div class="field">
+            <label>關聯案件 <span class="req">*</span></label>
+            <select id="f_caseId">
+              <option value="">載入中…</option>
+            </select>
+          </div>
+        </div>
         <div class="form-row">
           <div class="field"><label>場次名稱 <span class="req">*</span></label><input id="f_name" placeholder="例如：第一梯次 職業技能培訓"></div>
         </div>
@@ -403,11 +412,30 @@ function debouncedSearch() {
 }
 
 // ── Modal ─────────────────────────────────────────────────
-function openCreateModal() {
+async function openCreateModal() {
   clearForm();
   document.getElementById('editSesId').value = '';
   document.getElementById('modalTitle').textContent = '新增場次';
   document.getElementById('submitBtn').textContent = '新增場次';
+  // 載入案件清單
+  var caseRow = document.getElementById('caseSelectRow');
+  var caseSelect = document.getElementById('f_caseId');
+  if (_currentCaseId) {
+    // 從 cases.html 帶入，直接隱藏選單
+    if (caseRow) caseRow.style.display = 'none';
+    caseSelect.innerHTML = '<option value="'+_currentCaseId+'">'+(decodeURIComponent(_currentCaseName)||_currentCaseId)+'</option>';
+  } else {
+    if (caseRow) caseRow.style.display = '';
+    caseSelect.innerHTML = '<option value="">選擇案件…</option>';
+    var cr = await ERPALIGNED.api({ action: 'getCases', limit: 200, offset: 0 });
+    if (cr.success && cr.data && cr.data.length) {
+      var opts = '<option value="">請選擇案件 *</option>';
+      cr.data.forEach(function(c){ opts += '<option value="'+c['專案ID']+'">'+c['專案計畫名稱']+'</option>'; });
+      caseSelect.innerHTML = opts;
+    } else {
+      caseSelect.innerHTML = '<option value="">（無案件，請先新增案件）</option>';
+    }
+  }
   document.getElementById('sesModal').style.display = 'flex';
 }
 
@@ -442,15 +470,13 @@ function fillForm(row) {
 }
 
 function clearForm() {
-  ['f_name','f_loc','f_regEnd','f_lecturer','f_contact','f_staff','f_note'].forEach(function(id){ document.getElementById(id).value = ''; });
-  document.getElementById('f_type').value = '課程';
-  document.getElementById('f_status').value = '規劃中';
-  document.getElementById('f_date').value = '';
-  document.getElementById('f_start').value = '09:00';
-  document.getElementById('f_end').value = '17:00';
-  document.getElementById('f_planNum').value = '';
-  document.getElementById('f_realNum').value = '';
-  ['c_signin','c_signout','c_lunch','c_insure','c_survey','c_photo','c_receipt','c_worker'].forEach(function(id){ document.getElementById(id).checked = false; });
+  function v(id,val){ var el=document.getElementById(id); if(el) el.value=val||''; }
+  function chk(id,val){ var el=document.getElementById(id); if(el) el.checked=val||false; }
+  v('f_name'); v('f_loc'); v('f_regEnd'); v('f_lecturer'); v('f_contact'); v('f_staff'); v('f_note');
+  v('f_type','課程'); v('f_status','規劃中');
+  v('f_date'); v('f_start','09:00'); v('f_end','17:00');
+  v('f_planNum'); v('f_realNum');
+  ['c_signin','c_signout','c_lunch','c_insure','c_survey','c_photo','c_receipt','c_worker'].forEach(function(id){ chk(id,false); });
   hideErr();
 }
 
@@ -501,7 +527,9 @@ async function submitSession() {
   if (isEdit) {
     params.sessionId = sesId;
   } else {
-    params.caseId = _currentCaseId || '';
+    var caseId = _currentCaseId || (document.getElementById('f_caseId') ? document.getElementById('f_caseId').value : '');
+    if (!caseId) { showErr('請選擇關聯案件'); btn.disabled=false; btn.textContent='新增場次'; return; }
+    params.caseId = caseId;
   }
 
   var r = await ERPALIGNED.api(params);
