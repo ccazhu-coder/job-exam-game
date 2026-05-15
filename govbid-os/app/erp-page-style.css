@@ -21,7 +21,7 @@ header{background:var(--navy);color:var(--white);box-shadow:0 2px 12px rgba(0,0,
 header .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 16px}
 header .brand{font-size:1.05rem;font-weight:700;letter-spacing:.04em;color:var(--gold-light);white-space:nowrap;flex-shrink:0;order:1}
 header .sub{display:none}
-#_erpChip{order:2;margin-left:auto;flex-shrink:0}
+#_erpChip{order:2;margin-left:auto !important;flex-shrink:0}
 header nav{order:3;flex-basis:100%;width:100%;display:flex;flex-wrap:nowrap;gap:2px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:thin;scrollbar-color:rgba(184,150,62,.3) transparent;border-top:1px solid rgba(255,255,255,.08)}
 header nav::-webkit-scrollbar{height:2px}
 header nav::-webkit-scrollbar-thumb{background:rgba(184,150,62,.4);border-radius:2px}
