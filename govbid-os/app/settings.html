@@ -111,8 +111,7 @@
 function safeJSON(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
 function esc(v){return ERPALIGNED.esc(v);}
 function init(){
-  var _auth=safeJSON('govops_auth');if (!_auth || !_auth.sessionToken) { location.href = './login.html'; return; }
-  document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
+document.getElementById('nav').innerHTML=ERPALIGNED.nav();ERPALIGNED.appendUserChip('header .wrap');
   loadProfile(p);loadOrgSettings();checkHealth();
 }
 function loadProfile(p){
