@@ -1,8 +1,8 @@
 ﻿/* GovOps OS｜ERP Aligned Core v4 — 深海軍藍×古金色 */
 (function(){
   function $(id){return document.getElementById(id)}
-  function profile(){try{return Object.assign({tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'},JSON.parse(localStorage.getItem('govops_profile')||'{}'),JSON.parse(localStorage.getItem('govops_auth')||'{}'))}catch(e){return{tenantId:'TENANT-COMMERCIAL',userId:'USR-OWNER',userRole:'owner',plan:'enterprise'}}}
-  function params(obj){const p=profile();return Object.assign({tenantId:p.tenantId||'TENANT-COMMERCIAL',userId:p.userId||'USR-OWNER',userRole:p.userRole||p.role||'owner',plan:'enterprise'},obj||{})}
+  function profile(){try{return Object.assign({tenantId:'',userId:'',userRole:'viewer',plan:'free'},JSON.parse(localStorage.getItem('govops_profile')||'{}'),JSON.parse(localStorage.getItem('govops_auth')||'{}'))}catch(e){return{tenantId:'',userId:'',userRole:'viewer',plan:'free'}}}
+  function params(obj){const p=profile();return Object.assign({tenantId:p.tenantId||'',userId:p.userId||'',userRole:p.userRole||p.role||'viewer',plan:p.planId||p.plan||'free'},obj||{})}
 
   async function api(obj,targetId){
     const t=$(targetId);
@@ -177,40 +177,48 @@
       ['finance.html','財務'],['official-docs.html','公文'],
       ['file-manager.html','檔案管理'],['closing.html','結案'],['report-generator.html','結案報告'],
       ['master-data.html','基本資料'],['settings.html','系統設定'],
-      ['tender-pool.html','標案池'],['vendors.html','廠商']
+      ['tender-pool.html','標案池'],['vendors.html','廠商'],
+      ['users.html','成員管理']
     ]
     return pages.map(([href,label])=>'<a href="./'+href+'"'+(path===href?' class="active"':'')+'>'+label+'</a>').join('');
   }
 
   function userChip(){
     try{
+      const auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
       const p=JSON.parse(localStorage.getItem('govops_profile')||'{}');
-      if(!p||!p.userId)return '';
-      const name=p.userName||p.orgName||p.email||'使用者';
-      const LABELS={owner:'負責人',admin:'管理者',finance:'財務',staff:'行政',viewer:'檢視者'};
-      const role=LABELS[p.role||p.userRole]||'';
+      const name=auth.userName||p.userName||p.orgName||p.email||'使用者';
+      const ws=auth.workspaceName||p.orgName||'';
+      const LABELS={'tenant_owner':'擁有者','sys_admin':'系統管理','admin':'管理者','project':'專案','admin_staff':'行政','finance':'財務','viewer':'檢視者',owner:'負責人',staff:'行政'};
+      const role=LABELS[auth.role||p.role||p.userRole]||'';
+      if(!name)return '';
       return '<span style="font-size:.76rem;color:rgba(255,255,255,.7);margin-left:8px">'+
-        _escNav(name)+(role?'('+_escNav(role)+')':'')+'</span>'+
-        '<button onclick="if(window.GovOpsSessionGuard)GovOpsSessionGuard.logout();else{[\'govops_profile\',\'govops_auth\'].forEach(k=>localStorage.removeItem(k));location.href=\'./dashboard.html\'}" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:4px 11px;border-radius:5px;font-size:.74rem;cursor:pointer;margin-left:4px">登出</button>';
+        _escNav(name)+(ws?'・'+_escNav(ws):'')+(role?' ('+_escNav(role)+')':'')+'</span>'+
+        '<button onclick="if(window.GovOpsAPI&&GovOpsAPI.doLogout){GovOpsAPI.doLogout();}else{[\'govops_profile\',\'govops_auth\'].forEach(k=>localStorage.removeItem(k));location.href=\'./login.html\';}" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.75);padding:4px 11px;border-radius:5px;font-size:.74rem;cursor:pointer;margin-left:4px">登出</button>';
     }catch(e){return '';}
   }
   function _escNav(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
   window.ERPALIGNED={api,renderTable,renderTableWithEdit,showEditModal,showPickerModal,dateTW,nav,userChip,appendUserChip,$,params,format,esc};
 
-  // ── 自動初始化：Guard + UserChip（dashboard 跳過，由 dashboard 自管） ──
+  // ── 自動初始化：Guard + UserChip（dashboard / login / register 跳過） ──
   document.addEventListener('DOMContentLoaded',function(){
-    const isDashboard=/dashboard\.html/i.test(location.pathname)||location.pathname.endsWith('/')||location.pathname.endsWith('/govbid-os/app/');
-    if(isDashboard) return; // dashboard 自行管理登入狀態與 userChip
+    const skipPages=['dashboard.html','login.html','register.html'];
+    const curPage=location.pathname.split('/').pop()||'';
+    const isSkip=skipPages.some(function(p){return curPage===p||location.pathname.endsWith('/');})||location.pathname.endsWith('/govbid-os/app/');
+    if(isSkip) return;
 
-    // Guard：未登入跳回 dashboard
+    // SaaS Guard：檢查 govops_auth.sessionToken（優先）或 govops_profile.userId（向後相容）
     try{
-      const p=JSON.parse(localStorage.getItem('govops_profile')||'null');
-      if(!p||!p.userId){
-        location.href='./dashboard.html?redirect='+encodeURIComponent(location.pathname);
+      const auth=JSON.parse(localStorage.getItem('govops_auth')||'null');
+      const prof=JSON.parse(localStorage.getItem('govops_profile')||'null');
+      const hasSession=(auth&&auth.sessionToken&&auth.isLoggedIn);
+      const hasProfile=(prof&&prof.userId);
+      if(!hasSession&&!hasProfile){
+        location.href='./login.html?redirect='+encodeURIComponent(location.pathname);
         return;
       }
-    }catch(e){location.href='./dashboard.html';return;}
+    }catch(e){location.href='./login.html';return;}
 
     // UserChip：在 header 右側插入使用者資訊+登出
     const wrap=document.querySelector('header .wrap');
