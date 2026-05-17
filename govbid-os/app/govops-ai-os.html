@@ -45,6 +45,7 @@
     .ai-hero{background:linear-gradient(135deg,rgba(255,250,241,.96),rgba(245,237,216,.82));border-top:3px solid rgba(184,150,62,.62)}.ai-hero:after{background:radial-gradient(circle at 76% 36%,rgba(184,150,62,.12),transparent 32%)}.orbit,.orbit.o2,.orbit.o3,.core-node:before{border-color:rgba(13,35,64,.12)}.core-node{background:radial-gradient(circle at 35% 25%,#fff,#d4af6a 18%,#1a3a5c 68%);box-shadow:0 12px 30px rgba(13,35,64,.12)}.data-pill,.hero-card,.runtime-chip{background:rgba(255,255,255,.68);border-color:rgba(13,35,64,.12);color:#344054;box-shadow:0 8px 20px rgba(13,35,64,.08)}.particles{display:none}.eyebrow{background:rgba(184,150,62,.12);border-color:rgba(184,150,62,.24);color:#7a6029}.runtime-chip:before{background:#b8963e;box-shadow:0 0 10px rgba(184,150,62,.45)}#runtimeStatus{background:rgba(184,150,62,.12);color:#7a6029;border-color:rgba(184,150,62,.28);box-shadow:none}
     .kpi,.item{background:rgba(255,255,255,.72);border-color:rgba(13,35,64,.1);box-shadow:0 8px 24px rgba(13,35,64,.08)}.kpi:after{background:radial-gradient(circle,rgba(184,150,62,.12),transparent 66%)}.klabel,.tbl th{color:#6f7b8c}.knum{background:linear-gradient(135deg,#0d2340,#b8963e)!important;-webkit-background-clip:text!important;color:transparent!important}.trend{color:#7a6029}.tbl td{color:#344054}.tbl tr:hover td{background:rgba(184,150,62,.08)}.bar{background:linear-gradient(90deg,#b8963e,#1a3a5c)}button{background:#0d2340;color:#fff;box-shadow:0 8px 18px rgba(13,35,64,.14)}button:hover{background:#1a3a5c;box-shadow:0 10px 22px rgba(13,35,64,.16)}.secondary{background:transparent;color:#0d2340;border-color:rgba(13,35,64,.18)}.green{background:#b8963e;color:#0d2340}.danger{background:#c0392b}input,select,textarea{background:#fff;color:#182235;border-color:rgba(13,35,64,.16)}select option{background:#fff;color:#182235}
     .donut-center{background:#fffaf1;color:#0d2340}.legend div,.bizbar-label,.hero-card .small,.assistant-text{color:#5f6876}.quick-stack button{background:#fff;border-color:rgba(184,150,62,.2);color:#0d2340}.assistant-orb{background:rgba(255,250,241,.94);border-color:rgba(184,150,62,.24);box-shadow:0 12px 34px rgba(13,35,64,.16)}.assistant-core{background:radial-gradient(circle at 35% 28%,#fff,#d4af6a 24%,#1a3a5c 78%);box-shadow:0 0 16px rgba(184,150,62,.22)}.assistant-text b{color:#0d2340}.drawer{background:#fffaf1}.drawer-head,.drawer-foot{border-color:rgba(13,35,64,.12)}.toast{background:#fffaf1;color:#182235;box-shadow:0 12px 34px rgba(13,35,64,.14)}
+    .brand-logo{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(212,175,106,.72);box-shadow:0 8px 22px rgba(13,35,64,.16);vertical-align:middle;margin-right:9px;background:#fff}.brand-logo.hero-logo{width:92px;height:92px;border-width:3px;margin:0 0 16px 0;box-shadow:0 12px 34px rgba(13,35,64,.18)}.brand-logo.form-logo{width:54px;height:54px;margin:0 10px 0 0}.brand-title{display:flex;align-items:center;gap:0}.brand-title-text{display:inline-flex;flex-direction:column;line-height:1.12}.brand-title-text small{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px}.side .brand-logo{width:38px;height:38px;border-color:rgba(212,175,106,.78);box-shadow:0 6px 18px rgba(0,0,0,.18)}
     @media(min-width:1000px){.ai-hero{grid-template-columns:1.08fr .92fr;align-items:center}.ai-hero .btns{max-width:740px}}
   </style>
 </head>
@@ -52,7 +53,7 @@
 <div id="loginView" class="login">
   <div class="login-card">
     <div class="hero">
-      <div class="mark">✦</div>
+      <img class="brand-logo hero-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo">
       <h1 class="gradient" style="margin-top:16px">GovOps AI OS</h1>
       <p class="sub">AI 政府專案營運作業系統：把標案、履約、活動、核銷、請款、結案與 LINE 提醒整合成一個營運控制台。</p>
       <div style="margin-top:20px">
@@ -63,7 +64,7 @@
       </div>
     </div>
     <div>
-      <h2 class="gradient" style="font-size:28px">GovOps AI OS</h2>
+      <div class="brand-title"><img class="brand-logo form-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo"><div class="brand-title-text"><h2 class="gradient" style="font-size:28px;margin:0">GovOps AI OS</h2><small>知己知途｜AI 政府專案營運作業系統</small></div></div>
       <p class="sub">登入後即可開案、看戰情、追風險與操作各中心。</p>
       <div class="tabs"><button id="loginTab" class="active" onclick="Auth.switch('login')">登入</button><button id="registerTab" onclick="Auth.switch('register')">註冊新公司</button></div>
       <div id="loginPanel">
@@ -93,7 +94,7 @@
 
 <div id="appView" class="app hidden">
   <aside class="side">
-    <div class="brand"><span class="brand-icon">✦</span>GovOps AI OS<small id="sideCompany">載入中</small></div>
+    <div class="brand"><img class="brand-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo">GovOps AI OS<small id="sideCompany">載入中</small></div>
     <div id="nav" class="nav"></div>
     <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--line)"><div id="sideUser" class="small"></div><button class="secondary" style="width:100%;margin-top:8px" onclick="Auth.logout()">登出</button></div>
   </aside>
