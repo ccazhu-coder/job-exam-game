@@ -13,14 +13,14 @@
 | 基本資料中心 / 講師資料 | 停用 | `AppRuntime.handleAction('disable')` | `disableTeacher` | 已建立 | 講師資料 | 已接上 |
 | 基本資料中心 / 講師資料 | 啟用 | `AppRuntime.handleAction('enable')` | `enableTeacher` | 已建立 | 講師資料 | 已接上 |
 | 基本資料中心 / 講師資料 | 封存 | `AppRuntime.handleAction('archive')` | `archiveTeacher` | 已建立 | 講師資料 | 已接上 |
-| 基本資料中心 / 廠商 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createVendor/updateVendor/disableVendor/archiveVendor` | 尚未建立 | 廠商資料 | 後端無 action |
-| 基本資料中心 / 場地 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createVenue/updateVenue/disableVenue/archiveVenue` | 尚未建立 | 場地資料 | 後端無 action |
-| 基本資料中心 / 工作人員 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createStaff/updateStaff/disableStaff/archiveStaff` | 尚未建立 | 工作人員資料 | 後端無 action |
-| 基本資料中心 / 機關窗口 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createAgency/updateAgency/disableAgency/archiveAgency` | 尚未建立 | 機關窗口 | 後端無 action |
-| 基本資料中心 / 學員 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createStudent/updateStudent/disableStudent/archiveStudent` | 尚未建立 | 學員資料 | 後端無 action |
-| 基本資料中心 / 物資設備 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createEquipment/updateEquipment/disableEquipment/archiveEquipment` | 尚未建立 | 物資設備 | 後端無 action |
-| 基本資料中心 / 財務科目 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createFinanceItem/updateFinanceItem/disableFinanceItem/archiveFinanceItem` | 尚未建立 | 財務科目 | 後端無 action |
-| 基本資料中心 / 文件模板 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createTemplate/updateTemplate/disableTemplate/archiveTemplate` | 尚未建立 | 文件模板 | 後端無 action |
+| 基本資料中心 / 廠商 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createVendor/updateVendor/disableVendor/archiveVendor` | 已建立 | 廠商資料 | 已接上 |
+| 基本資料中心 / 場地 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createVenue/updateVenue/disableVenue/archiveVenue` | 已建立 | 場地資料 | 已接上 |
+| 基本資料中心 / 工作人員 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createStaff/updateStaff/disableStaff/archiveStaff` | 已建立 | 工作人員資料 | 已接上 |
+| 基本資料中心 / 機關窗口 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createAgency/updateAgency/disableAgency/archiveAgency` | 已建立 | 機關窗口 | 已接上 |
+| 基本資料中心 / 學員 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createStudent/updateStudent/disableStudent/archiveStudent` | 已建立 | 學員資料 | 已接上 |
+| 基本資料中心 / 物資設備 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createEquipment/updateEquipment/disableEquipment/archiveEquipment` | 已建立 | 物資設備 | 已接上 |
+| 基本資料中心 / 財務科目 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createFinanceItem/updateFinanceItem/disableFinanceItem/archiveFinanceItem` | 已建立 | 財務科目 | 已接上 |
+| 基本資料中心 / 文件模板 | 新增 / 修改 / 停用 / 封存 | `AppRuntime.handleAction(...)` | `createTemplate/updateTemplate/disableTemplate/archiveTemplate` | 已建立 | 文件模板 | 已接上 |
 | 左側選單 | 各頁切換 | Legacy `onclick=UI.page(...)` + Router patch | 無 | 不需後端 | 無 | 已接上 |
 | 手機底部選單 | 指揮中心 / 戰情 / 專案 / 活動 / 風險 | Legacy `onclick=UI.page(...)` + Router patch | 無 | 不需後端 | 無 | 已接上 |
 | AI 指揮中心 | 更新 / 風險掃描 / 戰情等 | Legacy `Action.run(...)` | `runAIOSRiskScan/generateWarRoomMode/...` | 已有 runtime skeleton | 多表 | 已接上 |
@@ -38,4 +38,4 @@
 - 新增 `AppRuntime.handleAction(action, context)`，集中處理 navigate、refresh、create、edit、view、save、update、disable、enable、archive、export、import、syncCalendar、sendLine、generateDocument、generateReport、openModal、closeModal。
 - 新增 `callApi(action, data)`，Runtime API 不再各處直接 `fetch`。
 - 新增 Debug Panel，記錄最近 20 筆 click、API request、response、error。
-- GAS 已新增講師資料閉環：`listTeachers/getTeacher/createTeacher/updateTeacher/disableTeacher/enableTeacher/archiveTeacher`。
+- GAS 已新增基礎資料閉環：講師、廠商、場地、工作人員、機關窗口、學員、物資設備、財務科目、文件模板的 list/get/create/update/disable/enable/archive actions。
