@@ -366,5 +366,12 @@ function safeCall(a,d={}){return GovOpsAPI.call(a,d).catch(e=>({success:false,me
 function byId(id){return document.getElementById(id)} function v(id){return byId(id)?.value.trim()||''} function msg(t,type){byId('loginMsg').textContent=t;byId('loginMsg').style.color=type==='error'?'#fca5a5':'#94a3b8'} function esc(x){return String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')} function jesc(o){return JSON.stringify(o).replace(/"/g,'&quot;')} function money(n){return n||n===0?'NT$'+Number(n).toLocaleString('zh-TW'):'—'} function link(u){return u?`<a class="tag green-tag" href="${esc(u)}" target="_blank">開啟</a>`:'—'} function daysLeft(d){if(!d)return'—';return Math.ceil((new Date(d)-new Date())/86400000)+' 天'} function makeCode(e){return String(e||'company').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||'company'} function safeJson(s,f){try{return JSON.parse(s)}catch(e){return f}}
 App.boot();
 </script>
+<script src="./runtime/eventBus.js"></script>
+<script src="./runtime/mockData.js"></script>
+<script src="./runtime/state.js"></script>
+<script src="./runtime/api.js"></script>
+<script src="./runtime/ui.js"></script>
+<script src="./runtime/router.js"></script>
+<script src="./runtime/app.js"></script>
 </body>
 </html>
