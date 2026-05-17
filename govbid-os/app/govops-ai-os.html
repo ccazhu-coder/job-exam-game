@@ -1,1 +1,1204 @@
-<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>GovOps AI OS｜AI SaaS 指揮中心</title><style>:root{--bg0:#0B1020;--bg1:#0F172A;--bg2:#111827;--card:#172033;--card2:#1E293B;--glass:rgba(17,24,39,.74);--line:rgba(255,255,255,.08);--line2:rgba(99,102,241,.35);--text:#E5EDF8;--muted:#94A3B8;--brand:#4F46E5;--brand2:#6366F1;--hover:#7C3AED;--cyan:#06B6D4;--ai:#8B5CF6;--red:#EF4444;--amber:#F59E0B;--green:#10B981;--blue:#3B82F6;--teal:#14B8A6;--orange:#F97316;--linegreen:#22C55E;--google:#60A5FA;--shadow:0 24px 80px rgba(0,0,0,.45);--glow:0 0 28px rgba(79,70,229,.28)}*{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;background:radial-gradient(circle at 18% 8%,rgba(79,70,229,.22),transparent 32%),radial-gradient(circle at 84% 16%,rgba(6,182,212,.16),transparent 30%),linear-gradient(135deg,#070B16 0%,#0B1020 42%,#111827 100%)}body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 75%);pointer-events:none}.hidden{display:none!important}.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}.loginCard,.panel{position:relative;background:linear-gradient(180deg,rgba(17,24,39,.88),rgba(15,23,42,.82));border:1px solid var(--line);border-radius:26px;padding:20px;box-shadow:var(--shadow);backdrop-filter:blur(18px);overflow:hidden}.loginCard:before,.panel:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(99,102,241,.6),rgba(6,182,212,.18),rgba(255,255,255,.04));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}.loginCard{max-width:980px;width:100%;display:grid;grid-template-columns:1fr;gap:18px}.loginHero{display:none;padding:26px;border-radius:24px;background:linear-gradient(135deg,rgba(79,70,229,.26),rgba(6,182,212,.16));border:1px solid rgba(255,255,255,.08);box-shadow:var(--glow)}.logoMark{width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,var(--brand),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 32px rgba(6,182,212,.3)}h1,h2,h3{margin:0 0 10px}h1{font-size:44px;letter-spacing:-1.5px}.gradientText{background:linear-gradient(135deg,#fff,#A5B4FC,#67E8F9);-webkit-background-clip:text;color:transparent}.sub,.small{color:var(--muted);font-size:13px;line-height:1.7}.feature{display:flex;gap:10px;align-items:center;margin:12px 0;color:#cbd5e1}.dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--cyan));box-shadow:0 0 16px rgba(6,182,212,.65)}label{display:block;color:#A8B6CC;font-size:12px;font-weight:950;margin:10px 0 6px}input,select,textarea{width:100%;padding:13px 14px;border-radius:15px;border:1px solid rgba(255,255,255,.08);background:rgba(8,20,36,.82);color:var(--text);font-size:15px;outline:none;transition:.22s}input:focus,select:focus,textarea:focus{border-color:rgba(99,102,241,.8);box-shadow:0 0 0 4px rgba(99,102,241,.12),0 0 18px rgba(99,102,241,.14)}input[type=checkbox]{width:auto}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.tabs button{background:rgba(15,23,42,.72);color:var(--muted);border:1px solid var(--line)}.tabs button.active{background:linear-gradient(135deg,var(--brand),var(--cyan));color:#fff;box-shadow:0 12px 36px rgba(79,70,229,.28)}button{border:0;border-radius:15px;padding:12px 16px;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;font-weight:950;font-size:14px;cursor:pointer;transition:.22s;box-shadow:0 10px 28px rgba(79,70,229,.18)}button:hover{transform:translateY(-1px);box-shadow:0 14px 36px rgba(124,58,237,.28);filter:saturate(1.08)}button.secondary{background:rgba(30,41,59,.86);color:var(--text);border:1px solid var(--line);box-shadow:none}button.green{background:linear-gradient(135deg,var(--green),#22C55E)}.btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.msg{white-space:pre-wrap;color:var(--muted);font-size:13px;line-height:1.65;margin-top:12px}.grid{display:grid;grid-template-columns:1fr;gap:12px}.app{display:grid;grid-template-columns:1fr;min-height:100vh}.side{display:none;background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(11,16,32,.96));border-right:1px solid var(--line);padding:20px;box-shadow:12px 0 38px rgba(0,0,0,.18)}.brand{font-size:22px;font-weight:950;letter-spacing:-.5px}.brand small{display:block;color:var(--muted);font-size:12px;margin-top:6px}.brandIcon{display:inline-flex;width:34px;height:34px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--cyan));align-items:center;justify-content:center;margin-right:8px;box-shadow:0 0 26px rgba(79,70,229,.35)}.nav{display:grid;gap:8px;margin-top:24px}.nav button{background:transparent;color:var(--muted);border:1px solid transparent;text-align:left;box-shadow:none;display:flex;gap:9px;align-items:center}.nav button.active,.nav button:hover{background:linear-gradient(135deg,rgba(79,70,229,.24),rgba(6,182,212,.08));color:var(--text);border-color:rgba(99,102,241,.32)}.navIcon{width:10px;height:10px;border-radius:999px;background:var(--brand2);box-shadow:0 0 14px currentColor}.main{padding:14px 14px 92px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:16px;border:1px solid var(--line);background:rgba(15,23,42,.58);border-radius:22px;backdrop-filter:blur(14px)}.pill,.tag{display:inline-block;border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;background:rgba(59,130,246,.18);color:#BFDBFE;margin:3px;border:1px solid rgba(59,130,246,.22)}.section{display:none}.section.show{display:block}.section.show#dashboard:before{content:"AI 營運控制塔";display:block;margin-bottom:14px;padding:20px;border-radius:24px;border:1px solid rgba(99,102,241,.22);background:linear-gradient(135deg,rgba(79,70,229,.25),rgba(6,182,212,.15));box-shadow:0 0 40px rgba(79,70,229,.16);font-size:24px;font-weight:950;letter-spacing:-.5px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.kpi{position:relative;background:linear-gradient(180deg,rgba(30,41,59,.72),rgba(15,23,42,.76));border:1px solid var(--line);border-radius:20px;padding:14px;overflow:hidden;transition:.22s}.kpi:after{content:"";position:absolute;right:-24px;top:-28px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.24),transparent 62%)}.kpi:hover{transform:translateY(-3px);border-color:rgba(99,102,241,.46);box-shadow:0 0 28px rgba(99,102,241,.16)}.kpi:nth-child(1){box-shadow:0 0 24px rgba(239,68,68,.08)}.kpi:nth-child(3){box-shadow:0 0 24px rgba(245,158,11,.08)}.kpi:nth-child(4){box-shadow:0 0 24px rgba(20,184,166,.1)}.kpi:nth-child(6){box-shadow:0 0 24px rgba(59,130,246,.1)}.kpi .label{color:var(--muted);font-size:12px;font-weight:900}.kpi .num{font-size:32px;font-weight:950;background:linear-gradient(135deg,#fff,#93C5FD);-webkit-background-clip:text;color:transparent}.item{background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(8,20,36,.78));border:1px solid var(--line);border-radius:18px;padding:13px;margin-bottom:10px;transition:.2s}.item:hover{border-color:rgba(139,92,246,.34);box-shadow:0 0 24px rgba(139,92,246,.1)}.panel h2:before,.panel h3:before{content:"✦";color:var(--ai);margin-right:8px;text-shadow:0 0 12px rgba(139,92,246,.75)}.mobile{position:fixed;left:0;right:0;bottom:0;background:rgba(15,23,42,.96);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:8px;backdrop-filter:blur(16px)}.mobile button{font-size:12px;background:rgba(30,41,59,.88);padding:10px 4px;box-shadow:none}.shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:220% 100%;animation:shimmer 1.4s infinite}@keyframes shimmer{to{background-position:-220% 0}}@keyframes pulseGlow{0%,100%{box-shadow:0 0 22px rgba(139,92,246,.18)}50%{box-shadow:0 0 38px rgba(6,182,212,.24)}}#aiTips .item{animation:pulseGlow 3s infinite}@media(min-width:1000px){.loginCard{grid-template-columns:.85fr 1fr;padding:22px}.loginHero{display:block}.app{grid-template-columns:280px 1fr}.side{display:block;position:sticky;top:0;height:100vh}.main{padding:24px 30px 60px}.mobile{display:none}.grid{grid-template-columns:repeat(2,1fr)}.kpis{grid-template-columns:repeat(4,1fr)}} </style></head><body><div id="loginView" class="login"><div class="loginCard"><div class="loginHero"><div class="logoMark">✦</div><h1 class="gradientText">GovOps AI OS</h1><p class="sub">AI 政府專案營運控制塔，整合戰情、履約、核銷、請款與結案風險。</p><div class="feature"><span class="dot"></span><span>AI 戰情中心與風險預警</span></div><div class="feature"><span class="dot"></span><span>多租戶 SaaS 資料隔離</span></div><div class="feature"><span class="dot"></span><span>政府專案全生命週期管理</span></div></div><div><h1>GovOps AI OS</h1><p class="sub">新公司可先註冊，系統會自動產生公司代碼並直接進入系統。</p><div class="tabs"><button id="loginTab" class="active" onclick="switchAuth('login')">登入</button><button id="registerTab" onclick="switchAuth('register')">註冊新公司</button></div><div id="loginPanel"><label>公司代碼</label><input id="loginCompany" placeholder="註冊成功後系統會自動填入"><label>Email</label><input id="loginEmail"><label>密碼</label><input id="loginPassword" type="password"><div class="btns"><button class="green" onclick="login()">登入</button><button class="secondary" onclick="testPublicApi()">測試系統連線</button></div></div><div id="registerPanel" class="hidden"><div class="grid"><div><label>公司／單位名稱</label><input id="regCompanyName" placeholder="例如：知己知途"></div><div><label>負責人姓名</label><input id="regDisplayName"></div><div><label>Email</label><input id="regEmail"></div><div><label>電話</label><input id="regPhone"></div><div><label>方案</label><select id="regPlan"><option>FREE</option><option>TRIAL</option></select></div><div><label>密碼</label><input id="regPassword" type="password"></div><div><label>確認密碼</label><input id="regConfirmPassword" type="password"></div></div><label><input id="regAgree" type="checkbox"> 我同意服務條款與資料使用規範</label><div class="small">公司代碼由系統自動產生，若重複會自動加數字重試。</div><div class="btns"><button id="registerBtn" class="green" onclick="registerTenant()">建立公司帳號</button><button class="secondary" onclick="switchAuth('login')">已有帳號登入</button></div></div><div id="loginMsg" class="msg"></div></div></div></div><div id="appView" class="app hidden"><aside class="side"><div class="brand"><span class="brandIcon">✦</span>GovOps AI OS<small>政府專案 AI 營運作業系統</small></div><div class="nav" id="nav"></div></aside><main class="main"><div class="top"><div><h1 id="pageTitle">戰情中心</h1><div id="tenantLine" class="sub">Session 初始化中</div></div><div><span id="runtimeStatus" class="pill">AI Runtime</span><button class="secondary" onclick="logout()">登出</button></div></div><section id="dashboard" class="section show"><div class="panel"><h2>今日戰情摘要</h2><div id="kpis" class="kpis"></div></div><div class="panel"><h2>今日最急 5 件事</h2><div id="topFive"></div></div><div class="panel"><h2>AI 建議</h2><div id="aiTips"></div></div></section><section id="projects" class="section"></section><section id="activities" class="section"></section><section id="tasks" class="section"></section><section id="finance" class="section"></section><section id="settings" class="section"></section></main><nav class="mobile"><button onclick="showPage('dashboard')">戰情</button><button onclick="showPage('projects')">專案</button><button onclick="showPage('activities')">活動</button><button onclick="showPage('finance')">財務</button><button onclick="showPage('settings')">設定</button></nav></div><script>const GOVOPS_API_URL='https://script.google.com/macros/s/AKfycbzOCj5JyioBnk6KBdoWyPIxIEQc1ZXHt0Inh4_OYdIWbQCBeUjnL_w1BUL2K3gIaCt7/exec';const modules=[['dashboard','戰情中心'],['projects','專案生命週期'],['activities','活動執行'],['tasks','任務檢核'],['finance','財務核銷'],['settings','系統設定']];const state={apiUrl:GOVOPS_API_URL,token:'',user:null,projects:[],activities:[],tasks:[],finance:[]};window.addEventListener('load',boot);async function boot(){localStorage.setItem('GovOpsAI_API',GOVOPS_API_URL);buildNav();buildModuleScreens();state.token=localStorage.getItem('GovOpsAI_TOKEN')||'';if(!state.token)return showLogin();try{await loadCurrentUser();showApp();await refreshAll()}catch(e){sessionExpired(e.message)}}function switchAuth(mode){loginTab.classList.toggle('active',mode==='login');registerTab.classList.toggle('active',mode==='register');loginPanel.classList.toggle('hidden',mode!=='login');registerPanel.classList.toggle('hidden',mode!=='register');loginMsg.textContent=''}function buildNav(){nav.innerHTML=modules.map((m,i)=>`<button class="${i===0?'active':''}" onclick="showPage('${m[0]}',this)"><span class="navIcon"></span>${m[1]}</button>`).join('')}function showLogin(){loginView.classList.remove('hidden');appView.classList.add('hidden')}function showApp(){loginView.classList.add('hidden');appView.classList.remove('hidden')}async function testPublicApi(){try{loginMsg.textContent='連線正常：'+JSON.stringify(await callPublic('健康檢查'))}catch(e){loginMsg.textContent='連線失敗：'+friendly(e.message)}}async function login(){try{loginMsg.textContent='登入中...';const r=await callPublic('login',{companyCode:loginCompany.value.trim(),email:loginEmail.value.trim(),password:loginPassword.value});await acceptLoginResult(r);await loadCurrentUser();showApp();await refreshAll()}catch(e){loginMsg.textContent='登入失敗：'+friendly(e.message)}}async function registerTenant(){try{if(!regCompanyName.value.trim())throw new Error('請填公司／單位名稱');if(!regDisplayName.value.trim())throw new Error('請填負責人姓名');if(!regEmail.value.trim())throw new Error('請填 Email');if(regPassword.value.length<6)throw new Error('密碼至少 6 碼');if(regPassword.value!==regConfirmPassword.value)throw new Error('密碼不一致');if(!regAgree.checked)throw new Error('請先勾選同意服務條款');registerBtn.disabled=true;registerBtn.textContent='建立中...';let base=makeCompanyCode(regCompanyName.value,regEmail.value);let lastErr='';for(let i=0;i<3;i++){let code=i===0?base:base+(Math.floor(Math.random()*900)+100);try{const payload={companyName:regCompanyName.value.trim(),companyCode:code,displayName:regDisplayName.value.trim(),email:regEmail.value.trim(),phone:regPhone.value.trim(),password:regPassword.value,plan:regPlan.value};const r=await callPublic('registerTenant',payload);const token=extractToken(r);if(!token)throw new Error('REGISTER_NO_TOKEN');loginCompany.value=code;loginEmail.value=payload.email;loginPassword.value=payload.password;loginMsg.textContent='註冊成功，正在進入系統...';saveSessionFromAuth(r,token,code,payload);await loadCurrentUser();showApp();await refreshAll();return}catch(err){lastErr=err.message;if(String(err.message)==='REGISTER_NO_TOKEN')throw err;if(!String(err.message).includes('公司代碼'))throw err;}}throw new Error(lastErr||'公司代碼重複，系統重試後仍失敗，請稍後再試');}catch(e){loginMsg.textContent='註冊失敗：'+friendly(e.message)}finally{registerBtn.disabled=false;registerBtn.textContent='建立公司帳號'}}function extractToken(r){return r&&(r.token||r.sessionToken||(r.data&&(r.data.token||r.data.sessionToken))||(r.result&&(r.result.token||r.result.sessionToken))||(r.結果&&(r.結果.token||r.結果.sessionToken)))}function saveSessionFromAuth(r,token,code,payload){state.token=token;localStorage.setItem('GovOpsAI_TOKEN',token);localStorage.setItem('GovOpsAI_companyCode',r.companyCode||code);localStorage.setItem('GovOpsAI_tenantId',r.tenantId||'');localStorage.setItem('GovOpsAI_email',r.email||payload.email||'');localStorage.setItem('GovOpsAI_companyName',r.companyName||payload.companyName||'');localStorage.setItem('GovOpsAI_plan',r.plan||payload.plan||'');localStorage.setItem('GovOpsAI_role',r.role||'老闆')}async function acceptLoginResult(r){const token=extractToken(r);if(!token)throw new Error('LOGIN_NO_TOKEN');state.token=token;localStorage.setItem('GovOpsAI_TOKEN',token);localStorage.setItem('GovOpsAI_companyCode',r.companyCode||loginCompany.value.trim());localStorage.setItem('GovOpsAI_tenantId',r.tenantId||'');localStorage.setItem('GovOpsAI_email',r.email||loginEmail.value.trim()||'');localStorage.setItem('GovOpsAI_companyName',r.companyName||'');localStorage.setItem('GovOpsAI_plan',r.plan||'');localStorage.setItem('GovOpsAI_role',r.role||'')}function makeCompanyCode(name,email){const prefix=(email||'company').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10);return prefix||('company'+Date.now().toString().slice(-6))}async function logout(){try{if(state.token)await callPublic('logout',{},{token:state.token})}catch(e){}localStorage.removeItem('GovOpsAI_TOKEN');state.token='';showLogin()}async function loadCurrentUser(){const r=await callApi('getCurrentUser',{},true);state.user=r;tenantLine.textContent=`${r.companyName||r.companyCode}｜${r.displayName||r.userId}｜${r.role}｜${r.plan||''}`;runtimeStatus.textContent='Session正常';return r}function sessionExpired(m){localStorage.removeItem('GovOpsAI_TOKEN');state.token='';showLogin();loginMsg.textContent='Session 已失效，請重新登入。'+(m?'\n'+friendly(m):'')}async function callPublic(action,data={},extra={}){let res;try{res=await fetch(state.apiUrl,{method:'POST',body:JSON.stringify(Object.assign({action,data},extra))})}catch(e){throw new Error('目前無法連線到系統後端，請確認 Apps Script 已部署為任何人可存取。')}const j=await res.json();if(!j.success&&!j.成功)throw new Error(j.error||j.錯誤訊息||'API錯誤');return j.result||j.結果||j}async function callApi(action,data={},allowNoToken=false){if(!state.token&&!allowNoToken)throw new Error('尚未登入');const res=await fetch(state.apiUrl,{method:'POST',body:JSON.stringify({action,data,token:state.token})});const j=await res.json();if(!j.success&&!j.成功){const m=j.error||j.錯誤訊息||'API錯誤';if(m.includes('session')||m.includes('過期'))sessionExpired(m);throw new Error(m)}return j.result||j.結果||j}function friendly(m){if(m==='REGISTER_NO_TOKEN')return'後端已建立帳號，但沒有回傳登入憑證。請將新版 GAS registerTenant 貼上並重新部署。';if(m==='LOGIN_NO_TOKEN')return'登入成功資料不完整：後端沒有回傳 token，請重新部署最新版 GAS。';if(m.includes('尚未登入或缺少 session token'))return'尚未取得登入憑證，請重新整理後再註冊一次。';if(m.includes('Failed to fetch'))return'目前無法連線到系統後端，請確認 Apps Script 已部署為任何人可存取。';if(m.includes('找不到指定的動作')||m.includes('registerTenant'))return'後端註冊功能尚未部署，請更新 Apps Script 程式碼並重新部署 Web App。';return m}async function refreshAll(){await loadDashboard();await listProjects();await listActivities();await listTasks();await listFinance()}async function loadDashboard(){try{const r=await callApi('取得Dashboard');renderDashboard(r)}catch(e){aiTips.innerHTML=errItem(e)}}function renderDashboard(d){const s=d.摘要||d.summary||{};kpis.innerHTML=[['高風險案件數',s.高風險案件數||0],['今日待辦數',(s.逾期任務數||0)+(s.今日活動數||0)],['逾期任務數',s.逾期任務數||0],['核銷缺件數',s.核銷缺件數||0],['未請款',s.未完成請款數||0],['本週活動數',s.本週活動數||0]].map(x=>`<div class="kpi"><div class="label">${x[0]}</div><div class="num">${x[1]}</div></div>`).join('');topFive.innerHTML=makeTopFive(d);aiTips.innerHTML=renderTips(d.AI建議||d.aiSuggestions||[])}function makeTopFive(d){let arr=[];(d.高風險案件||d.highRiskItems||[]).slice(0,2).forEach(x=>arr.push(['高風險',x.風險標題||x.title||'風險警示',x.風險說明||x.description||'請立即確認']));(d.逾期任務||[]).slice(0,2).forEach(x=>arr.push(['逾期',x.任務名稱||'任務逾期','期限：'+(x.預計完成日||'未設定')]));while(arr.length<5)arr.push(['新手引導','請建立或同步資料','AI 會依資料產生任務、缺件與戰情']);return arr.map((x,i)=>`<div class="item"><b>${i+1}. ${esc(x[1])}</b><span class="tag">${x[0]}</span><div class="small">${esc(x[2])}</div></div>`).join('')}function renderTips(tips){return(tips.length?tips:['目前尚無高風險資料，請先建立專案或同步 Dashboard。']).map(x=>`<div class="item"><b>AI 建議</b><div class="small">${esc(x)}</div></div>`).join('')}function buildModuleScreens(){projects.innerHTML=moduleHtml('專案生命週期','project',[['專案名稱','projectName'],['機關名稱','agencyName'],['契約金額','contractAmount','number'],['履約起日','startDate','date'],['履約迄日','endDate','date']]);activities.innerHTML=moduleHtml('活動執行','activity',[['活動名稱','activityName'],['活動日期','activityDate','date'],['開始時間','activityStart','time'],['結束時間','activityEnd','time'],['活動地點','activityPlace']]);tasks.innerHTML=moduleSimple('任務檢核','task');finance.innerHTML=moduleHtml('財務核銷','finance',[['金額','financeAmount','number'],['交易日期','financeDate','date'],['說明','financeDesc']]);settings.innerHTML=moduleSimple('系統設定','settings')}function moduleHtml(title,key,fields){return`<div class="panel"><h2>${title}</h2><div class="grid">${fields.map(f=>`<div><label>${f[0]}</label><input id="${f[1]}" type="${f[2]||'text'}"></div>`).join('')}</div><div class="btns"><button onclick="moduleAdd('${key}')">新增</button><button class="secondary" onclick="moduleQuery('${key}')">查詢</button></div><div id="${key}Msg" class="msg"></div></div><div class="panel"><h3>${title}清單</h3><div id="${key}List"></div></div>`}function moduleSimple(title,key){return`<div class="panel"><h2>${title}</h2><div id="${key}List"><div class="item"><b>新手引導</b><div class="small">請先新增資料或按查詢同步。</div></div></div></div>`}async function moduleAdd(key){if(key==='project')return createProject();if(key==='activity')return createActivity();if(key==='finance')return createFinance()}function moduleQuery(key){if(key==='project')return listProjects();if(key==='activity')return listActivities();if(key==='task')return listTasks();if(key==='finance')return listFinance()}async function listProjects(){try{const r=await callApi('查詢專案');state.projects=r.資料||[];projectList.innerHTML=renderCards(state.projects,'專案名稱','專案狀態')}catch(e){projectList.innerHTML=errItem(e)}}async function listActivities(){try{const r=await callApi('查詢活動');state.activities=r.資料||[];activityList.innerHTML=renderCards(state.activities,'活動名稱','活動日期')}catch(e){activityList.innerHTML=errItem(e)}}async function listTasks(){try{const r=await callApi('查詢任務');state.tasks=r.資料||[];taskList.innerHTML=renderCards(state.tasks,'任務名稱','預計完成日')}catch(e){taskList.innerHTML=errItem(e)}}async function listFinance(){try{const r=await callApi('查詢財務');state.finance=r.資料||[];financeList.innerHTML=renderCards(state.finance,'說明','金額')}catch(e){financeList.innerHTML=errItem(e)}}async function createProject(){try{await callApi('新增專案',{專案名稱:projectName.value,機關名稱:agencyName.value,契約金額:contractAmount.value,履約起日:startDate.value,履約迄日:endDate.value});await refreshAll();showPage('dashboard')}catch(e){projectMsg.textContent=e.message}}async function createActivity(){try{await callApi('新增活動',{專案ID:(state.projects[0]||{}).專案ID,活動名稱:activityName.value,活動日期:activityDate.value,開始時間:activityStart.value,結束時間:activityEnd.value,活動地點:activityPlace.value});await refreshAll();showPage('dashboard')}catch(e){activityMsg.textContent=e.message}}async function createFinance(){try{await callApi('新增財務',{專案ID:(state.projects[0]||{}).專案ID,金額:financeAmount.value,交易日期:financeDate.value,說明:financeDesc.value,類型:'支出'});await refreshAll()}catch(e){financeMsg.textContent=e.message}}function renderCards(data,titleKey,subKey){return data.length?data.map(x=>`<div class="item"><b>${esc(x[titleKey]||'未命名')}</b><span class="tag">${esc(x[subKey]||'')}</span><div class="small">${Object.keys(x).slice(0,5).map(k=>esc(k)+'：'+esc(x[k])).join('<br>')}</div></div>`).join(''):'<div class="item"><b>目前沒有資料</b><div class="small">請新增資料，這裡會自動更新。</div></div>'}function errItem(e){return`<div class="item"><b>載入失敗</b><div class="small">${esc(e.message)}</div></div>`}function showPage(id,btn){document.querySelectorAll('.section').forEach(x=>x.classList.remove('show'));document.getElementById(id).classList.add('show');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');pageTitle.textContent=(modules.find(m=>m[0]===id)||[])[1]||'GovOps AI OS'}function esc(x){return String(x??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</script></body></html>
+<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>GovOps AI OS｜AI SaaS 指揮中心</title><style>
+:root{--bg0:#0B1020;--bg1:#0F172A;--bg2:#111827;--card:#172033;--card2:#1E293B;--glass:rgba(17,24,39,.74);--line:rgba(255,255,255,.08);--line2:rgba(99,102,241,.35);--text:#E5EDF8;--muted:#94A3B8;--brand:#4F46E5;--brand2:#6366F1;--hover:#7C3AED;--cyan:#06B6D4;--ai:#8B5CF6;--red:#EF4444;--amber:#F59E0B;--green:#10B981;--blue:#3B82F6;--teal:#14B8A6;--orange:#F97316;--shadow:0 24px 80px rgba(0,0,0,.45);--glow:0 0 28px rgba(79,70,229,.28)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Microsoft JhengHei','Noto Sans TC',Arial,sans-serif;background:radial-gradient(circle at 18% 8%,rgba(79,70,229,.22),transparent 32%),radial-gradient(circle at 84% 16%,rgba(6,182,212,.16),transparent 30%),linear-gradient(135deg,#070B16 0%,#0B1020 42%,#111827 100%)}
+body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.8),transparent 75%);pointer-events:none}
+.hidden{display:none!important}
+/* LOGIN */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
+.loginCard{position:relative;background:linear-gradient(180deg,rgba(17,24,39,.88),rgba(15,23,42,.82));border:1px solid var(--line);border-radius:26px;padding:22px;box-shadow:var(--shadow);backdrop-filter:blur(18px);overflow:hidden;max-width:980px;width:100%;display:grid;grid-template-columns:1fr;gap:18px}
+.loginCard:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(99,102,241,.6),rgba(6,182,212,.18),rgba(255,255,255,.04));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.loginHero{display:none;padding:26px;border-radius:24px;background:linear-gradient(135deg,rgba(79,70,229,.26),rgba(6,182,212,.16));border:1px solid rgba(255,255,255,.08)}
+.logoMark{width:54px;height:54px;border-radius:18px;background:linear-gradient(135deg,var(--brand),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 32px rgba(6,182,212,.3)}
+h1,h2,h3{margin:0 0 10px}
+h1{font-size:36px;letter-spacing:-1.5px}
+.gradientText{background:linear-gradient(135deg,#fff,#A5B4FC,#67E8F9);-webkit-background-clip:text;color:transparent}
+.sub,.small{color:var(--muted);font-size:13px;line-height:1.7}
+.feature{display:flex;gap:10px;align-items:center;margin:12px 0;color:#cbd5e1}
+.dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--cyan));box-shadow:0 0 16px rgba(6,182,212,.65)}
+label{display:block;color:#A8B6CC;font-size:12px;font-weight:700;margin:10px 0 5px}
+input,select,textarea{width:100%;padding:11px 13px;border-radius:13px;border:1px solid rgba(255,255,255,.08);background:rgba(8,20,36,.82);color:var(--text);font-size:14px;outline:none;transition:.22s}
+input:focus,select:focus{border-color:rgba(99,102,241,.8);box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+select option{background:#1E293B}
+input[type=checkbox]{width:auto}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.tabs button{background:rgba(15,23,42,.72);color:var(--muted);border:1px solid var(--line)}
+.tabs button.active{background:linear-gradient(135deg,var(--brand),var(--cyan));color:#fff;box-shadow:0 12px 36px rgba(79,70,229,.28)}
+button{border:0;border-radius:13px;padding:11px 16px;background:linear-gradient(135deg,var(--brand2),var(--brand));color:#fff;font-weight:700;font-size:14px;cursor:pointer;transition:.22s;box-shadow:0 10px 28px rgba(79,70,229,.18)}
+button:hover{transform:translateY(-1px);box-shadow:0 14px 36px rgba(124,58,237,.28)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+button.secondary{background:rgba(30,41,59,.86);color:var(--text);border:1px solid var(--line);box-shadow:none}
+button.green{background:linear-gradient(135deg,var(--green),#22C55E);box-shadow:0 8px 24px rgba(16,185,129,.28)}
+button.danger{background:linear-gradient(135deg,var(--red),#DC2626)}
+button.sm{padding:6px 12px;font-size:12px;border-radius:10px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.msg{white-space:pre-wrap;color:var(--muted);font-size:13px;line-height:1.65;margin-top:10px}
+.err{color:var(--red)!important}
+/* APP LAYOUT */
+.app{display:grid;grid-template-columns:1fr;min-height:100vh}
+.side{display:none;background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(11,16,32,.96));border-right:1px solid var(--line);padding:18px;box-shadow:12px 0 38px rgba(0,0,0,.18);overflow-y:auto}
+.brand{font-size:18px;font-weight:800;letter-spacing:-.5px;margin-bottom:20px}
+.brand small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.brandIcon{display:inline-flex;width:32px;height:32px;border-radius:11px;background:linear-gradient(135deg,var(--brand),var(--cyan));align-items:center;justify-content:center;margin-right:8px;vertical-align:middle}
+.nav{display:grid;gap:4px}
+.nav button{background:transparent;color:var(--muted);border:1px solid transparent;text-align:left;box-shadow:none;padding:9px 12px;font-size:13px;font-weight:600;display:flex;gap:8px;align-items:center;border-radius:11px}
+.nav button.active,.nav button:hover{background:linear-gradient(135deg,rgba(79,70,229,.22),rgba(6,182,212,.08));color:var(--text);border-color:rgba(99,102,241,.3)}
+.nav button .nbadge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;border-radius:999px;padding:1px 6px;min-width:18px;text-align:center}
+.navIcon{width:8px;height:8px;border-radius:999px;background:var(--brand2);flex-shrink:0}
+.main{padding:14px 14px 92px;overflow-y:auto}
+/* TOP BAR */
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px;border:1px solid var(--line);background:rgba(15,23,42,.58);border-radius:20px;backdrop-filter:blur(14px)}
+.pill,.tag{display:inline-block;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:700;background:rgba(59,130,246,.18);color:#BFDBFE;margin:2px;border:1px solid rgba(59,130,246,.22)}
+.tag.green{background:rgba(16,185,129,.16);color:#6EE7B7;border-color:rgba(16,185,129,.24)}
+.tag.red{background:rgba(239,68,68,.16);color:#FCA5A5;border-color:rgba(239,68,68,.24)}
+.tag.amber{background:rgba(245,158,11,.16);color:#FCD34D;border-color:rgba(245,158,11,.24)}
+.tag.ai{background:rgba(139,92,246,.18);color:#C4B5FD;border-color:rgba(139,92,246,.28)}
+/* PANELS */
+.panel{position:relative;background:linear-gradient(180deg,rgba(23,32,51,.85),rgba(15,23,42,.78));border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,.22);backdrop-filter:blur(10px);overflow:hidden}
+.panel:before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(99,102,241,.4),rgba(6,182,212,.12),rgba(255,255,255,.03));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.panel h2,.panel h3{margin:0 0 14px;font-size:16px;font-weight:800}
+.panel h2:before,.panel h3:before{content:"✦";color:var(--ai);margin-right:7px;text-shadow:0 0 12px rgba(139,92,246,.75)}
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kpi{position:relative;background:linear-gradient(180deg,rgba(30,41,59,.72),rgba(15,23,42,.76));border:1px solid var(--line);border-radius:18px;padding:14px 16px;overflow:hidden;transition:.22s;cursor:pointer}
+.kpi:after{content:"";position:absolute;right:-20px;top:-24px;width:80px;height:80px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.22),transparent 62%)}
+.kpi:hover{transform:translateY(-2px);border-color:rgba(99,102,241,.5);box-shadow:0 0 28px rgba(99,102,241,.18)}
+.kpi .klabel{color:var(--muted);font-size:11px;font-weight:700;margin-bottom:4px}
+.kpi .knum{font-size:28px;font-weight:800;background:linear-gradient(135deg,#fff,#93C5FD);-webkit-background-clip:text;color:transparent;line-height:1}
+.kpi .kdesc{color:var(--muted);font-size:11px;margin-top:4px}
+/* ITEMS */
+.item{background:linear-gradient(180deg,rgba(15,23,42,.72),rgba(8,20,36,.78));border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px;transition:.2s;cursor:pointer}
+.item:hover{border-color:rgba(139,92,246,.34);box-shadow:0 0 20px rgba(139,92,246,.1);transform:translateY(-1px)}
+.item b{font-size:14px;font-weight:700;display:block;margin-bottom:4px}
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:8px 12px;text-align:left;color:var(--muted);font-weight:700;font-size:11px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.tbl tr:hover td{background:rgba(99,102,241,.06)}
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr;gap:10px}
+/* FORM GRID */
+.fgrid{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+/* SECTION */
+.section{display:none}.section.show{display:block}
+/* DRAWER */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;backdrop-filter:blur(4px)}
+.drawer{position:fixed;inset-y:0;right:0;width:min(520px,100%);background:linear-gradient(180deg,#0F172A,#0B1020);border-left:1px solid var(--line2);z-index:50;display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+.drawerHead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.drawerHead h3{margin:0;font-size:16px;font-weight:800}
+.drawerHead h3:before{content:"✦";color:var(--ai);margin-right:7px}
+.drawerBody{flex:1;overflow-y:auto;padding:20px}
+.drawerFoot{padding:16px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+/* MOBILE NAV */
+.mobile{position:fixed;left:0;right:0;bottom:0;background:rgba(11,16,32,.96);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:8px;backdrop-filter:blur(16px);z-index:30}
+.mobile button{font-size:11px;background:rgba(30,41,59,.88);padding:9px 4px;box-shadow:none;color:var(--muted);flex-direction:column;gap:3px}
+.mobile button.active{background:linear-gradient(135deg,rgba(79,70,229,.28),rgba(6,182,212,.12));color:var(--text);border:1px solid rgba(99,102,241,.3)}
+/* TOAST */
+.toast{position:fixed;bottom:80px;right:18px;z-index:60;min-width:220px;max-width:340px;padding:12px 18px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:0 12px 40px rgba(0,0,0,.5);transition:.3s;backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12)}
+.toast.success{background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(20,184,166,.12));color:#6EE7B7;border-color:rgba(16,185,129,.3)}
+.toast.error{background:linear-gradient(135deg,rgba(239,68,68,.2),rgba(220,38,38,.1));color:#FCA5A5;border-color:rgba(239,68,68,.3)}
+.toast.warn{background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(217,119,6,.1));color:#FCD34D;border-color:rgba(245,158,11,.3)}
+/* STATUS BADGE */
+.sbadge{display:inline-block;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:700}
+.s-進行中,.s-in_progress{background:rgba(59,130,246,.18);color:#93C5FD;border:1px solid rgba(59,130,246,.3)}
+.s-已完成,.s-completed{background:rgba(16,185,129,.18);color:#6EE7B7;border:1px solid rgba(16,185,129,.3)}
+.s-逾期,.s-overdue{background:rgba(239,68,68,.18);color:#FCA5A5;border:1px solid rgba(239,68,68,.3)}
+.s-草稿,.s-draft{background:rgba(148,163,184,.14);color:#94A3B8;border:1px solid rgba(148,163,184,.2)}
+.s-高風險{background:rgba(239,68,68,.18);color:#FCA5A5;border:1px solid rgba(239,68,68,.3)}
+.s-待審核,.s-pending{background:rgba(245,158,11,.18);color:#FCD34D;border:1px solid rgba(245,158,11,.3)}
+.s-已封存{background:rgba(100,116,139,.14);color:#64748B;border:1px solid rgba(100,116,139,.2)}
+.s-正常,.s-active{background:rgba(16,185,129,.18);color:#6EE7B7;border:1px solid rgba(16,185,129,.3)}
+/* ANIMATE */
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 18px rgba(139,92,246,.15)}50%{box-shadow:0 0 36px rgba(6,182,212,.22)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pulse{animation:pulseGlow 3s infinite}
+.fadeIn{animation:fadeIn .3s ease}
+/* PROGRESS */
+.progress{height:5px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.progress-bar{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand),var(--cyan));transition:.6s}
+/* SKELETON */
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.1),rgba(255,255,255,.05));background-size:300% 100%;animation:shimmer 1.4s infinite;border-radius:10px}
+@keyframes shimmer{to{background-position:-300% 0}}
+/* EMPTY STATE */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .eicon{font-size:48px;margin-bottom:12px}
+/* RESPONSIVE */
+@media(min-width:1000px){
+  .loginCard{grid-template-columns:.85fr 1fr;padding:22px}
+  .loginHero{display:block}
+  .app{grid-template-columns:260px 1fr}
+  .side{display:block;position:sticky;top:0;height:100vh}
+  .main{padding:24px 30px 60px}
+  .mobile{display:none}
+  .grid2{grid-template-columns:repeat(2,1fr)}
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .fgrid{grid-template-columns:1fr 1fr}
+}
+@media(min-width:1400px){.kpis{grid-template-columns:repeat(6,1fr)}}
+</style></head><body>
+
+<!-- LOGIN -->
+<div id="loginView" class="login">
+  <div class="loginCard">
+    <div class="loginHero">
+      <div class="logoMark">✦</div>
+      <h1 class="gradientText" style="font-size:40px;margin-top:16px">GovOps AI OS</h1>
+      <p class="sub">AI 政府專案營運控制塔，整合戰情、履約、核銷、請款與結案風險。</p>
+      <div style="margin-top:20px">
+        <div class="feature"><span class="dot"></span><span>AI 戰情中心 12 大模組</span></div>
+        <div class="feature"><span class="dot"></span><span>多租戶 SaaS 資料隔離</span></div>
+        <div class="feature"><span class="dot"></span><span>政府標案全生命週期管理</span></div>
+        <div class="feature"><span class="dot"></span><span>核銷缺件自動偵測</span></div>
+        <div class="feature"><span class="dot"></span><span>LINE 每日戰情推播</span></div>
+      </div>
+      <div style="margin-top:24px;padding:14px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.2);border-radius:14px">
+        <div style="font-size:12px;color:var(--muted)">v1.0 正式商業版｜SaaS 多租戶架構</div>
+      </div>
+    </div>
+    <div>
+      <h2 class="gradientText" style="font-size:26px">GovOps AI OS</h2>
+      <p class="sub">新公司可先註冊，系統會自動產生公司代碼並直接進入系統。</p>
+      <div class="tabs">
+        <button id="loginTab" class="active" onclick="switchAuth('login')">登入</button>
+        <button id="registerTab" onclick="switchAuth('register')">註冊新公司</button>
+      </div>
+      <!-- LOGIN -->
+      <div id="loginPanel">
+        <label>公司代碼</label>
+        <input id="loginCompany" placeholder="小寫英文數字（註冊後自動填入）" autocomplete="username">
+        <label>Email</label>
+        <input id="loginEmail" type="email" autocomplete="email">
+        <label>密碼</label>
+        <input id="loginPassword" type="password" autocomplete="current-password">
+        <div class="btns">
+          <button class="green" onclick="login()">登入系統</button>
+          <button class="secondary" onclick="testConn()">測試連線</button>
+        </div>
+      </div>
+      <!-- REGISTER -->
+      <div id="registerPanel" class="hidden">
+        <div class="fgrid">
+          <div><label>公司／單位名稱 *</label><input id="regName" placeholder="知己知途顧問"></div>
+          <div><label>負責人姓名 *</label><input id="regDisplay" placeholder="珍珠老師"></div>
+          <div><label>Email *</label><input id="regEmail" type="email"></div>
+          <div><label>電話</label><input id="regPhone" placeholder="0912345678"></div>
+          <div><label>方案</label><select id="regPlan"><option value="FREE">FREE 免費</option><option value="TRIAL">TRIAL 試用</option></select></div>
+          <div><label>密碼（至少 6 碼）*</label><input id="regPwd" type="password"></div>
+          <div style="grid-column:1/-1"><label>確認密碼 *</label><input id="regPwd2" type="password"></div>
+        </div>
+        <label><input id="regAgree" type="checkbox"> 我同意服務條款與資料使用規範</label>
+        <div class="small" style="margin-top:6px">公司代碼由系統自動產生（依 Email 前綴），若重複自動加數字重試。</div>
+        <div class="btns">
+          <button id="registerBtn" class="green" onclick="registerTenant()">建立公司帳號</button>
+          <button class="secondary" onclick="switchAuth('login')">已有帳號登入</button>
+        </div>
+      </div>
+      <div id="loginMsg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appView" class="app hidden">
+  <aside class="side">
+    <div class="brand">
+      <span class="brandIcon">✦</span>GovOps AI OS
+      <small id="sideCompany">載入中...</small>
+    </div>
+    <div class="nav" id="nav"></div>
+    <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--line)">
+      <div id="sideUser" class="small" style="padding:8px 0"></div>
+      <button class="secondary" style="width:100%;margin-top:8px" onclick="logout()">登出系統</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div>
+        <h2 id="pageTitle" style="margin:0;font-size:20px">戰情中心</h2>
+        <div id="tenantLine" class="sub">載入中...</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span id="runtimeStatus" class="pill">AI Runtime</span>
+        <span id="nowTime" class="small"></span>
+        <button class="secondary sm" onclick="refreshAll()">↺ 更新</button>
+        <button class="secondary sm" onclick="logout()">登出</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section id="s-dashboard" class="section show">
+      <div class="panel">
+        <h2>今日戰情摘要</h2>
+        <div id="kpis" class="kpis"></div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h2>今日最急 5 件事</h2>
+          <div id="topFive"></div>
+        </div>
+        <div class="panel">
+          <h2>高風險案件</h2>
+          <div id="riskList"></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <h2>今日活動</h2>
+          <div id="todayActs"></div>
+        </div>
+        <div class="panel">
+          <h2>逾期任務</h2>
+          <div id="overdueTasks"></div>
+        </div>
+      </div>
+      <div class="panel pulse">
+        <h2>AI 建議</h2>
+        <div id="aiTips"></div>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="s-projects" class="section">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0;flex:1">專案生命週期</h2>
+          <select id="projStatusFilter" onchange="listProjects()" style="width:auto;padding:8px 12px;font-size:12px">
+            <option value="">所有狀態</option>
+            <option>履約準備中</option><option>履約中</option><option>結案中</option><option>已結案</option><option>已取消</option>
+          </select>
+          <button class="sm green" onclick="openDrawer('project',null)">＋ 新增專案</button>
+        </div>
+        <div id="projectList"><div class="skel" style="height:60px;margin-bottom:8px"></div><div class="skel" style="height:60px;margin-bottom:8px"></div></div>
+      </div>
+    </section>
+
+    <!-- ACTIVITIES -->
+    <section id="s-activities" class="section">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0;flex:1">活動執行中心</h2>
+          <select id="actProjFilter" onchange="listActivities()" style="width:auto;padding:8px 12px;font-size:12px">
+            <option value="">所有專案</option>
+          </select>
+          <button class="sm green" onclick="openDrawer('activity',null)">＋ 新增活動</button>
+        </div>
+        <div id="activityList"><div class="skel" style="height:60px;margin-bottom:8px"></div></div>
+      </div>
+    </section>
+
+    <!-- TASKS -->
+    <section id="s-tasks" class="section">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0;flex:1">任務檢核中心</h2>
+          <div style="display:flex;gap:4px">
+            <button class="sm secondary task-tab active" data-tab="all" onclick="setTaskTab('all',this)">全部</button>
+            <button class="sm secondary task-tab" data-tab="today" onclick="setTaskTab('today',this)">今日</button>
+            <button class="sm secondary task-tab" data-tab="overdue" onclick="setTaskTab('overdue',this)">逾期</button>
+            <button class="sm secondary task-tab" data-tab="pending" onclick="setTaskTab('pending',this)">未完成</button>
+          </div>
+          <button class="sm green" onclick="openDrawer('task',null)">＋ 新增任務</button>
+        </div>
+        <div id="taskList"><div class="skel" style="height:50px;margin-bottom:8px"></div></div>
+      </div>
+    </section>
+
+    <!-- REGISTRATIONS -->
+    <section id="s-registrations" class="section">
+      <div class="panel">
+        <h2>報名審核中心</h2>
+        <div class="empty"><div class="eicon">📋</div><div style="font-size:15px;font-weight:700;color:var(--text)">報名審核中心</div><div style="margin-top:6px">Google 表單匯入、去重、批次審核、通知、簽到表</div><div style="margin-top:14px"><span class="tag ai">下一版本推出</span></div></div>
+      </div>
+    </section>
+
+    <!-- SURVEYS -->
+    <section id="s-surveys" class="section">
+      <div class="panel">
+        <h2>滿意度問卷中心</h2>
+        <div class="empty"><div class="eicon">📊</div><div style="font-size:15px;font-weight:700;color:var(--text)">滿意度問卷中心</div><div style="margin-top:6px">問卷匯入、統計分析、AI 改善建議、結案報告產生</div><div style="margin-top:14px"><span class="tag ai">下一版本推出</span></div></div>
+      </div>
+    </section>
+
+    <!-- FINANCE -->
+    <section id="s-finance" class="section">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0;flex:1">財務核銷中心</h2>
+          <select id="finProjFilter" onchange="listFinance()" style="width:auto;padding:8px 12px;font-size:12px">
+            <option value="">所有專案</option>
+          </select>
+          <button class="sm green" onclick="openDrawer('finance',null)">＋ 新增收支</button>
+        </div>
+        <div id="finSummary" class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px"></div>
+        <div id="financeList"></div>
+      </div>
+    </section>
+
+    <!-- PAYMENTS -->
+    <section id="s-payments" class="section">
+      <div class="panel">
+        <h2>請款撥款中心</h2>
+        <div class="empty"><div class="eicon">💰</div><div style="font-size:15px;font-weight:700;color:var(--text)">請款撥款中心</div><div style="margin-top:6px">請款規則、機關審查追蹤、主計審查、撥款對帳</div><div style="margin-top:14px"><span class="tag ai">下一版本推出</span></div></div>
+      </div>
+    </section>
+
+    <!-- DOCUMENTS -->
+    <section id="s-documents" class="section">
+      <div class="panel">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0;flex:1">文件結案中心</h2>
+          <button class="sm green" onclick="openDrawer('doc',null)">＋ 新增文件</button>
+        </div>
+        <div id="docList"></div>
+      </div>
+    </section>
+
+    <!-- LINE -->
+    <section id="s-line" class="section">
+      <div class="panel">
+        <h2>LINE 提醒中心</h2>
+        <div class="empty"><div class="eicon">💬</div><div style="font-size:15px;font-weight:700;color:var(--text)">LINE 提醒中心</div><div style="margin-top:6px">每日戰情推播、高風險提醒、結案倒數、Rich Menu 管理</div><div style="margin-top:14px"><span class="tag ai">下一版本推出</span></div></div>
+      </div>
+    </section>
+
+    <!-- MASTER -->
+    <section id="s-master" class="section">
+      <div class="panel">
+        <h2>基礎資料中心</h2>
+        <div class="grid2">
+          <div class="item" onclick="alert('講師主檔開發中')"><b>🎓 講師主檔</b><div class="small">講師姓名、費率、身分證、銀行資料</div></div>
+          <div class="item" onclick="alert('工作人員開發中')"><b>👷 工作人員主檔</b><div class="small">人員、費率、出勤紀錄</div></div>
+          <div class="item" onclick="alert('廠商主檔開發中')"><b>🏢 廠商主檔</b><div class="small">廠商、統編、銀行帳號</div></div>
+          <div class="item" onclick="alert('機關主檔開發中')"><b>🏛️ 機關主檔</b><div class="small">機關、承辦人、聯絡資料</div></div>
+          <div class="item" onclick="alert('場地主檔開發中')"><b>📍 場地主檔</b><div class="small">場地名稱、地址、容量</div></div>
+          <div class="item" onclick="alert('物資設備開發中')"><b>📦 物資設備主檔</b><div class="small">物品、數量、供應廠商</div></div>
+          <div class="item" onclick="alert('財務科目開發中')"><b>💼 財務會計主檔</b><div class="small">會計科目、核銷分類</div></div>
+          <div class="item" onclick="alert('文件模板開發中')"><b>📄 文件與模板主檔</b><div class="small">領據模板、結案報告模板</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="s-settings" class="section">
+      <div class="grid2">
+        <div class="panel">
+          <h2>公司資訊</h2>
+          <div id="settingsCompany"></div>
+        </div>
+        <div class="panel">
+          <h2>系統狀態</h2>
+          <div id="settingsStatus"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>API 設定</h2>
+        <label>後端 API URL</label>
+        <input id="settingsApiUrl" value="" style="font-size:12px;font-family:monospace" onchange="saveApiUrl()">
+        <div class="btns" style="margin-top:10px">
+          <button class="sm green" onclick="testConn()">測試連線</button>
+          <button class="sm secondary" onclick="saveApiUrl()">儲存 URL</button>
+        </div>
+        <div id="settingsMsg" class="msg"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MOBILE NAV -->
+  <nav class="mobile">
+    <button onclick="showPage('dashboard',this)" class="active" id="mob-dashboard">戰情</button>
+    <button onclick="showPage('projects',this)" id="mob-projects">專案</button>
+    <button onclick="showPage('activities',this)" id="mob-activities">活動</button>
+    <button onclick="showPage('finance',this)" id="mob-finance">財務</button>
+    <button onclick="showMobileMore()" id="mob-more">更多</button>
+  </nav>
+</div>
+
+<!-- DRAWER -->
+<div id="drawerOverlay" class="overlay hidden" onclick="closeDrawer()"></div>
+<div id="drawerPanel" class="drawer hidden">
+  <div class="drawerHead">
+    <h3 id="drawerTitle">詳細資料</h3>
+    <button class="secondary sm" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawerBody" id="drawerBody"></div>
+  <div class="drawerFoot" id="drawerFoot"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden fadeIn"></div>
+
+<!-- MORE MENU (mobile) -->
+<div id="moreMenu" class="hidden" style="position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.6)" onclick="closeMobileMore()">
+  <div style="position:absolute;bottom:72px;left:0;right:0;padding:16px;background:rgba(11,16,32,.97);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);gap:8px" onclick.stop>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('tasks');closeMobileMore()">任務檢核</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('registrations');closeMobileMore()">報名審核</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('surveys');closeMobileMore()">滿意度</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('payments');closeMobileMore()">請款</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('documents');closeMobileMore()">文件</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('line');closeMobileMore()">LINE</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('master');closeMobileMore()">基礎資料</button>
+    <button class="secondary sm" style="flex-direction:column;gap:4px;padding:12px 4px" onclick="showPage('settings');closeMobileMore()">設定</button>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────
+const DEFAULT_API = 'https://script.google.com/macros/s/AKfycbwlM1WGOZZSzL24CEFC8XULPUJgzo3O-FvMkiNoxpKUzRFs3d0jvyaxOmDfuGOaa6rl/exec';
+const SK = { TOKEN:'GovOps_token', CODE:'GovOps_code', TID:'GovOps_tid', API:'GovOps_api', USER:'GovOps_user' };
+
+// ── State ─────────────────────────────────────────────────────
+const S = {
+  token: '',
+  user: null,
+  projects: [],
+  activities: [],
+  tasks: [],
+  finances: [],
+  documents: [],
+  taskTab: 'all',
+  currentPage: 'dashboard',
+  get apiUrl(){ return localStorage.getItem(SK.API) || DEFAULT_API; }
+};
+
+// ── Nav ───────────────────────────────────────────────────────
+const MODULES = [
+  ['dashboard','🏛️','AI 戰情中心'],
+  ['projects','📁','專案生命週期'],
+  ['activities','🗓️','活動執行中心'],
+  ['tasks','✅','任務檢核中心'],
+  ['registrations','📋','報名審核中心'],
+  ['surveys','📊','滿意度問卷中心'],
+  ['finance','💳','財務核銷中心'],
+  ['payments','💰','請款撥款中心'],
+  ['documents','📄','文件結案中心'],
+  ['line','💬','LINE 提醒中心'],
+  ['master','🗂️','基礎資料中心'],
+  ['settings','⚙️','系統設定中心'],
+];
+
+// ── Boot ──────────────────────────────────────────────────────
+window.addEventListener('load', boot);
+
+function boot(){
+  buildNav();
+  updateClock();
+  setInterval(updateClock, 30000);
+  if(document.getElementById('settingsApiUrl'))
+    document.getElementById('settingsApiUrl').value = S.apiUrl;
+
+  S.token = localStorage.getItem(SK.TOKEN) || '';
+  if(!S.token){ showLogin(); return; }
+  showApp();
+  loadCurrentUser().then(refreshAll).catch(e => {
+    if(e.message.includes('session')||e.message.includes('過期')){
+      sessionExpired(e.message);
+    } else { refreshAll(); }
+  });
+}
+
+function buildNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = MODULES.map((m,i)=>
+    `<button class="${i===0?'active':''}" onclick="showPage('${m[0]}',this)">
+      <span class="navIcon"></span>${m[1]} ${m[2]}
+    </button>`
+  ).join('');
+}
+
+function updateClock(){
+  const el = document.getElementById('nowTime');
+  if(el) el.textContent = new Date().toLocaleString('zh-TW',{month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+function switchAuth(mode){
+  document.getElementById('loginTab').classList.toggle('active', mode==='login');
+  document.getElementById('registerTab').classList.toggle('active', mode==='register');
+  document.getElementById('loginPanel').classList.toggle('hidden', mode!=='login');
+  document.getElementById('registerPanel').classList.toggle('hidden', mode!=='register');
+  document.getElementById('loginMsg').textContent = '';
+}
+
+async function login(){
+  const msg = document.getElementById('loginMsg');
+  msg.textContent = '登入中...';
+  msg.className = 'msg';
+  try {
+    const r = await callPublic('login', {
+      companyCode: v('loginCompany'),
+      email: v('loginEmail'),
+      password: v('loginPassword')
+    });
+    const tok = extractToken(r);
+    if(!tok) throw new Error('LOGIN_NO_TOKEN');
+    saveSession(r, tok, v('loginCompany'));
+    showApp();
+    await loadCurrentUser();
+    await refreshAll();
+  } catch(e) {
+    msg.className = 'msg err';
+    msg.textContent = '登入失敗：' + friendly(e.message);
+  }
+}
+
+async function registerTenant(){
+  const msg = document.getElementById('loginMsg');
+  const btn = document.getElementById('registerBtn');
+  if(!v('regName')) return setMsg('請填公司名稱', true);
+  if(!v('regDisplay')) return setMsg('請填負責人姓名', true);
+  if(!v('regEmail').includes('@')) return setMsg('請填正確 Email', true);
+  if(v('regPwd').length < 6) return setMsg('密碼至少 6 碼', true);
+  if(v('regPwd') !== v('regPwd2')) return setMsg('密碼不一致', true);
+  if(!document.getElementById('regAgree').checked) return setMsg('請勾選同意條款', true);
+
+  btn.disabled = true; btn.textContent = '建立中...';
+  msg.className = 'msg'; msg.textContent = '正在建立公司帳號...';
+
+  const base = makeCode(v('regEmail'));
+  let lastErr = '';
+  for(let i=0; i<3; i++){
+    const code = i===0 ? base : base + (Math.floor(Math.random()*900)+100);
+    try {
+      const r = await callPublic('registerTenant', {
+        companyName: v('regName'), companyCode: code,
+        displayName: v('regDisplay'), email: v('regEmail'),
+        phone: v('regPhone'), password: v('regPwd'),
+        plan: document.getElementById('regPlan').value
+      });
+      const tok = extractToken(r);
+      if(!tok) throw new Error('REGISTER_NO_TOKEN');
+      saveSession(r, tok, code);
+      setInputVal('loginCompany', code);
+      setInputVal('loginEmail', v('regEmail'));
+      msg.textContent = '✅ 註冊成功，正在進入系統...';
+      showApp();
+      await loadCurrentUser();
+      await refreshAll();
+      return;
+    } catch(err){
+      lastErr = err.message;
+      if(!String(err.message).includes('公司代碼')&&!String(err.message).includes('companyCode')) throw err;
+    }
+  }
+  msg.className = 'msg err';
+  msg.textContent = '失敗：' + friendly(lastErr);
+  btn.disabled = false; btn.textContent = '建立公司帳號';
+}
+
+async function testConn(){
+  const msg = document.getElementById('loginMsg') || document.getElementById('settingsMsg');
+  if(msg){ msg.textContent = '測試中...'; msg.className = 'msg'; }
+  try {
+    const r = await callPublic('健康檢查');
+    const txt = '✅ 連線正常：' + (r.狀態||r.status||r.系統||JSON.stringify(r).slice(0,60));
+    if(msg){ msg.textContent = txt; }
+    showToast(txt.slice(0,60), 'success');
+  } catch(e) {
+    const txt = '❌ ' + friendly(e.message);
+    if(msg){ msg.textContent = txt; msg.className = 'msg err'; }
+    showToast(txt, 'error');
+  }
+}
+
+function saveSession(r, token, code){
+  S.token = token;
+  localStorage.setItem(SK.TOKEN, token);
+  localStorage.setItem(SK.CODE, r.companyCode||code||'');
+  localStorage.setItem(SK.TID, r.tenantId||r.tenant_id||'');
+  localStorage.setItem(SK.USER, JSON.stringify(r));
+}
+
+function extractToken(r){
+  return r&&(r.token||r.sessionToken||(r.data&&(r.data.token||r.data.sessionToken))||(r.result&&(r.result.token||r.result.sessionToken))||(r['結果']&&(r['結果'].token||r['結果'].sessionToken)));
+}
+
+async function loadCurrentUser(){
+  const r = await callApi('getCurrentUser', {}, true);
+  S.user = r;
+  const name = r.companyName||r.displayName||r.companyCode||'';
+  const role = r.role||r.roleName||'老闆';
+  document.getElementById('sideCompany').textContent = name;
+  document.getElementById('tenantLine').textContent = `${name}｜${r.displayName||r.userId||''}｜${role}｜${r.plan||'FREE'}`;
+  document.getElementById('runtimeStatus').textContent = 'Session 正常';
+  document.getElementById('sideUser').innerHTML = `<b>${r.displayName||'使用者'}</b><br>${r.email||''}`;
+  renderSettings(r);
+  return r;
+}
+
+function renderSettings(r){
+  const c = document.getElementById('settingsCompany');
+  const s = document.getElementById('settingsStatus');
+  if(c) c.innerHTML = `
+    <div class="item"><b>公司名稱</b><div class="small">${esc(r.companyName||r.tenantName||'—')}</div></div>
+    <div class="item"><b>公司代碼</b><div class="small" style="font-family:monospace">${esc(r.companyCode||'—')}</div></div>
+    <div class="item"><b>方案</b><span class="tag ai">${esc(r.plan||'FREE')}</span></div>
+    <div class="item"><b>租戶 ID</b><div class="small" style="font-family:monospace;font-size:11px">${esc(r.tenantId||r.tenant_id||'—')}</div></div>
+  `;
+  if(s) s.innerHTML = `
+    <div class="item"><b>後端 API</b><span class="tag green">✅ 正常</span></div>
+    <div class="item"><b>登入狀態</b><span class="tag green">✅ 已登入</span></div>
+    <div class="item"><b>Session 到期</b><div class="small">${esc(r.expiresAt||r.expireTime||'—')}</div></div>
+  `;
+  const url = document.getElementById('settingsApiUrl');
+  if(url) url.value = S.apiUrl;
+}
+
+function saveApiUrl(){
+  const url = document.getElementById('settingsApiUrl');
+  if(url && url.value.trim()){
+    localStorage.setItem(SK.API, url.value.trim());
+    showToast('API URL 已儲存', 'success');
+  }
+}
+
+async function logout(){
+  try{ if(S.token) await callPublic('logout',{token:S.token}); }catch(e){}
+  Object.values(SK).forEach(k => localStorage.removeItem(k));
+  S.token=''; S.user=null;
+  showLogin();
+}
+
+function sessionExpired(m){
+  Object.values(SK).forEach(k => localStorage.removeItem(k));
+  S.token=''; showLogin();
+  document.getElementById('loginMsg').textContent = 'Session 已失效，請重新登入。' + (m?'\n'+friendly(m):'');
+}
+
+// ── API ───────────────────────────────────────────────────────
+async function callPublic(action, data={}, extra={}){
+  let res;
+  try {
+    res = await fetch(S.apiUrl, {
+      method:'POST',
+      body: JSON.stringify(Object.assign({action, data, 動作:action, 資料:data}, extra))
+    });
+  } catch(e) {
+    throw new Error('目前無法連線到系統後端，請確認 Apps Script 已部署為任何人可存取。');
+  }
+  const j = await res.json();
+  if(j.success===false || j['成功']===false){
+    throw new Error(j.error||j.message||j['錯誤訊息']||'API 錯誤');
+  }
+  // Inner result may also have success:false
+  const inner = j.result||j['結果']||j;
+  if(inner && inner.success===false){
+    throw new Error(inner.error||inner.message||inner['錯誤訊息']||'操作失敗');
+  }
+  return inner;
+}
+
+async function callApi(action, data={}, allowNoToken=false){
+  if(!S.token && !allowNoToken) throw new Error('尚未登入');
+  try {
+    const res = await fetch(S.apiUrl, {
+      method:'POST',
+      body: JSON.stringify({action, data, 動作:action, 資料:data, token:S.token})
+    });
+    const j = await res.json();
+    if(j.success===false || j['成功']===false){
+      const m = j.error||j.message||j['錯誤訊息']||'API 錯誤';
+      if(m.includes('session')||m.includes('過期')||m.includes('UNAUTHORIZED')) sessionExpired(m);
+      throw new Error(m);
+    }
+    const inner = j.result||j['結果']||j;
+    if(inner && inner.success===false){
+      throw new Error(inner.error||inner.message||inner['錯誤訊息']||'操作失敗');
+    }
+    return inner;
+  } catch(e) {
+    if(e.message.includes('session')||e.message.includes('過期')) sessionExpired(e.message);
+    throw e;
+  }
+}
+
+// ── Data loaders ──────────────────────────────────────────────
+async function refreshAll(){
+  await loadDashboard();
+  await listProjects();
+  await listActivities();
+  await listTasks();
+  await listFinance();
+  await listDocuments();
+}
+
+async function loadDashboard(){
+  try {
+    const r = await callApi('取得Dashboard');
+    renderDashboard(r);
+  } catch(e){ renderDashboardError(e); }
+}
+
+function renderDashboard(d){
+  const s = d['摘要']||d.summary||{};
+  const kpiData = [
+    ['高風險案件',s['高風險案件數']||0,'var(--red)'],
+    ['逾期任務',s['逾期任務數']||0,'var(--amber)'],
+    ['核銷缺件',s['核銷缺件數']||0,'var(--orange)'],
+    ['今日活動',s['今日活動數']||0,'var(--cyan)'],
+    ['未請款',s['未完成請款數']||0,'var(--brand2)'],
+    ['本週活動',s['本週活動數']||0,'var(--green)'],
+  ];
+  document.getElementById('kpis').innerHTML = kpiData.map(x=>`
+    <div class="kpi">
+      <div class="klabel">${x[0]}</div>
+      <div class="knum" style="background:linear-gradient(135deg,#fff,${x[2]});-webkit-background-clip:text;color:transparent">${x[1]}</div>
+    </div>`).join('');
+
+  const risks = d['高風險案件']||d.highRiskItems||[];
+  const overdue = d['逾期任務']||d.overdueTasks||[];
+  const todayActs = d['今日活動']||d.todayActivities||[];
+  const aiArr = d['AI建議']||d.aiAdvice||[];
+
+  // Top 5
+  let top5 = [];
+  risks.slice(0,2).forEach(x=>top5.push(['⚠️','高風險',x['風險標題']||x.title||'風險警示',x['風險說明']||x.description||'請立即確認']));
+  overdue.slice(0,2).forEach(x=>top5.push(['🔴','逾期任務',x['任務名稱']||x.name||'任務逾期','到期：'+(x['預計完成日']||x.due_date||'未設定')]));
+  while(top5.length<5) top5.push(['💡','新手引導','請建立或同步資料','AI 會依資料自動產生任務與戰情']);
+  document.getElementById('topFive').innerHTML = top5.map((x,i)=>`
+    <div class="item"><span class="tag ${i<2?'red':i<4?'amber':''}">${x[1]}</span>
+    <b style="margin:0 0 4px;display:block">${i+1}. ${esc(x[2])}</b>
+    <div class="small">${esc(x[3])}</div></div>`).join('');
+
+  document.getElementById('riskList').innerHTML = risks.length
+    ? risks.slice(0,5).map(x=>`<div class="item"><span class="tag red">高風險</span><b style="display:block;margin:4px 0 2px">${esc(x['風險標題']||x.title||'—')}</b><div class="small">${esc(x['風險說明']||x.description||'')}</div></div>`).join('')
+    : '<div class="item"><b>✅ 目前沒有高風險案件</b></div>';
+
+  document.getElementById('todayActs').innerHTML = todayActs.length
+    ? todayActs.map(x=>`<div class="item"><b>${esc(x['活動名稱']||x.activity_name||'未命名')}</b><div class="small">${esc((x['開始時間']||x.start_time||''))} - ${esc(x['結束時間']||x.end_time||'')}｜${esc(x['活動地點']||x.venue||'')}</div></div>`).join('')
+    : '<div class="item"><b>今日沒有排程活動</b></div>';
+
+  document.getElementById('overdueTasks').innerHTML = overdue.length
+    ? overdue.slice(0,5).map(x=>`<div class="item" onclick="openDrawer('task',${JSON.stringify(x).replace(/"/g,'&quot;')})"><span class="tag red">逾期</span><b style="display:block;margin:4px 0 2px">${esc(x['任務名稱']||x.name||'任務')}</b><div class="small">到期：${esc(x['預計完成日']||x.due_date||'未設定')}</div></div>`).join('')
+    : '<div class="item"><b>✅ 沒有逾期任務</b></div>';
+
+  const aiItems = Array.isArray(aiArr) ? aiArr : (typeof aiArr==='string'?[aiArr]:[]);
+  document.getElementById('aiTips').innerHTML = (aiItems.length ? aiItems : ['目前尚無高風險資料，請先建立專案或同步 Dashboard。'])
+    .map(x=>`<div class="item"><b>🤖 AI 建議</b><div class="small" style="margin-top:4px">${esc(String(x))}</div></div>`).join('');
+}
+
+function renderDashboardError(e){
+  document.getElementById('kpis').innerHTML = '<div class="small" style="color:var(--amber);padding:8px">Dashboard 載入中... 請先確認登入狀態</div>';
+  document.getElementById('topFive').innerHTML = '<div class="item"><b>📥 新手引導</b><div class="small">請先新增專案，系統會自動展開任務與戰情。</div></div>';
+  document.getElementById('riskList').innerHTML = '<div class="item"><b>尚無資料</b></div>';
+  document.getElementById('todayActs').innerHTML = '<div class="item"><b>尚無活動</b></div>';
+  document.getElementById('overdueTasks').innerHTML = '<div class="item"><b>尚無任務</b></div>';
+  document.getElementById('aiTips').innerHTML = '<div class="item"><b>🤖 AI 建議</b><div class="small">請先建立專案與活動，AI 會自動分析並提供建議。</div></div>';
+}
+
+async function listProjects(){
+  try {
+    const r = await callApi('查詢專案');
+    S.projects = normalize(r);
+    const filter = document.getElementById('projStatusFilter').value;
+    const data = filter ? S.projects.filter(p=>(p['專案狀態']||p.status||'')===filter) : S.projects;
+    updateProjectFilter();
+    document.getElementById('projectList').innerHTML = data.length
+      ? `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>專案名稱</th><th>狀態</th><th>機關</th><th>契約金額</th><th>履約迄日</th><th>操作</th></tr></thead><tbody>${
+          data.map(p=>`<tr onclick="openDrawer('project',${jsonEsc(p)})">
+            <td><b>${esc(p['專案名稱']||p.name||'未命名')}</b></td>
+            <td><span class="sbadge s-${p['專案狀態']||p.status||'草稿'}">${esc(p['專案狀態']||p.status||'草稿')}</span></td>
+            <td>${esc(p['機關名稱']||p.agency||'—')}</td>
+            <td>${money(p['契約金額']||p.contract_amount)}</td>
+            <td>${esc(p['履約迄日']||p.end_date||'—')}</td>
+            <td><button class="sm secondary" onclick="event.stopPropagation();openDrawer('project',${jsonEsc(p)})">編輯</button></td>
+          </tr>`).join('')
+        }</tbody></table></div>`
+      : '<div class="empty"><div class="eicon">📁</div><div>還沒有專案，點擊「新增專案」開始</div></div>';
+  } catch(e){ document.getElementById('projectList').innerHTML = errHtml(e); }
+}
+
+async function listActivities(){
+  try {
+    const r = await callApi('查詢活動');
+    S.activities = normalize(r);
+    const pid = document.getElementById('actProjFilter').value;
+    const data = pid ? S.activities.filter(a=>(a['專案ID']||a.project_id||'')=== pid) : S.activities;
+    document.getElementById('activityList').innerHTML = data.length
+      ? data.map(a=>`<div class="item" onclick="openDrawer('activity',${jsonEsc(a)})">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="text-align:center;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.25);border-radius:12px;padding:8px 12px;min-width:52px">
+              <div style="font-size:20px;font-weight:800;color:var(--brand2)">${new Date(a['活動日期']||a.activity_date||Date.now()).getDate()}</div>
+              <div style="font-size:10px;color:var(--muted)">${fmtMonth(a['活動日期']||a.activity_date)}</div>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <b>${esc(a['活動名稱']||a.name||'未命名')}</b>
+                <span class="sbadge s-${a['活動狀態']||a.status||'草稿'}">${esc(a['活動狀態']||a.status||'草稿')}</span>
+              </div>
+              <div class="small">${esc((a['開始時間']||a.start_time||''))} - ${esc(a['結束時間']||a.end_time||'')}｜📍${esc(a['活動地點']||a.venue_address||'—')}｜👥 ${esc(a['預計人數']||a.max_participants||'—')}人</div>
+            </div>
+          </div>
+        </div>`).join('')
+      : '<div class="empty"><div class="eicon">🗓️</div><div>還沒有活動</div></div>';
+  } catch(e){ document.getElementById('activityList').innerHTML = errHtml(e); }
+}
+
+async function listTasks(){
+  try {
+    const r = await callApi('查詢任務');
+    S.tasks = normalize(r);
+    renderTasks();
+  } catch(e){ document.getElementById('taskList').innerHTML = errHtml(e); }
+}
+
+function renderTasks(){
+  const today = todayStr();
+  let data = S.tasks;
+  if(S.taskTab==='today') data = S.tasks.filter(t=>(t['預計完成日']||t.due_date||'')===today && (t['任務狀態']||t.status||'')==='未完成');
+  if(S.taskTab==='overdue') data = S.tasks.filter(t=>(t['預計完成日']||t.due_date||'')<today && (t['任務狀態']||t.status||'')!=='已完成');
+  if(S.taskTab==='pending') data = S.tasks.filter(t=>(t['任務狀態']||t.status||'')!=='已完成'&&(t['任務狀態']||t.status||'')!=='已取消');
+  document.getElementById('taskList').innerHTML = data.length
+    ? data.map(t=>{
+        const done = (t['任務狀態']||t.status||'')==='已完成';
+        const over = !done && (t['預計完成日']||t.due_date||'')<today;
+        return `<div class="item" style="${over?'border-left:3px solid var(--red)':''};display:flex;align-items:center;gap:12px">
+          <button class="sm secondary" style="flex-shrink:0;padding:6px 8px;border-radius:8px;${done?'background:rgba(16,185,129,.2);color:var(--green)':''}" onclick="toggleTask('${esc(t['任務ID']||t.task_id||'')}',${done})">
+            ${done?'✅':'○'}
+          </button>
+          <div style="flex:1;min-width:0;cursor:pointer" onclick="openDrawer('task',${jsonEsc(t)})">
+            <div style="${done?'text-decoration:line-through;opacity:.5':''}"><b>${esc(t['任務名稱']||t.name||'未命名')}</b>
+              <span class="sbadge s-${t['優先等級']||t.priority||''}" style="margin-left:6px">${esc(t['優先等級']||t.priority||'中')}</span>
+            </div>
+            <div class="small" style="${over?'color:var(--red)':''}">到期：${esc(t['預計完成日']||t.due_date||'—')}${over?' ⚠️逾期':''}</div>
+          </div>
+          <span class="sbadge s-${t['任務狀態']||t.status||'草稿'}">${esc(t['任務狀態']||t.status||'未開始')}</span>
+        </div>`;}).join('')
+    : `<div class="empty"><div class="eicon">✅</div><div>${S.taskTab==='overdue'?'沒有逾期任務！':'沒有任務資料'}</div></div>`;
+}
+
+function setTaskTab(tab, btn){
+  S.taskTab = tab;
+  document.querySelectorAll('.task-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTasks();
+}
+
+async function toggleTask(id, wasDone){
+  try {
+    await callApi('修改任務', { 任務ID:id, 任務狀態: wasDone?'未開始':'已完成' });
+    const t = S.tasks.find(t=>(t['任務ID']||t.task_id||'')=== id);
+    if(t){ t['任務狀態'] = wasDone?'未開始':'已完成'; }
+    renderTasks();
+    showToast(wasDone?'已取消完成':'任務完成 ✅', 'success');
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+async function listFinance(){
+  try {
+    const r = await callApi('查詢財務');
+    S.finances = normalize(r);
+    const pid = document.getElementById('finProjFilter').value;
+    const data = pid ? S.finances.filter(f=>(f['專案ID']||f.project_id||'')=== pid) : S.finances;
+    let income=0, expense=0, contract=0;
+    S.projects.forEach(p=>{ contract+=Number(p['契約金額']||p.contract_amount||0); });
+    data.forEach(f=>{ const amt=Number(f['金額']||f.amount||0); if(f['類型']==='收入'||f.direction==='in') income+=amt; else expense+=amt; });
+    document.getElementById('finSummary').innerHTML = [
+      ['契約總額',money(contract),'var(--brand2)'],
+      ['已支出',money(expense),'var(--red)'],
+      ['已收款',money(income),'var(--green)'],
+    ].map(x=>`<div class="kpi"><div class="klabel">${x[0]}</div><div class="knum" style="font-size:20px;background:linear-gradient(135deg,#fff,${x[2]});-webkit-background-clip:text;color:transparent">${x[1]}</div></div>`).join('');
+    document.getElementById('financeList').innerHTML = data.length
+      ? `<table class="tbl"><thead><tr><th>日期</th><th>類型</th><th>說明</th><th>金額</th></tr></thead><tbody>${
+          data.map(f=>`<tr onclick="openDrawer('finance',${jsonEsc(f)})">
+            <td>${esc(f['交易日期']||f.txn_date||'—')}</td>
+            <td><span class="sbadge" style="${f['類型']==='收入'||f.direction==='in'?'background:rgba(16,185,129,.16);color:#6EE7B7':'background:rgba(239,68,68,.16);color:#FCA5A5'}">${esc(f['類型']||f.direction||'支出')}</span></td>
+            <td>${esc(f['說明']||f.description||'—')}</td>
+            <td style="${f['類型']==='收入'||f.direction==='in'?'color:var(--green)':'color:var(--red)'}">${money(f['金額']||f.amount)}</td>
+          </tr>`).join('')
+        }</tbody></table>`
+      : '<div class="empty"><div class="eicon">💳</div><div>還沒有財務記錄</div></div>';
+  } catch(e){ document.getElementById('financeList').innerHTML = errHtml(e); }
+}
+
+async function listDocuments(){
+  try {
+    const r = await callApi('查詢文件');
+    S.documents = normalize(r);
+    document.getElementById('docList').innerHTML = S.documents.length
+      ? S.documents.map(d=>`<div class="item" onclick="openDrawer('doc',${jsonEsc(d)})">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:28px;flex-shrink:0">📄</div>
+            <div style="flex:1;min-width:0">
+              <b>${esc(d['文件名稱']||d.doc_name||'未命名')}</b>
+              <span class="sbadge s-${d['文件狀態']||d.status||'草稿'}" style="margin-left:6px">${esc(d['文件狀態']||'最新版')}</span>
+              <div class="small">${esc(d['文件類型']||d.doc_type||'—')} ｜ ${esc(d['版本']||d.version||'v1')}</div>
+            </div>
+            ${d['檔案連結']||d.file_link?`<a href="${esc(d['檔案連結']||d.file_link)}" target="_blank" onclick="event.stopPropagation()" class="tag green">開啟 ↗</a>`:''}
+          </div>
+        </div>`).join('')
+      : '<div class="empty"><div class="eicon">📄</div><div>還沒有文件記錄</div></div>';
+  } catch(e){ document.getElementById('docList').innerHTML = errHtml(e); }
+}
+
+// ── Drawer ────────────────────────────────────────────────────
+let drawerType='', drawerData=null;
+
+function openDrawer(type, data){
+  drawerType = type;
+  drawerData = typeof data === 'string' ? JSON.parse(data.replace(/&quot;/g,'"')) : (data||null);
+  document.getElementById('drawerOverlay').classList.remove('hidden');
+  document.getElementById('drawerPanel').classList.remove('hidden');
+  document.getElementById('drawerTitle').textContent = titles[type] || type;
+  renderDrawerBody(type, drawerData);
+}
+
+const titles = { project:'專案詳細資料', activity:'活動詳細資料', task:'任務詳細資料', finance:'財務記錄', doc:'文件管理' };
+
+function renderDrawerBody(type, d){
+  const body = document.getElementById('drawerBody');
+  const foot = document.getElementById('drawerFoot');
+  const isEdit = !!d;
+
+  if(type==='project'){
+    const pOpts = S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}" ${(d&&(d['專案ID']||d.project_id)===(p['專案ID']||p.project_id))?'selected':''}>${esc(p['專案名稱']||p.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="fgrid">
+        <div style="grid-column:1/-1"><label>專案名稱 *</label><input id="d_projName" value="${esc(d?.['專案名稱']||d?.name||'')}"></div>
+        <div><label>專案類型</label><select id="d_projType">
+          <option ${sel(d,'專案類型','標案')}>標案</option><option ${sel(d,'專案類型','補助案')}>補助案</option>
+          <option ${sel(d,'專案類型','課程案')}>課程案</option><option ${sel(d,'專案類型','活動案')}>活動案</option>
+          <option ${sel(d,'專案類型','職訓案')}>職訓案</option><option ${sel(d,'專案類型','公會協會案')}>公會協會案</option>
+          <option ${sel(d,'專案類型','其他')}>其他</option>
+        </select></div>
+        <div><label>機關名稱</label><input id="d_agency" value="${esc(d?.['機關名稱']||'')}"></div>
+        <div><label>契約編號</label><input id="d_contractNo" value="${esc(d?.['契約編號']||'')}"></div>
+        <div><label>契約金額（元）</label><input id="d_amount" type="number" value="${esc(d?.['契約金額']||d?.contract_amount||'')}"></div>
+        <div><label>履約起日</label><input id="d_startDate" type="date" value="${esc(d?.['履約起日']||d?.start_date||'')}"></div>
+        <div><label>履約迄日</label><input id="d_endDate" type="date" value="${esc(d?.['履約迄日']||d?.end_date||'')}"></div>
+        <div><label>請款方式</label><select id="d_payMethod">
+          <option ${sel(d,'請款方式','一次結案付款')}>一次結案付款</option>
+          <option ${sel(d,'請款方式','分期付款')}>分期付款</option>
+          <option ${sel(d,'請款方式','預付+結案')}>預付+結案</option>
+        </select></div>
+        <div><label>專案狀態</label><select id="d_projStatus">
+          <option ${sel(d,'專案狀態','履約準備中')}>履約準備中</option><option ${sel(d,'專案狀態','履約中')}>履約中</option>
+          <option ${sel(d,'專案狀態','結案中')}>結案中</option><option ${sel(d,'專案狀態','已結案')}>已結案</option>
+          <option ${sel(d,'專案狀態','已取消')}>已取消</option>
+        </select></div>
+        <div style="grid-column:1/-1"><label>備註</label><textarea id="d_notes" rows="3">${esc(d?.['備註']||d?.notes||'')}</textarea></div>
+      </div>`;
+    foot.innerHTML = `
+      <button class="secondary sm" onclick="closeDrawer()">取消</button>
+      ${isEdit?`<button class="danger sm" onclick="archiveProject('${esc(d['專案ID']||d.project_id||'')}')">封存</button>`:''}
+      <button class="green sm" onclick="saveProject()">💾 儲存專案</button>`;
+
+  } else if(type==='activity'){
+    const projOpts = `<option value="">請選擇</option>`+S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}" ${(d&&(d['專案ID']||d.project_id)===(p['專案ID']||p.project_id))?'selected':''}>${esc(p['專案名稱']||p.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="fgrid">
+        <div style="grid-column:1/-1"><label>所屬專案 *</label><select id="d_actProjId">${projOpts}</select></div>
+        <div style="grid-column:1/-1"><label>活動名稱 *</label><input id="d_actName" value="${esc(d?.['活動名稱']||d?.name||'')}"></div>
+        <div><label>活動類型</label><select id="d_actType">
+          <option ${sel(d,'活動類型','研習課程')}>研習課程</option><option ${sel(d,'活動類型','說明會')}>說明會</option>
+          <option ${sel(d,'活動類型','媒合會')}>媒合會</option><option ${sel(d,'活動類型','工作坊')}>工作坊</option>
+          <option ${sel(d,'活動類型','參訪')}>參訪</option><option ${sel(d,'活動類型','其他')}>其他</option>
+        </select></div>
+        <div><label>活動日期</label><input id="d_actDate" type="date" value="${esc(d?.['活動日期']||d?.activity_date||'')}"></div>
+        <div><label>開始時間</label><input id="d_actStart" type="time" value="${esc(d?.['開始時間']||d?.start_time||'')}"></div>
+        <div><label>結束時間</label><input id="d_actEnd" type="time" value="${esc(d?.['結束時間']||d?.end_time||'')}"></div>
+        <div style="grid-column:1/-1"><label>活動地點</label><input id="d_actPlace" value="${esc(d?.['活動地點']||d?.venue_address||'')}"></div>
+        <div><label>預計人數</label><input id="d_actPeople" type="number" value="${esc(d?.['預計人數']||d?.max_participants||30)}"></div>
+        <div><label>活動狀態</label><select id="d_actStatus">
+          <option ${sel(d,'活動狀態','籌備中')}>籌備中</option><option ${sel(d,'活動狀態','報名中')}>報名中</option>
+          <option ${sel(d,'活動狀態','已確認')}>已確認</option><option ${sel(d,'活動狀態','進行中')}>進行中</option>
+          <option ${sel(d,'活動狀態','已完成')}>已完成</option><option ${sel(d,'活動狀態','已取消')}>已取消</option>
+        </select></div>
+        <div style="grid-column:1/-1"><label>備註</label><textarea id="d_actNotes" rows="2">${esc(d?.['備註']||d?.notes||'')}</textarea></div>
+      </div>`;
+    foot.innerHTML = `
+      <button class="secondary sm" onclick="closeDrawer()">取消</button>
+      <button class="green sm" onclick="saveActivity()">💾 儲存活動</button>`;
+
+  } else if(type==='task'){
+    const projOpts = `<option value="">請選擇</option>`+S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}" ${(d&&(d['專案ID']||d.project_id)===(p['專案ID']||p.project_id))?'selected':''}>${esc(p['專案名稱']||p.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="fgrid">
+        <div style="grid-column:1/-1"><label>任務名稱 *</label><input id="d_taskName" value="${esc(d?.['任務名稱']||d?.name||'')}"></div>
+        <div style="grid-column:1/-1"><label>所屬專案</label><select id="d_taskProj">${projOpts}</select></div>
+        <div><label>任務類型</label><select id="d_taskType">
+          <option ${sel(d,'任務類型','活動任務')}>活動任務</option><option ${sel(d,'任務類型','核銷任務')}>核銷任務</option>
+          <option ${sel(d,'任務類型','文件任務')}>文件任務</option><option ${sel(d,'任務類型','財務任務')}>財務任務</option>
+          <option ${sel(d,'任務類型','結案任務')}>結案任務</option><option ${sel(d,'任務類型','專案任務')}>專案任務</option>
+        </select></div>
+        <div><label>優先等級</label><select id="d_taskPrio">
+          <option ${sel(d,'優先等級','高')}>高</option><option ${sel(d,'優先等級','中')}>中</option><option ${sel(d,'優先等級','低')}>低</option>
+        </select></div>
+        <div><label>任務狀態</label><select id="d_taskStatus">
+          <option ${sel(d,'任務狀態','未開始')}>未開始</option><option ${sel(d,'任務狀態','進行中')}>進行中</option>
+          <option ${sel(d,'任務狀態','待補件')}>待補件</option><option ${sel(d,'任務狀態','已完成')}>已完成</option>
+          <option ${sel(d,'任務狀態','已取消')}>已取消</option>
+        </select></div>
+        <div style="grid-column:1/-1"><label>預計完成日</label><input id="d_taskDue" type="date" value="${esc(d?.['預計完成日']||d?.due_date||'')}"></div>
+        <div style="grid-column:1/-1"><label>備註</label><textarea id="d_taskNotes" rows="2">${esc(d?.['備註']||d?.notes||'')}</textarea></div>
+      </div>`;
+    foot.innerHTML = `
+      <button class="secondary sm" onclick="closeDrawer()">取消</button>
+      <button class="green sm" onclick="saveTask()">💾 儲存任務</button>`;
+
+  } else if(type==='finance'){
+    const projOpts = `<option value="">請選擇</option>`+S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}" ${(d&&(d['專案ID']||d.project_id)===(p['專案ID']||p.project_id))?'selected':''}>${esc(p['專案名稱']||p.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="fgrid">
+        <div style="grid-column:1/-1"><label>所屬專案</label><select id="d_finProj">${projOpts}</select></div>
+        <div><label>類型</label><select id="d_finType">
+          <option ${sel(d,'類型','支出')}>支出</option><option ${sel(d,'類型','收入')}>收入</option>
+        </select></div>
+        <div><label>會計科目</label><select id="d_finDesc">
+          <option>講師費</option><option>工作人員費</option><option>場地費</option><option>餐費</option>
+          <option>印刷費</option><option>物資設備費</option><option>交通費</option><option>設計製作費</option>
+          <option>核銷已收</option><option>其他</option>
+        </select></div>
+        <div><label>金額（元）*</label><input id="d_finAmount" type="number" value="${esc(d?.['金額']||d?.amount||'')}"></div>
+        <div style="grid-column:1/-1"><label>交易日期</label><input id="d_finDate" type="date" value="${esc(d?.['交易日期']||d?.txn_date||todayStr())}"></div>
+        <div style="grid-column:1/-1"><label>備註</label><textarea id="d_finNotes" rows="2">${esc(d?.['備註']||d?.notes||'')}</textarea></div>
+      </div>`;
+    foot.innerHTML = `
+      <button class="secondary sm" onclick="closeDrawer()">取消</button>
+      <button class="green sm" onclick="saveFinance()">💾 儲存</button>`;
+
+  } else if(type==='doc'){
+    const projOpts = `<option value="">請選擇</option>`+S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}" ${(d&&(d['專案ID']||d.project_id)===(p['專案ID']||p.project_id))?'selected':''}>${esc(p['專案名稱']||p.name)}</option>`).join('');
+    body.innerHTML = `
+      <div class="fgrid">
+        <div style="grid-column:1/-1"><label>所屬專案</label><select id="d_docProj">${projOpts}</select></div>
+        <div style="grid-column:1/-1"><label>文件名稱 *</label><input id="d_docName" value="${esc(d?.['文件名稱']||d?.doc_name||'')}"></div>
+        <div><label>文件類型</label><select id="d_docType">
+          <option>簽到表</option><option>滿意度問卷</option><option>成果照片</option><option>結案報告</option>
+          <option>講師領據</option><option>場地費發票</option><option>餐費發票</option><option>印刷費發票</option>
+          <option>契約書</option><option>計畫書</option><option>驗收資料</option><option>公文</option><option>其他</option>
+        </select></div>
+        <div><label>版本</label><input id="d_docVer" value="${esc(d?.['版本']||d?.version||'v1')}"></div>
+        <div style="grid-column:1/-1"><label>Google Drive 連結</label><input id="d_docLink" value="${esc(d?.['檔案連結']||d?.file_link||'')}" placeholder="https://drive.google.com/..."></div>
+        <div style="grid-column:1/-1"><label>文件狀態</label><select id="d_docStatus">
+          <option ${sel(d,'文件狀態','草稿版')}>草稿版</option><option ${sel(d,'文件狀態','正式版')}>正式版</option>
+          <option ${sel(d,'文件狀態','最新版')}>最新版</option><option ${sel(d,'文件狀態','已作廢')}>已作廢</option>
+        </select></div>
+        <div style="grid-column:1/-1"><label>備註</label><textarea id="d_docNotes" rows="2">${esc(d?.['備註']||d?.notes||'')}</textarea></div>
+      </div>`;
+    foot.innerHTML = `
+      <button class="secondary sm" onclick="closeDrawer()">取消</button>
+      <button class="green sm" onclick="saveDoc()">💾 儲存文件</button>`;
+  }
+}
+
+function closeDrawer(){
+  document.getElementById('drawerOverlay').classList.add('hidden');
+  document.getElementById('drawerPanel').classList.add('hidden');
+  drawerType=''; drawerData=null;
+}
+
+// ── Saves ─────────────────────────────────────────────────────
+async function saveProject(){
+  const name = v('d_projName');
+  if(!name){ showToast('請輸入專案名稱','error'); return; }
+  try {
+    const data = { 專案名稱:name, 專案類型:v('d_projType'), 機關名稱:v('d_agency'), 契約編號:v('d_contractNo'), 契約金額:v('d_amount'), 履約起日:v('d_startDate'), 履約迄日:v('d_endDate'), 請款方式:v('d_payMethod'), 專案狀態:v('d_projStatus'), 備註:v('d_notes') };
+    if(drawerData?.['專案ID']){ data['專案ID']=drawerData['專案ID']; await callApi('修改專案',data); }
+    else { await callApi('新增專案',data); }
+    closeDrawer(); showToast('專案已儲存 ✅'); await listProjects(); await loadDashboard();
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+async function archiveProject(id){
+  if(!confirm('確定要封存此專案？')) return;
+  try { await callApi('封存專案',{專案ID:id}); closeDrawer(); showToast('專案已封存'); await listProjects(); } catch(e){ showToast(e.message,'error'); }
+}
+
+async function saveActivity(){
+  const name=v('d_actName'), pid=v('d_actProjId');
+  if(!name||!pid){ showToast('請填寫活動名稱與所屬專案','error'); return; }
+  try {
+    const data={專案ID:pid,活動名稱:name,活動類型:v('d_actType'),活動日期:v('d_actDate'),開始時間:v('d_actStart'),結束時間:v('d_actEnd'),活動地點:v('d_actPlace'),預計人數:v('d_actPeople'),活動狀態:v('d_actStatus'),備註:v('d_actNotes')};
+    if(drawerData?.['活動ID']){data['活動ID']=drawerData['活動ID'];await callApi('修改活動',data);}
+    else{await callApi('新增活動',data);}
+    closeDrawer(); showToast('活動已儲存 ✅'); await listActivities();
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+async function saveTask(){
+  const name=v('d_taskName');
+  if(!name){ showToast('請輸入任務名稱','error'); return; }
+  try {
+    const data={任務名稱:name,專案ID:v('d_taskProj'),任務類型:v('d_taskType'),優先等級:v('d_taskPrio'),任務狀態:v('d_taskStatus'),預計完成日:v('d_taskDue'),備註:v('d_taskNotes')};
+    if(drawerData?.['任務ID']){data['任務ID']=drawerData['任務ID'];await callApi('修改任務',data);}
+    else{await callApi('新增任務',data);}
+    closeDrawer(); showToast('任務已儲存 ✅'); await listTasks();
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+async function saveFinance(){
+  if(!v('d_finAmount')){ showToast('請輸入金額','error'); return; }
+  try {
+    await callApi('新增財務',{專案ID:v('d_finProj'),類型:v('d_finType'),說明:v('d_finDesc'),金額:v('d_finAmount'),交易日期:v('d_finDate'),備註:v('d_finNotes')});
+    closeDrawer(); showToast('財務記錄已儲存 ✅'); await listFinance();
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+async function saveDoc(){
+  if(!v('d_docName')){ showToast('請輸入文件名稱','error'); return; }
+  try {
+    const data={專案ID:v('d_docProj'),文件名稱:v('d_docName'),文件類型:v('d_docType'),版本:v('d_docVer'),檔案連結:v('d_docLink'),文件狀態:v('d_docStatus'),備註:v('d_docNotes')};
+    if(drawerData?.['文件ID']){data['文件ID']=drawerData['文件ID'];await callApi('修改文件',data);}
+    else{await callApi('新增文件',data);}
+    closeDrawer(); showToast('文件已儲存 ✅'); await listDocuments();
+  } catch(e){ showToast(e.message,'error'); }
+}
+
+// ── Navigation ────────────────────────────────────────────────
+function showPage(id, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('show'));
+  const sec = document.getElementById('s-'+id);
+  if(sec){ sec.classList.add('show'); sec.classList.add('fadeIn'); }
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const mod = MODULES.find(m=>m[0]===id);
+  if(mod) document.getElementById('pageTitle').textContent = mod[2];
+  S.currentPage = id;
+  // Update project selects
+  if(['activities','tasks','finance','documents'].includes(id)) updateProjectFilter();
+}
+
+function updateProjectFilter(){
+  const opts = `<option value="">所有專案</option>` + S.projects.map(p=>`<option value="${esc(p['專案ID']||p.project_id)}">${esc(p['專案名稱']||p.name)}</option>`).join('');
+  ['actProjFilter','finProjFilter'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=opts; });
+}
+
+function showMobileMore(){ document.getElementById('moreMenu').classList.remove('hidden'); }
+function closeMobileMore(){ document.getElementById('moreMenu').classList.add('hidden'); }
+
+// ── Toast ─────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.textContent = (type==='success'?'✅ ':type==='error'?'❌ ':'⚠️ ') + msg;
+  t.className = `toast ${type} fadeIn`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className='toast hidden'; }, 3500);
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+function showLogin(){ document.getElementById('loginView').classList.remove('hidden'); document.getElementById('appView').classList.add('hidden'); }
+function showApp(){ document.getElementById('loginView').classList.add('hidden'); document.getElementById('appView').classList.remove('hidden'); }
+function v(id){ const el=document.getElementById(id); return el ? el.value.trim() : ''; }
+function setInputVal(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
+function setMsg(msg,isErr){ const el=document.getElementById('loginMsg'); if(el){el.textContent=msg;el.className='msg'+(isErr?' err':'');} }
+function esc(x){ return String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function jsonEsc(obj){ return JSON.stringify(obj).replace(/"/g,'&quot;'); }
+function normalize(r){ return Array.isArray(r)?r:(r?.資料||r?.rows||r?.data||r?.result||r?.結果||[]); }
+function money(v){ if(!v&&v!==0)return'—'; return 'NT$'+Number(v).toLocaleString('zh-TW'); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtMonth(d){ if(!d)return''; return new Date(d).toLocaleDateString('zh-TW',{month:'short'}); }
+function sel(d,key,val){ return (d&&(d[key]||'')=== val)?'selected':''; }
+function makeCode(email){ return (email||'company').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,10)||('co'+Date.now().toString().slice(-6)); }
+function errHtml(e){ return `<div class="item"><b>⚠️ 載入失敗</b><div class="small">${esc(e.message)}</div></div>`; }
+function friendly(m){
+  if(m==='REGISTER_NO_TOKEN') return '後端已建立帳號但未回傳登入憑證，請重新部署最新版 GAS。';
+  if(m==='LOGIN_NO_TOKEN') return '登入成功但後端未回傳 token，請重新部署最新版 GAS。';
+  if(m.includes('Failed to fetch')) return '目前無法連線到系統後端，請確認 Apps Script 已部署為任何人可存取。';
+  if(m.includes('找不到指定的動作')||m.includes('registerTenant')) return '後端功能尚未部署，請更新 Apps Script 程式碼並重新部署。';
+  return m;
+}
+</script>
+</body></html>
