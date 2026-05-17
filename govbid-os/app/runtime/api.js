@@ -6,7 +6,16 @@
     finance: '財務ID',
     documents: '文件ID',
     tasks: '任務ID',
-    contacts: 'id'
+    contacts: 'id',
+    instructors: '講師ID',
+    vendors: '廠商ID',
+    venues: '場地ID',
+    staff: '人員ID',
+    agencies: '機關ID',
+    students: '學員ID',
+    resources: '物資ID',
+    accounts: '科目ID',
+    templates: '模板ID'
   };
 
   const entityToCollection = {
@@ -51,6 +60,9 @@
       if (!window.AppState.documents.length) window.AppStateStore.replaceCollection('documents', getMock('documents'));
       window.AppStateStore.replaceCollection('tasks', getMock('tasks'));
       window.AppStateStore.replaceCollection('contacts', getMock('contacts'));
+      ['instructors', 'vendors', 'venues', 'staff', 'agencies', 'students', 'resources', 'accounts', 'templates'].forEach((collection) => {
+        if (!window.AppState[collection] || !window.AppState[collection].length) window.AppStateStore.replaceCollection(collection, getMock(collection));
+      });
       window.AppStateStore.replaceCollection('notifications', getMock('notifications'));
     },
     async query(collection, filters) {

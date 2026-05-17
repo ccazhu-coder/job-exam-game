@@ -20,6 +20,10 @@
       window.UI.page = async function (id) {
         await original(id);
         window.AppStateStore.update('currentPage', id);
+        if (id === 'master') {
+          const section = document.getElementById('s-master');
+          if (section && window.RuntimeUI) window.RuntimeUI.renderMasterDataCenter(section);
+        }
       };
       window.UI.__runtimePatched = true;
       document.addEventListener('click', (event) => {

@@ -6,6 +6,7 @@
     command: 'command',
     projects: 'projects',
     crm: 'master',
+    master: 'master',
     finance: 'finance',
     documents: 'documents',
     settings: 'settings',
@@ -28,7 +29,10 @@
     const page = routes[route] || route || 'command';
     window.AppStateStore.update('currentPage', page);
     if (window.UI && window.UI.page) await window.UI.page(page);
-    if (runtimeTables[route]) {
+    if (route === 'master' || route === 'crm') {
+      const section = document.getElementById('s-master');
+      if (section) window.RuntimeUI.renderMasterDataCenter(section);
+    } else if (runtimeTables[route]) {
       const section = document.getElementById('s-' + page);
       if (section) window.RuntimeUI.renderTable(section, runtimeTables[route].collection, runtimeTables[route].columns);
     }
