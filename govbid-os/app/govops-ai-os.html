@@ -139,6 +139,11 @@ const ENTITY_LABEL={project:'專案',activity:'活動',task:'任務',finance:'�
 
 const GovOpsAPI={
  async call(action,data={},opt={}){
+   if(window.callApi){
+     const result=await window.callApi(action,data);
+     if(opt.toast) UI.toast(opt.toast,'success');
+     return result;
+   }
    const payload=Object.assign({action,動作:action,data,資料:data,token:S.token,authToken:S.token,companyCode:localStorage.getItem(SK.CODE)||'',tenantId:localStorage.getItem(SK.TID)||'',userId:S.user&&S.user.userId||''},opt.extra||{});
    let res,json;
    UI.setBusy(true, opt.label||action);
@@ -369,6 +374,7 @@ App.boot();
 <script src="./runtime/eventBus.js"></script>
 <script src="./runtime/mockData.js"></script>
 <script src="./runtime/state.js"></script>
+<script src="./runtime/moduleConfig.js"></script>
 <script src="./runtime/api.js"></script>
 <script src="./runtime/ui.js"></script>
 <script src="./runtime/router.js"></script>

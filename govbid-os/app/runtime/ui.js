@@ -38,6 +38,9 @@
     if (!document.getElementById('assistantPanel')) {
       document.body.insertAdjacentHTML('beforeend', '<div id="assistantPanel" class="assistant-panel hidden"></div>');
     }
+    if (!document.getElementById('debugPanel')) {
+      document.body.insertAdjacentHTML('beforeend', '<div id="debugPanel" class="debug-panel hidden"><div class="debug-head"><b>Debug Panel</b><button class="secondary sm" data-action="toggleDebug" data-module="debug">收合</button></div><div id="debugLog"></div></div>');
+    }
   }
 
   function escapeHtml(value) {
@@ -55,6 +58,16 @@
     return '<span class="tag ' + cls + '">' + escapeHtml(text) + '</span>';
   }
 
+  function masterConfigForCollection(collection) {
+    return masterTabs.find((tab) => tab.key === collection) ||
+      masterTabs.flatMap((tab) => tab.subTabs || []).find((tab) => tab.key === collection) ||
+      masterTabs[0];
+  }
+
+  function moduleForCollection(collection) {
+    return window.collectionToModule ? window.collectionToModule(collection) : collection;
+  }
+
   window.RuntimeUI = {
     init() {
       ensureChrome();
@@ -64,7 +77,7 @@
     injectStyles() {
       if (document.getElementById('runtimeStyles')) return;
       document.head.insertAdjacentHTML('beforeend', `<style id="runtimeStyles">
-        .runtime-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.runtime-toolbar input,.runtime-toolbar select{max-width:320px}.runtime-table-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.runtime-pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:10px}.runtime-modal{position:fixed;inset:0;z-index:80;background:rgba(2,6,23,.62);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}.runtime-dialog{width:min(820px,100%);background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(8,13,24,.94));border:1px solid rgba(148,163,184,.16);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.42);overflow:hidden;color:#eaf2ff}.runtime-dialog header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid rgba(148,163,184,.13);background:transparent;color:#eaf2ff;position:static;box-shadow:none}.runtime-dialog main{padding:18px 20px}.runtime-dialog footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid rgba(148,163,184,.13)}.runtime-loading{position:fixed;right:20px;top:20px;z-index:90;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:999px;background:rgba(15,23,42,.92);border:1px solid rgba(212,175,106,.28);box-shadow:0 16px 40px rgba(0,0,0,.28);color:#eaf2ff;font-size:13px}.runtime-loader{width:16px;height:16px;border-radius:50%;border:2px solid rgba(212,175,106,.25);border-top-color:#d4af6a;animation:runtimeSpin .8s linear infinite}@keyframes runtimeSpin{to{transform:rotate(360deg)}}.assistant-panel{position:fixed;right:18px;bottom:86px;width:min(360px,calc(100vw - 36px));z-index:75;background:rgba(15,23,42,.96);border:1px solid rgba(148,163,184,.16);box-shadow:0 22px 70px rgba(0,0,0,.32);border-radius:24px;padding:16px;color:#eaf2ff}.assistant-panel h3{margin:0 0 10px;color:#fff}.assistant-message{padding:10px 12px;border-radius:16px;background:rgba(124,58,237,.12);margin:8px 0;color:#dbeafe;font-size:13px}.master-tabs,.master-subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.master-tabs button,.master-subtabs button{background:rgba(15,23,42,.58);border-color:rgba(148,163,184,.14)}.master-tabs button.active,.master-subtabs button.active{background:linear-gradient(135deg,rgba(124,58,237,.26),rgba(56,189,248,.12));border-color:rgba(124,58,237,.34);color:#fff}.master-actions{display:flex;gap:6px;flex-wrap:wrap}.master-actions button{padding:6px 9px;font-size:12px}.runtime-view-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.runtime-view-item{border:1px solid rgba(148,163,184,.12);background:rgba(15,23,42,.52);border-radius:14px;padding:10px}.runtime-view-item b{display:block;color:#94a3b8;font-size:12px;margin-bottom:5px}.hidden{display:none!important}
+        .runtime-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.runtime-toolbar input,.runtime-toolbar select{max-width:320px}.runtime-table-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.runtime-pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:10px}.runtime-modal{position:fixed;inset:0;z-index:80;background:rgba(2,6,23,.62);backdrop-filter:blur(10px);display:grid;place-items:center;padding:18px}.runtime-dialog{width:min(820px,100%);background:linear-gradient(180deg,rgba(15,23,42,.96),rgba(8,13,24,.94));border:1px solid rgba(148,163,184,.16);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.42);overflow:hidden;color:#eaf2ff}.runtime-dialog header{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid rgba(148,163,184,.13);background:transparent;color:#eaf2ff;position:static;box-shadow:none}.runtime-dialog main{padding:18px 20px}.runtime-dialog footer{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid rgba(148,163,184,.13)}.runtime-loading{position:fixed;right:20px;top:20px;z-index:90;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:999px;background:rgba(15,23,42,.92);border:1px solid rgba(212,175,106,.28);box-shadow:0 16px 40px rgba(0,0,0,.28);color:#eaf2ff;font-size:13px}.runtime-loader{width:16px;height:16px;border-radius:50%;border:2px solid rgba(212,175,106,.25);border-top-color:#d4af6a;animation:runtimeSpin .8s linear infinite}@keyframes runtimeSpin{to{transform:rotate(360deg)}}.assistant-panel{position:fixed;right:18px;bottom:86px;width:min(360px,calc(100vw - 36px));z-index:75;background:rgba(15,23,42,.96);border:1px solid rgba(148,163,184,.16);box-shadow:0 22px 70px rgba(0,0,0,.32);border-radius:24px;padding:16px;color:#eaf2ff}.assistant-panel h3{margin:0 0 10px;color:#fff}.assistant-message{padding:10px 12px;border-radius:16px;background:rgba(124,58,237,.12);margin:8px 0;color:#dbeafe;font-size:13px}.master-tabs,.master-subtabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.master-tabs button,.master-subtabs button{background:rgba(15,23,42,.58);border-color:rgba(148,163,184,.14)}.master-tabs button.active,.master-subtabs button.active{background:linear-gradient(135deg,rgba(124,58,237,.26),rgba(56,189,248,.12));border-color:rgba(124,58,237,.34);color:#fff}.master-actions{display:flex;gap:6px;flex-wrap:wrap}.master-actions button{padding:6px 9px;font-size:12px}.runtime-view-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.runtime-view-item{border:1px solid rgba(148,163,184,.12);background:rgba(15,23,42,.52);border-radius:14px;padding:10px}.runtime-view-item b{display:block;color:#94a3b8;font-size:12px;margin-bottom:5px}.debug-panel{position:fixed;left:18px;bottom:18px;width:min(520px,calc(100vw - 36px));max-height:42vh;z-index:95;background:rgba(3,7,18,.96);border:1px solid rgba(56,189,248,.22);box-shadow:0 22px 70px rgba(0,0,0,.35);border-radius:18px;color:#dbeafe;overflow:hidden}.debug-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid rgba(148,163,184,.14)}#debugLog{padding:10px 12px;overflow:auto;max-height:34vh;font-size:12px}.debug-entry{border-bottom:1px solid rgba(148,163,184,.12);padding:7px 0}.debug-entry code{white-space:pre-wrap;color:#bae6fd}.hidden{display:none!important}
       </style>`);
     },
     loading(on) {
@@ -166,31 +179,19 @@
       target.innerHTML = `<div class="panel">
         <div class="runtime-table-head">
           <div><h1 class="gradient" style="margin:0 0 8px">基本資料中心</h1><div class="sub">管理講師、廠商、場地、工作人員、機關窗口、學員、物資設備、財務科目、文件模板等基礎資料。</div></div>
-          <button class="green" data-master-create>＋ ${escapeHtml(config.add)}</button>
+          <button class="green" data-action="create" data-module="${moduleForCollection(config.key)}">＋ ${escapeHtml(config.add)}</button>
         </div>
-        <div class="master-tabs">${masterTabs.map((tab) => `<button data-master-tab="${tab.key}" class="${tab.key === baseKey ? 'active' : ''}">${escapeHtml(tab.label)}</button>`).join('')}</div>
-        ${masterTabs.find((tab) => tab.key === baseKey)?.subTabs ? `<div class="master-subtabs">${masterTabs.find((tab) => tab.key === baseKey).subTabs.map((tab) => `<button data-master-subtab="${tab.key}" class="${tab.key === config.key ? 'active' : ''}">${escapeHtml(tab.label)}</button>`).join('')}</div>` : ''}
+        <div class="master-tabs">${masterTabs.map((tab) => `<button data-action="switchMasterTab" data-module="${moduleForCollection(tab.key)}" data-id="${tab.key}" class="${tab.key === baseKey ? 'active' : ''}">${escapeHtml(tab.label)}</button>`).join('')}</div>
+        ${masterTabs.find((tab) => tab.key === baseKey)?.subTabs ? `<div class="master-subtabs">${masterTabs.find((tab) => tab.key === baseKey).subTabs.map((tab) => `<button data-action="switchMasterSubTab" data-module="${moduleForCollection(tab.key)}" data-id="${tab.key}" class="${tab.key === config.key ? 'active' : ''}">${escapeHtml(tab.label)}</button>`).join('')}</div>` : ''}
         <div class="runtime-toolbar">
           <input data-master-search placeholder="${escapeHtml(config.search)}" value="${escapeHtml(query)}">
           <select data-master-archive-filter><option value="">預設清單</option><option value="archived" ${showArchived ? 'selected' : ''}>包含封存</option></select>
-          <button class="secondary" data-master-refresh>重新整理</button>
+          <button class="secondary" data-action="refresh" data-module="${moduleForCollection(config.key)}">重新整理</button>
         </div>
         <div class="tbl-wrap"><table class="tbl"><thead><tr>${config.columns.map((col) => `<th>${escapeHtml(col[0])}</th>`).join('')}<th>操作</th></tr></thead><tbody>
           ${rows.length ? rows.map((row) => this.masterRow(config, row)).join('') : `<tr><td colspan="${config.columns.length + 1}"><div class="empty"><div class="e"></div><div>目前沒有資料，請先新增或調整搜尋條件。</div></div></td></tr>`}
         </tbody></table></div>
       </div>`;
-      target.querySelectorAll('[data-master-tab]').forEach((button) => button.addEventListener('click', () => {
-        window.AppStateStore.update('ui.masterTab', button.dataset.masterTab);
-        window.AppStateStore.update('ui.masterSubTab', '');
-        window.AppStateStore.update('ui.masterQuery', '');
-        window.Router.refresh();
-      }));
-      target.querySelectorAll('[data-master-subtab]').forEach((button) => button.addEventListener('click', () => {
-        window.AppStateStore.update('ui.masterSubTab', button.dataset.masterSubtab);
-        window.AppStateStore.update('ui.masterQuery', '');
-        window.Router.refresh();
-      }));
-      target.querySelector('[data-master-create]').addEventListener('click', () => this.openMasterCreate());
       target.querySelector('[data-master-search]').addEventListener('input', (event) => {
         window.AppStateStore.update('ui.masterQuery', event.target.value);
         window.Router.refresh();
@@ -199,27 +200,19 @@
         window.AppStateStore.update('ui.masterShowArchived', event.target.value === 'archived');
         window.Router.refresh();
       });
-      target.querySelector('[data-master-refresh]').addEventListener('click', () => {
-        this.toast('已重新整理', 'success');
-        window.Router.refresh();
-      });
-      target.querySelectorAll('[data-master-view]').forEach((button) => button.addEventListener('click', () => this.openMasterView(button.dataset.collection, button.dataset.id)));
-      target.querySelectorAll('[data-master-edit]').forEach((button) => button.addEventListener('click', () => this.openMasterEdit(button.dataset.collection, button.dataset.id)));
-      target.querySelectorAll('[data-master-toggle]').forEach((button) => button.addEventListener('click', () => this.toggleMasterStatus(button.dataset.collection, button.dataset.id)));
-      target.querySelectorAll('[data-master-archive]').forEach((button) => button.addEventListener('click', () => this.archiveMaster(button.dataset.collection, button.dataset.id)));
     },
     masterRow(config, row) {
       const id = row[config.id];
       const status = String(row['狀態'] || row.status || '啟用');
       return `<tr>${config.columns.map((col) => `<td>${col[2] === 'badge' ? statusBadge(row[col[1]]) : escapeHtml(row[col[1]] || '')}</td>`).join('')}<td><div class="master-actions">
-        <button class="secondary" data-master-view data-collection="${config.key}" data-id="${escapeHtml(id)}">查看</button>
-        <button class="secondary" data-master-edit data-collection="${config.key}" data-id="${escapeHtml(id)}">修改</button>
-        <button class="secondary" data-master-toggle data-collection="${config.key}" data-id="${escapeHtml(id)}">${status === '停用' ? '啟用' : '停用'}</button>
-        <button class="danger" data-master-archive data-collection="${config.key}" data-id="${escapeHtml(id)}">封存</button>
+        <button class="secondary" data-action="view" data-module="${moduleForCollection(config.key)}" data-id="${escapeHtml(id)}">查看</button>
+        <button class="secondary" data-action="edit" data-module="${moduleForCollection(config.key)}" data-id="${escapeHtml(id)}">修改</button>
+        <button class="secondary" data-action="${status === '停用' ? 'enable' : 'disable'}" data-module="${moduleForCollection(config.key)}" data-id="${escapeHtml(id)}">${status === '停用' ? '啟用' : '停用'}</button>
+        <button class="danger" data-action="archive" data-module="${moduleForCollection(config.key)}" data-id="${escapeHtml(id)}">封存</button>
       </div></td></tr>`;
     },
-    openMasterCreate() {
-      const config = this.getMasterConfig();
+    openMasterCreate(collection) {
+      const config = collection ? masterConfigForCollection(collection) : this.getMasterConfig();
       this.openModal({
         title: '＋ ' + config.add,
         body: this.masterForm(config, { '狀態': '啟用' }),
@@ -257,10 +250,10 @@
       });
     },
     async toggleMasterStatus(collection, id) {
-      const config = (masterTabs.find((tab) => tab.key === collection) || masterTabs.flatMap((tab) => tab.subTabs || []).find((tab) => tab.key === collection) || this.getMasterConfig());
+      const config = masterConfigForCollection(collection);
       const row = (window.AppState[collection] || []).find((item) => String(item[config.id]) === String(id));
       const next = String(row && row['狀態']) === '停用' ? '啟用' : '停用';
-      await window.RuntimeAPI.update(collection, id, { '狀態': next });
+      await window.RuntimeAPI.setStatus(collection, id, next);
       this.toast('狀態已更新', 'success');
       window.Router.refresh();
     },
