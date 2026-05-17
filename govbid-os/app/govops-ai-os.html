@@ -132,7 +132,11 @@ const DEFAULT_API='https://script.google.com/macros/s/AKfycbwlM1WGOZZSzL24CEFC8X
 const SK={TOKEN:'GovOps_token',CODE:'GovOps_code',TID:'GovOps_tid',API:'GovOps_api',USER:'GovOps_user'};
 const S={apiUrl:localStorage.getItem(SK.API)||DEFAULT_API,token:localStorage.getItem(SK.TOKEN)||'',user:safeJson(localStorage.getItem(SK.USER),null),current:'command',cache:{projects:[],activities:[],tasks:[],finance:[],documents:[],registrations:[],surveys:[],claims:[]},loading:{}};
 const MENUS=[
- ['command','AI 指揮中心','runAIOSRiskScan'],['osMap','系統架構圖','generateAIOSCommandCenterSnapshot'],['warroom','一鍵戰情','generateWarRoomMode'],['priorities','今日優先','generateOperationPriorities'],['health','健康度','calculateProjectHealthScores'],['hotspots','熱區圖','generateOperationHotspots'],['projects','專案中心','queryRecords'],['wizard','開案精靈','createProjectWithSpecWizard'],['projectDetail','專案詳情','getRelationQuery'],['activities','活動履約','queryRecords'],['activityDetail','活動詳情','getRelationQuery'],['registrations','招生報名','detectRegistrationSource'],['documents','文件中心','queryRecords'],['finance','財務核銷','getClaimDashboardStatus'],['payments','請款撥款','checkProjectClaimEligibility'],['surveys','成果滿意度','generateSurveyReport'],['closeout','結案報告','getCloseoutDashboardStatus'],['line','LINE 提醒','getLinePushLogs'],['batch','批次操作','runBatchOperation'],['master','基礎資料','queryRecords'],['settings','系統設定','health']
+ ['command','AI 指揮中心','runAIOSRiskScan'],['osMap','系統架構圖','generateAIOSCommandCenterSnapshot'],['warroom','一鍵戰情','generateWarRoomMode'],['priorities','今日優先','generateOperationPriorities'],['health','健康度','calculateProjectHealthScores'],['hotspots','熱區圖','generateOperationHotspots'],
+ ['projects','業務案件','getCases'],['caseRequirements','需求摘要','getCaseRequirements'],['sessions','場次管理','getSessions'],['registrations','報名管理','getRegistrations'],['review','資格審查','getRegistrations'],['admission','錄取名單','getAdmissions'],['manpower','人力招募','getManpower'],['manpowerSchedule','人力排班','getManpowerSchedules'],['import','資料匯入','getImportJobs'],
+ ['tasks','任務','getTasks'],['calendar','日曆','getCalendarItems'],['documents','行政文件','getDocumentableStatus'],['officialDocs','公文','getOfficialDocs'],['fileManager','檔案管理','getFiles'],['changeLogs','變更紀錄','getChangeLogs'],
+ ['finance','財務核銷','getFinanceRecords'],['closing','結案','getClosingChecklist'],['reportGenerator','結案報告產生器','getReportData'],
+ ['wizard','開案精靈','createProjectWithSpecWizard'],['tenderPool','標案池','查詢標案池'],['master','基礎資料','queryRecords'],['users','使用者權限','getTenantUsers'],['line','LINE 提醒','getLinePushLogs'],['batch','批次操作','runBatchOperation'],['settings','系統設定','health']
 ];
 const PAGE_TITLES=Object.fromEntries(MENUS.map(x=>[x[0],x[1]]));
 const ENTITY_LABEL={project:'專案',activity:'活動',task:'任務',finance:'財務',document:'文件',registration:'報名',survey:'滿意度',claim:'請款',contact:'基礎資料'};
@@ -377,6 +381,30 @@ App.boot();
 <script src="./runtime/moduleConfig.js"></script>
 <script src="./runtime/api.js"></script>
 <script src="./runtime/ui.js"></script>
+<script src="./pages/_shared.js"></script>
+<script src="./pages/dashboard.js"></script>
+<script src="./pages/cases.js"></script>
+<script src="./pages/caseRequirements.js"></script>
+<script src="./pages/sessions.js"></script>
+<script src="./pages/registrations.js"></script>
+<script src="./pages/review.js"></script>
+<script src="./pages/admission.js"></script>
+<script src="./pages/manpower.js"></script>
+<script src="./pages/manpowerSchedule.js"></script>
+<script src="./pages/import.js"></script>
+<script src="./pages/documents.js"></script>
+<script src="./pages/calendar.js"></script>
+<script src="./pages/tasks.js"></script>
+<script src="./pages/changeLogs.js"></script>
+<script src="./pages/finance.js"></script>
+<script src="./pages/officialDocs.js"></script>
+<script src="./pages/fileManager.js"></script>
+<script src="./pages/closing.js"></script>
+<script src="./pages/reportGenerator.js"></script>
+<script src="./pages/masterData.js"></script>
+<script src="./pages/settings.js"></script>
+<script src="./pages/tenderPool.js"></script>
+<script src="./pages/users.js"></script>
 <script src="./runtime/router.js"></script>
 <script src="./runtime/app.js"></script>
 </body>

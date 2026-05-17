@@ -78,7 +78,19 @@
       window.UI.page = async function (id) {
         await original(id);
         window.AppStateStore.update('currentPage', id);
-        if (id === 'master') {
+        const pageModule = window.GovOpsPages && window.GovOpsPages[id];
+        if (pageModule) {
+          let section = document.getElementById('s-' + id);
+          if (!section) {
+            section = document.createElement('section');
+            section.id = 's-' + id;
+            section.className = 'section';
+            (document.getElementById('sections') || document.body).appendChild(section);
+          }
+          document.querySelectorAll('.section').forEach((node) => node.classList.remove('show'));
+          section.classList.add('show');
+          await pageModule.render(section);
+        } else if (id === 'master') {
           const section = document.getElementById('s-master');
           if (section && window.RuntimeUI) window.RuntimeUI.renderMasterDataCenter(section);
         }

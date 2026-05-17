@@ -5,6 +5,24 @@
     dashboard: 'command',
     command: 'command',
     projects: 'projects',
+    cases: 'projects',
+    caseRequirements: 'caseRequirements',
+    sessions: 'sessions',
+    registrations: 'registrations',
+    review: 'review',
+    admission: 'admission',
+    manpower: 'manpower',
+    manpowerSchedule: 'manpowerSchedule',
+    import: 'import',
+    changeLogs: 'changeLogs',
+    tasks: 'tasks',
+    calendar: 'calendar',
+    officialDocs: 'officialDocs',
+    fileManager: 'fileManager',
+    closing: 'closing',
+    reportGenerator: 'reportGenerator',
+    tenderPool: 'tenderPool',
+    users: 'users',
     crm: 'master',
     master: 'master',
     finance: 'finance',
@@ -29,7 +47,12 @@
     const page = routes[route] || route || 'command';
     window.AppStateStore.update('currentPage', page);
     if (window.UI && window.UI.page) await window.UI.page(page);
-    if (route === 'master' || route === 'crm') {
+    const modulePage = window.GovOpsPages && (window.GovOpsPages[page] || window.GovOpsPages[route]);
+    if (modulePage) {
+      const section = ensureSection(page);
+      section.classList.add('show');
+      await modulePage.render(section);
+    } else if (route === 'master' || route === 'crm') {
       const section = document.getElementById('s-master');
       if (section) window.RuntimeUI.renderMasterDataCenter(section);
     } else if (runtimeTables[route]) {
@@ -37,6 +60,19 @@
       if (section) window.RuntimeUI.renderTable(section, runtimeTables[route].collection, runtimeTables[route].columns);
     }
     window.EventBus.emit('router:navigated', { route, page });
+  }
+
+  function ensureSection(page) {
+    let section = document.getElementById('s-' + page);
+    if (!section) {
+      const host = document.getElementById('sections') || document.body;
+      section = document.createElement('section');
+      section.id = 's-' + page;
+      section.className = 'section';
+      host.appendChild(section);
+    }
+    document.querySelectorAll('.section').forEach((node) => node.classList.remove('show'));
+    return section;
   }
 
   window.Router = {
