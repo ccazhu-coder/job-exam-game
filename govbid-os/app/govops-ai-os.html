@@ -135,8 +135,8 @@ const MENUS=[
  ['command','AI 指揮中心','runAIOSRiskScan'],['osMap','系統架構圖','generateAIOSCommandCenterSnapshot'],['warroom','一鍵戰情','generateWarRoomMode'],['priorities','今日優先','generateOperationPriorities'],['health','健康度','calculateProjectHealthScores'],['hotspots','熱區圖','generateOperationHotspots'],
  ['projects','業務案件','getCases'],['caseRequirements','需求摘要','getCaseRequirements'],['sessions','場次管理','getSessions'],['registrations','報名管理','getRegistrations'],['review','資格審查','getRegistrations'],['admission','錄取名單','getAdmissions'],['manpower','人力招募','getManpower'],['manpowerSchedule','人力排班','getManpowerSchedules'],['import','資料匯入','getImportJobs'],
  ['tasks','任務','getTasks'],['calendar','日曆','getCalendarItems'],['documents','行政文件','getDocumentableStatus'],['officialDocs','公文','getOfficialDocs'],['fileManager','檔案管理','getFiles'],['changeLogs','變更紀錄','getChangeLogs'],
- ['finance','財務核銷','getFinanceRecords'],['closing','結案','getClosingChecklist'],['reportGenerator','結案報告產生器','getReportData'],
- ['wizard','開案精靈','createProjectWithSpecWizard'],['tenderPool','標案池','查詢標案池'],['master','基礎資料','queryRecords'],['users','使用者權限','getTenantUsers'],['line','LINE 提醒','getLinePushLogs'],['batch','批次操作','runBatchOperation'],['settings','系統設定','health']
+ ['finance','財務核銷','getFinanceRecords'],['questionnaire','問卷滿意度','getQuestionnaires'],['closing','結案','getClosingChecklist'],['reportGenerator','結案報告產生器','getReportData'],
+ ['paperArchive','紙本歸檔','getPaperArchives'],['templateCase','範本案例','getTemplateCases'],['wizard','開案精靈','createProjectWithSpecWizard'],['tenderPool','標案池','查詢標案池'],['master','基礎資料','queryRecords'],['users','使用者權限','getTenantUsers'],['line','LINE 提醒','getLinePushLogs'],['batch','批次操作','runBatchOperation'],['settings','系統設定','health']
 ];
 const PAGE_TITLES=Object.fromEntries(MENUS.map(x=>[x[0],x[1]]));
 const ENTITY_LABEL={project:'專案',activity:'活動',task:'任務',finance:'財務',document:'文件',registration:'報名',survey:'滿意度',claim:'請款',contact:'基礎資料'};
@@ -237,7 +237,7 @@ const Data={
 const UI={
  renderShell(){
   byId('nav').innerHTML=MENUS.map((m,i)=>`<button id="nav-${m[0]}" onclick="UI.page('${m[0]}')">${icon(iconFor(m[1]))}<span>${String(i+1).padStart(2,'0')}｜${m[1]}</span></button>`).join('');
-  byId('workspaceNav').innerHTML=['command','warroom','projects','activities','finance','documents','closeout','settings'].map(id=>`<button id="top-${id}" onclick="UI.page('${id}')">${icon(iconFor(PAGE_TITLES[id]))}<span>${PAGE_TITLES[id]}</span></button>`).join('');
+  byId('workspaceNav').innerHTML=['command','warroom','projects','activities','finance','documents','questionnaire','closeout','settings'].map(id=>`<button id="top-${id}" onclick="UI.page('${id}')">${icon(iconFor(PAGE_TITLES[id]))}<span>${PAGE_TITLES[id]}</span></button>`).join('');
   byId('sections').innerHTML=MENUS.map(m=>`<section id="s-${m[0]}" class="section"></section>`).join('');
  },
  renderUser(){const u=S.user||{}; const name=u.companyName||u.companyCode||'GovOps'; byId('sideCompany').textContent=name; byId('tenantLine').textContent=`${name}｜${u.displayName||u.email||''}｜${u.role||'OWNER'}｜${u.plan||'FREE'}`; byId('sideUser').innerHTML=`<b>${esc(u.displayName||'使用者')}</b><br>${esc(u.email||'')}`;byId('runtimeStatus').textContent='Runtime 正常'},
@@ -411,10 +411,13 @@ App.boot();
 <script src="./pages/tasks.js"></script>
 <script src="./pages/changeLogs.js"></script>
 <script src="./pages/finance.js"></script>
+<script src="./pages/questionnaire.js"></script>
 <script src="./pages/officialDocs.js"></script>
 <script src="./pages/fileManager.js"></script>
+<script src="./pages/paperArchive.js"></script>
 <script src="./pages/closing.js"></script>
 <script src="./pages/reportGenerator.js"></script>
+<script src="./pages/templateCase.js"></script>
 <script src="./pages/masterData.js"></script>
 <script src="./pages/settings.js"></script>
 <script src="./pages/tenderPool.js"></script>

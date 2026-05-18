@@ -15,7 +15,10 @@
     students: '學員ID',
     resources: '物資ID',
     accounts: '科目ID',
-    templates: '模板ID'
+    templates: '模板ID',
+    questionnaires: '問卷ID',
+    paperArchives: '紙本ID',
+    templateCases: '範本案例ID'
   };
 
   function uid(prefix) {
