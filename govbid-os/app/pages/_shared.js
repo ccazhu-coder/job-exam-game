@@ -145,6 +145,7 @@
         },
         async submitForm(data) {
           this.validate(data);
+          if (config.beforeSubmit) await config.beforeSubmit(this, data, !!state.editing);
           const editing = state.editing;
           if (editing) data[idField] = editing;
           const action = editing ? config.api.update : config.api.create;

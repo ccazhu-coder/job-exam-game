@@ -29,14 +29,29 @@
       { key: '專案類型', label: '類型' },
       { key: '主辦單位', label: '客戶' },
       { key: '狀態', label: '狀態' },
-      { key: '契約金額', label: '預估收入' }
+      { key: '契約金額', label: '預估收入' },
+      { key: 'projectFolderUrl', label: '雲端資料夾' }
     ],
     rowActions: [
+      { action: 'openProjectFolder', label: '開啟資料夾' },
       { action: 'openSessions', label: '場次' },
       { action: 'openRegistrations', label: '報名' },
       { action: 'openManpower', label: '人力' }
     ],
+    async beforeSubmit(page, data, editing) {
+      if (editing) return;
+      const settings = await page.callApi('getStorageSettings', {});
+      if (!settings || !settings.status || settings.status === '未設定') {
+        window.Router.go('settings');
+        throw new Error('請先設定檔案存放位置，之後系統會自動幫你整理專案文件。');
+      }
+    },
     actionHandlers: {
+      async openProjectFolder(page, id) {
+        const r = await page.callApi('getProjectFolderUrl', { projectId: id, '專案ID': id });
+        if (r.url) window.open(r.url, '_blank');
+        else window.RuntimeUI.toast('此專案尚未建立雲端資料夾', 'warn');
+      },
       openSessions(page, id) { window.Router.go('sessions'); window.AppStateStore.update('ui.caseId', id); },
       openRegistrations(page, id) { window.Router.go('registrations'); window.AppStateStore.update('ui.caseId', id); },
       openManpower(page, id) { window.Router.go('manpower'); window.AppStateStore.update('ui.caseId', id); }

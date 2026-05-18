@@ -8,6 +8,11 @@
     idField: '檔案ID',
     api: { list: 'getFiles', create: 'createFile', update: 'updateFile', archive: 'deleteFile' },
     searchPlaceholder: '搜尋檔案名稱、類型、說明、上傳人',
+    actions: [
+      { action: 'testCloudStorage', label: '測試雲端連線' },
+      { action: 'scanMissingFiles', label: '檢查缺件' },
+      { action: 'createClosingPackageFolder', label: '建立結案資料包' }
+    ],
     fields: [
       { key: 'caseId', label: '案件ID' }, { key: 'sessionId', label: '場次ID' },
       { key: '檔案名稱', label: '檔案名稱', required: true },
