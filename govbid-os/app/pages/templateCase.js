@@ -9,6 +9,7 @@
     api: { list: 'getTemplateCases', create: 'createTemplateCase', update: 'updateTemplateCase', archive: 'archiveTemplateCase', generateFromTemplateCase: 'generateFromTemplateCase' },
     searchPlaceholder: '搜尋範本名稱、案例名稱、分類、適用階段',
     actions: [{ action: 'generateFromTemplateCase', label: '套用產生文件' }],
+    rowActions: [{ action: 'generateFromTemplateCase', label: '套用' }],
     fields: [
       { key: '類型', label: '類型', type: 'select', options: ['文件範本','歷年案例'] },
       { key: '名稱', label: '名稱', required: true },
@@ -33,7 +34,12 @@
       { key: '狀態', label: '狀態' }
     ],
     actionHandlers: {
-      generateFromTemplateCase: (page) => page.callApi('generateFromTemplateCase', {}).then(() => page.loadData())
+      generateFromTemplateCase: (page, id) => page
+        .callApi('generateFromTemplateCase', id ? { 範本案例ID: id, templateCaseId: id } : {})
+        .then(() => {
+          window.RuntimeUI.toast('已依範本/案例產生文件草稿', 'success');
+          return page.loadData();
+        })
     }
   });
 })(window);
