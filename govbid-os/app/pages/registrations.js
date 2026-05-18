@@ -39,6 +39,16 @@
       { action: 'waitlist', label: '備取' },
       { action: 'reject', label: '未錄取' }
     ],
+    beforeSubmit(page, data) {
+      data.caseId = data.caseId || window.AppState?.ui?.caseId || '';
+      data.sessionId = data.sessionId || window.AppState?.ui?.sessionId || '';
+      data['活動ID'] = data['活動ID'] || data.sessionId;
+      data['資格審查狀態'] = data['資格審查狀態'] || '待審查';
+      data['錄取狀態'] = data['錄取狀態'] || '待審查';
+      data['報名來源'] = data['報名來源'] || '手動新增';
+      data['通知狀態'] = data['通知狀態'] || '待通知';
+      data['狀態'] = data['狀態'] || data['錄取狀態'];
+    },
     actionHandlers: {
       approve: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '符合資格' }).then(() => page.loadData()),
       admit: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '已錄取', 錄取狀態: '已錄取' }).then(() => page.loadData()),

@@ -52,11 +52,17 @@
           return `<select data-page-filter="${esc(filter.key)}"><option value="">${esc(filter.all || '全部')}</option>${(filter.options || []).map((o) => `<option value="${esc(o)}">${esc(o)}</option>`).join('')}</select>`;
         },
         bindEvents(target) {
+          if (!target.dataset.govopsPageBound) {
+            target.dataset.govopsPageBound = '1';
+            target.addEventListener('click', async (event) => {
+              const button = event.target.closest('[data-page-action]');
+              if (!button || !target.contains(button)) return;
+              event.preventDefault();
+              await this.handleAction(button.dataset.pageAction, button.dataset.id, target);
+            });
+          }
           target.querySelector('[data-page-search]')?.addEventListener('input', (event) => {
             state.query = event.target.value;
-          });
-          target.querySelectorAll('[data-page-action]').forEach((button) => {
-            button.addEventListener('click', async () => this.handleAction(button.dataset.pageAction, button.dataset.id, target));
           });
         },
         async handleAction(action, id, target) {

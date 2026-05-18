@@ -40,10 +40,18 @@
     ],
     async beforeSubmit(page, data, editing) {
       if (editing) return;
-      const settings = await page.callApi('getStorageSettings', {});
-      if (!settings || !settings.status || settings.status === '未設定') {
-        window.Router.go('settings');
-        throw new Error('請先設定檔案存放位置，之後系統會自動幫你整理專案文件。');
+      data['專案計畫名稱'] = data['專案計畫名稱'] || data['案件名稱'];
+      data['專案類型'] = data['專案類型'] || data['案件類型'];
+      data['狀態'] = data['狀態'] || data['案件狀態'] || '洽談中';
+      data['契約金額'] = data['契約金額'] || data['預估收入'];
+      try {
+        const settings = await page.callApi('getStorageSettings', {});
+        const storage = settings.record || settings.data || settings.settings || settings;
+        if (!storage || !storage.status || storage.status === '未設定') {
+          window.RuntimeUI.toast('尚未設定雲端檔案位置；案件會先建立，之後可到系統設定補上 Cloud Sync。', 'warn');
+        }
+      } catch (error) {
+        window.RuntimeUI.toast('Cloud Sync 尚未設定；案件會先建立，之後可補設定。', 'warn');
       }
     },
     actionHandlers: {

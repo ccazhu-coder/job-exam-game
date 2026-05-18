@@ -41,6 +41,14 @@
       { action: 'openRegistrations', label: '報名' },
       { action: 'generateTasks', label: 'SOP任務' }
     ],
+    beforeSubmit(page, data) {
+      data.caseId = data.caseId || window.AppState?.ui?.caseId || '';
+      data['專案ID'] = data['專案ID'] || data.caseId;
+      data['活動名稱'] = data['活動名稱'] || data['場次名稱'];
+      data['活動類型'] = data['活動類型'] || data['場次類型'];
+      data['活動日期'] = data['活動日期'] || data['場次日期'];
+      data['狀態'] = data['狀態'] || data['場次狀態'] || '已排定';
+    },
     actionHandlers: {
       openRegistrations(page, id) { window.AppStateStore.update('ui.sessionId', id); window.Router.go('registrations'); },
       async generateTasks(page, id) { await window.callApi('generateSessionTasks', { sessionId: id, 活動ID: id }); window.RuntimeUI.toast('已產生 SOP 任務', 'success'); }

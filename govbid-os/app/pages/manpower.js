@@ -29,6 +29,11 @@
       { key: '狀態', label: '狀態' }
     ],
     rowActions: [{ action: 'schedule', label: '排班' }],
+    beforeSubmit(page, data) {
+      data.caseId = data.caseId || window.AppState?.ui?.caseId || '';
+      data.sessionId = data.sessionId || window.AppState?.ui?.sessionId || '';
+      data['狀態'] = data['狀態'] || '待確認';
+    },
     actionHandlers: {
       schedule(page, id) { window.AppStateStore.update('ui.manpowerId', id); window.Router.go('manpowerSchedule'); }
     }
