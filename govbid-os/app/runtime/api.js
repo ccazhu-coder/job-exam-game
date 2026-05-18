@@ -22,8 +22,14 @@
     return prefix + '-' + Date.now().toString(36).toUpperCase() + '-' + Math.floor(Math.random() * 1000);
   }
 
+  function isAuthenticated() {
+    return !!(window.S?.token || localStorage.getItem('GovOps_token'));
+  }
+
   function getMock(collection) {
-    return JSON.parse(JSON.stringify((window.AppState[collection] && window.AppState[collection].length ? window.AppState[collection] : window.MockData[collection]) || []));
+    const current = window.AppState[collection] || [];
+    if (isAuthenticated()) return JSON.parse(JSON.stringify(current));
+    return JSON.parse(JSON.stringify((current.length ? current : window.MockData[collection]) || []));
   }
 
   function normalize(result) {
@@ -48,6 +54,7 @@
     const payload = {
       action,
       tenantId: window.AppState?.tenantId || window.S?.tenantId || window.S?.tid || localStorage.getItem('GovOps_tid') || '',
+      workspaceId: window.AppState?.workspaceId || window.S?.workspaceId || localStorage.getItem('GovOps_workspace') || '',
       userId: window.AppState?.userId || window.S?.user?.userId || '',
       authToken: window.S?.token || localStorage.getItem('GovOps_token') || '',
       token: window.S?.token || localStorage.getItem('GovOps_token') || '',
@@ -102,20 +109,21 @@
     },
     async bootstrap() {
       window.AppStateStore.replaceCollection('projects', normalize(await safeGas('queryRecords', { entityType: 'project' })));
-      if (!window.AppState.projects.length) localReplace('projects', getMock('projects'));
+      if (!isAuthenticated() && !window.AppState.projects.length) localReplace('projects', getMock('projects'));
       window.AppStateStore.replaceCollection('finance', normalize(await safeGas('queryRecords', { entityType: 'finance' })));
-      if (!window.AppState.finance.length) localReplace('finance', getMock('finance'));
+      if (!isAuthenticated() && !window.AppState.finance.length) localReplace('finance', getMock('finance'));
       window.AppStateStore.replaceCollection('documents', normalize(await safeGas('queryRecords', { entityType: 'document' })));
-      if (!window.AppState.documents.length) localReplace('documents', getMock('documents'));
-      window.AppStateStore.replaceCollection('tasks', getMock('tasks'));
-      window.AppStateStore.replaceCollection('contacts', getMock('contacts'));
+      if (!isAuthenticated() && !window.AppState.documents.length) localReplace('documents', getMock('documents'));
+      window.AppStateStore.replaceCollection('tasks', isAuthenticated() ? [] : getMock('tasks'));
+      window.AppStateStore.replaceCollection('contacts', isAuthenticated() ? [] : getMock('contacts'));
       await Promise.all(['instructors', 'vendors', 'venues', 'staff', 'agencies', 'students', 'resources', 'accounts', 'templates'].map((collection) => this.refresh(collection, { silent: true })));
-      window.AppStateStore.replaceCollection('notifications', getMock('notifications'));
+      window.AppStateStore.replaceCollection('notifications', isAuthenticated() ? [] : getMock('notifications'));
     },
     async refresh(collection, options = {}) {
       const listAction = actionForCollection(collection, 'list');
       const remote = listAction ? normalize(await safeGas(listAction, { filters: options.filters || {} })) : [];
       if (remote.length) return localReplace(collection, remote);
+      if (isAuthenticated()) return localReplace(collection, []);
       if (!window.AppState[collection] || !window.AppState[collection].length) return localReplace(collection, getMock(collection));
       return window.AppState[collection];
     },

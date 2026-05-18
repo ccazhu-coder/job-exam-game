@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>GovOps AI OS｜政府專案 AI 營運控制台</title>
+  <title>GovOps OS Core v0.1｜政府標案全流程營運系統</title>
   <style>
     :root{--bg0:#070b16;--bg1:#0b1020;--panel:#101a2d;--panel2:#172033;--line:rgba(255,255,255,.09);--text:#e5edf8;--muted:#94a3b8;--brand:#6366f1;--cyan:#06b6d4;--ai:#8b5cf6;--green:#10b981;--yellow:#f59e0b;--orange:#f97316;--red:#ef4444;--blue:#3b82f6;--shadow:0 24px 80px rgba(0,0,0,.45)}
     *{box-sizing:border-box} body{margin:0;min-height:100vh;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Microsoft JhengHei","Noto Sans TC",Arial,sans-serif;background:radial-gradient(circle at 20% 8%,rgba(99,102,241,.22),transparent 34%),radial-gradient(circle at 82% 14%,rgba(6,182,212,.16),transparent 30%),linear-gradient(135deg,var(--bg0),var(--bg1) 54%,#111827)}
@@ -54,8 +54,8 @@
   <div class="login-card">
     <div class="hero">
       <img class="brand-logo hero-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo">
-      <h1 class="gradient" style="margin-top:16px">GovOps AI OS</h1>
-      <p class="sub">AI 政府專案營運作業系統：把標案、履約、活動、核銷、請款、結案與 LINE 提醒整合成一個營運控制台。</p>
+      <h1 class="gradient" style="margin-top:16px">GovOps OS Core v0.1</h1>
+      <p class="sub">政府標案全流程營運系統｜SaaS 商業版 MVP：從標案、課程、活動、報名、人力、文件、財務、公文到結案報告，一套系統統一管理。</p>
       <div style="margin-top:20px">
         <div class="feature"><span class="dot"></span><span>AI 營運指揮中心與一鍵戰情</span></div>
         <div class="feature"><span class="dot"></span><span>專案、活動、任務、文件、財務可操作</span></div>
@@ -64,7 +64,7 @@
       </div>
     </div>
     <div>
-      <div class="brand-title"><img class="brand-logo form-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo"><div class="brand-title-text"><h2 class="gradient" style="font-size:28px;margin:0">GovOps AI OS</h2><small>知己知途｜AI 政府專案營運作業系統</small></div></div>
+      <div class="brand-title"><img class="brand-logo form-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo"><div class="brand-title-text"><h2 class="gradient" style="font-size:28px;margin:0">GovOps OS Core v0.1</h2><small>政府標案全流程營運系統｜SaaS 商業版 MVP</small></div></div>
       <p class="sub">登入後即可開案、看戰情、追風險與操作各中心。</p>
       <div class="tabs"><button id="loginTab" class="active" onclick="Auth.switch('login')">登入</button><button id="registerTab" onclick="Auth.switch('register')">註冊新公司</button></div>
       <div id="loginPanel">
@@ -94,13 +94,13 @@
 
 <div id="appView" class="app hidden">
   <aside class="side">
-    <div class="brand"><img class="brand-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo">GovOps AI OS<small id="sideCompany">載入中</small></div>
+    <div class="brand"><img class="brand-logo" src="./assets/zhiji-zhitu-logo.jpg" alt="知己知途 Logo">GovOps OS Core<small id="sideCompany">載入中</small></div>
     <div id="nav" class="nav"></div>
     <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--line)"><div id="sideUser" class="small"></div><button class="secondary" style="width:100%;margin-top:8px" onclick="Auth.logout()">登出</button></div>
   </aside>
   <main class="main">
     <div class="top">
-      <div><h2 id="pageTitle" style="margin:0">AI 營運指揮中心</h2><div id="tenantLine" class="sub">載入中</div></div>
+      <div><h2 id="pageTitle" style="margin:0">GovOps OS Core v0.1</h2><div id="tenantLine" class="sub">政府標案全流程營運系統｜SaaS 商業版 MVP</div></div>
       <div class="btns" style="margin:0"><span id="runtimeStatus" class="tag ai-tag">AI Runtime</span><span id="nowTime" class="small"></span><button class="secondary sm" onclick="App.refresh()">更新</button><button class="secondary sm" onclick="Auth.logout()">登出</button></div>
     </div>
     <div id="workspaceNav" class="workspace-nav"></div>
@@ -129,8 +129,8 @@
 
 <script>
 const DEFAULT_API='https://script.google.com/macros/s/AKfycbwlM1WGOZZSzL24CEFC8XULPUJgzo3O-FvMkiNoxpKUzRFs3d0jvyaxOmDfuGOaa6rl/exec';
-const SK={TOKEN:'GovOps_token',CODE:'GovOps_code',TID:'GovOps_tid',API:'GovOps_api',USER:'GovOps_user'};
-const S={apiUrl:localStorage.getItem(SK.API)||DEFAULT_API,token:localStorage.getItem(SK.TOKEN)||'',user:safeJson(localStorage.getItem(SK.USER),null),current:'command',cache:{projects:[],activities:[],tasks:[],finance:[],documents:[],registrations:[],surveys:[],claims:[]},loading:{}};
+const SK={TOKEN:'GovOps_token',CODE:'GovOps_code',TID:'GovOps_tid',WID:'GovOps_workspace',API:'GovOps_api',USER:'GovOps_user'};
+const S={apiUrl:localStorage.getItem(SK.API)||DEFAULT_API,token:localStorage.getItem(SK.TOKEN)||'',tenantId:localStorage.getItem(SK.TID)||'',workspaceId:localStorage.getItem(SK.WID)||'',user:safeJson(localStorage.getItem(SK.USER),null),current:'command',cache:{projects:[],activities:[],tasks:[],finance:[],documents:[],registrations:[],surveys:[],claims:[]},loading:{}};
 const MENUS=[
  ['command','AI 指揮中心','runAIOSRiskScan'],['osMap','系統架構圖','generateAIOSCommandCenterSnapshot'],['warroom','一鍵戰情','generateWarRoomMode'],['priorities','今日優先','generateOperationPriorities'],['health','健康度','calculateProjectHealthScores'],['hotspots','熱區圖','generateOperationHotspots'],
  ['projects','業務案件','getCases'],['caseRequirements','需求摘要','getCaseRequirements'],['sessions','場次管理','getSessions'],['registrations','報名管理','getRegistrations'],['review','資格審查','getRegistrations'],['admission','錄取名單','getAdmissions'],['manpower','人力招募','getManpower'],['manpowerSchedule','人力排班','getManpowerSchedules'],['import','資料匯入','getImportJobs'],
@@ -148,7 +148,7 @@ const GovOpsAPI={
      if(opt.toast) UI.toast(opt.toast,'success');
      return result;
    }
-   const payload=Object.assign({action,動作:action,data,資料:data,token:S.token,authToken:S.token,companyCode:localStorage.getItem(SK.CODE)||'',tenantId:localStorage.getItem(SK.TID)||'',userId:S.user&&S.user.userId||''},opt.extra||{});
+   const payload=Object.assign({action,動作:action,data,資料:data,token:S.token,authToken:S.token,companyCode:localStorage.getItem(SK.CODE)||'',tenantId:S.tenantId||localStorage.getItem(SK.TID)||'',workspaceId:S.workspaceId||localStorage.getItem(SK.WID)||'',userId:S.user&&S.user.userId||''},opt.extra||{});
    let res,json;
    UI.setBusy(true, opt.label||action);
    try{
@@ -197,14 +197,28 @@ const Auth={
     this.save(r,code); await App.start();
    }catch(e){msg(e.message,'error')}
  },
- save(r,code){const token=r.token||r.sessionToken; if(!token) throw new Error('登入成功但後端未回傳 token'); S.token=token; S.user=r; localStorage.setItem(SK.TOKEN,token);localStorage.setItem(SK.CODE,r.companyCode||code||'');localStorage.setItem(SK.TID,r.tenantId||'');localStorage.setItem(SK.USER,JSON.stringify(r));},
- async logout(){try{if(S.token)await GovOpsAPI.call('logout',{token:S.token})}catch(e){} Object.values(SK).forEach(k=>localStorage.removeItem(k));S.token='';S.user=null;byId('appView').classList.add('hidden');byId('loginView').classList.remove('hidden')},
- expired(m){Object.values(SK).forEach(k=>localStorage.removeItem(k));S.token='';byId('appView').classList.add('hidden');byId('loginView').classList.remove('hidden');msg('Session 已失效，請重新登入。'+(m?'\n'+m:''),'error')}
+ save(r,code){const token=r.token||r.sessionToken; if(!token) throw new Error('登入成功但後端未回傳 token'); const oldTenant=localStorage.getItem(SK.TID)||''; const tenantId=r.tenantId||''; const workspaceId=r.workspaceId||tenantId; if(oldTenant&&tenantId&&oldTenant!==tenantId) clearClientRuntimeCache(); S.token=token; S.user=r; S.tenantId=tenantId; S.workspaceId=workspaceId; localStorage.setItem(SK.TOKEN,token);localStorage.setItem(SK.CODE,r.companyCode||code||'');localStorage.setItem(SK.TID,tenantId);localStorage.setItem(SK.WID,workspaceId);localStorage.setItem(SK.USER,JSON.stringify(r)); if(window.AppStateStore) window.AppStateStore.set({user:r,tenantId,workspaceId,tenant:{tenantId,workspaceId,companyCode:r.companyCode||code||'',companyName:r.companyName||''}});},
+ async logout(){try{if(S.token)await GovOpsAPI.call('logout',{token:S.token})}catch(e){} clearClientSession();byId('appView').classList.add('hidden');byId('loginView').classList.remove('hidden')},
+ expired(m){clearClientSession();byId('appView').classList.add('hidden');byId('loginView').classList.remove('hidden');msg('Session 已失效，請重新登入。'+(m?'\n'+m:''),'error')}
 };
+
+function clearClientRuntimeCache(){
+ localStorage.removeItem('GovOps_runtime_state_v1');
+ if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
+ Object.keys(S.cache).forEach(k=>S.cache[k]=[]);
+}
+function clearClientSession(){
+ Object.values(SK).forEach(k=>localStorage.removeItem(k));
+ localStorage.removeItem('GovOps_runtime_state_v1');
+ Object.keys(sessionStorage).filter(k=>k.indexOf('GovOps_')===0).forEach(k=>sessionStorage.removeItem(k));
+ S.token='';S.user=null;S.tenantId='';S.workspaceId='';
+ Object.keys(S.cache).forEach(k=>S.cache[k]=[]);
+ if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
+}
 
 const App={
  async boot(){UI.renderShell(); setInterval(()=>byId('nowTime').textContent=new Date().toLocaleString('zh-TW'),1000); if(S.token) await this.start(); else byId('loginView').classList.remove('hidden')},
- async start(){byId('loginView').classList.add('hidden');byId('appView').classList.remove('hidden');try{S.user=await GovOpsAPI.call('getCurrentUser',{},{});localStorage.setItem(SK.USER,JSON.stringify(S.user))}catch(e){} UI.renderUser(); await this.refresh(); UI.page(S.current||'command')},
+ async start(){byId('loginView').classList.add('hidden');byId('appView').classList.remove('hidden');try{S.user=await GovOpsAPI.call('getCurrentUser',{},{});S.tenantId=S.user.tenantId||S.tenantId;S.workspaceId=S.user.workspaceId||S.workspaceId||S.tenantId;if(window.AppState&&window.AppState.tenantId&&S.tenantId&&window.AppState.tenantId!==S.tenantId) clearClientRuntimeCache();localStorage.setItem(SK.USER,JSON.stringify(S.user));localStorage.setItem(SK.TID,S.tenantId||'');localStorage.setItem(SK.WID,S.workspaceId||'');if(window.AppStateStore) window.AppStateStore.set({user:S.user,tenantId:S.tenantId,workspaceId:S.workspaceId,tenant:{tenantId:S.tenantId,workspaceId:S.workspaceId,companyCode:S.user.companyCode||'',companyName:S.user.companyName||''}})}catch(e){} UI.renderUser(); await this.refresh(); UI.page(S.current||'command')},
  async refresh(){await Promise.allSettled([Data.loadProjects(),Data.loadActivities(),Data.loadTasks(),Data.loadFinance(),Data.loadDocuments(),Data.loadRegistrations(),Data.loadSurveys(),Data.loadClaims()]); await Pages.render(S.current||'command')},
  async testConnection(){try{const r=await GovOpsAPI.call('健康檢查',{},{});UI.toast('後端連線正常：'+(r.runtime||r.status||'OK'),'success')}catch(e){UI.toast(e.message,'error')}}
 };
@@ -260,7 +274,7 @@ const Pages={
  async command(s){
   let d={}; try{d=await GovOpsAPI.call('generateAIOSCommandCenterSnapshot')}catch(e){d={summary:{},topFive:[],aiAdvice:[e.message]}};
   const sum=d.summary||d['摘要']||{}; const top=d.topFive||[]; const advice=d.aiAdvice||[];
-  s.innerHTML=`${hero('AI 營運指揮中心','不是普通 Dashboard，而是政府專案營運控制塔。',[
+  s.innerHTML=`${hero('GovOps OS Core v0.1','政府標案全流程營運系統｜SaaS 商業版 MVP：從標案、課程、活動、報名、人力、文件、財務、公文到結案報告，一套系統統一管理。',[
    ['啟動一鍵戰情模式',"UI.page('warroom')"],['查看系統架構圖',"UI.page('osMap')"],['執行 AI 風險掃描',"Action.run('runAIOSRiskScan')"],['更新 Dashboard','App.refresh()'],['查看高風險案件',"UI.page('health')"],['查看未撥款',"UI.page('payments')"],['查看核銷缺件',"UI.page('documents')"]])}
    <div class="kpis">${kpi('專案',sum.projectCount||sum['專案數']||0,'blue')}${kpi('今日活動',sum.todayActivityCount||sum['今日活動數']||0,'cyan')}${kpi('逾期任務',sum.overdueTaskCount||sum['逾期任務數']||0,'orange')}${kpi('高風險',sum.highRiskCount||sum['高風險案件數']||0,'red')}${kpi('核銷缺件',sum.missingDocumentCount||sum['核銷缺件數']||0,'yellow')}${kpi('未請款',sum.unpaidClaimCount||sum['未完成請款數']||0,'blue')}</div>
    ${executiveDashboard(sum)}

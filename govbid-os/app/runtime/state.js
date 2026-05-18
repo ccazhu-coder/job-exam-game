@@ -6,6 +6,8 @@
   const state = Object.assign({
     user: null,
     tenant: null,
+    tenantId: '',
+    workspaceId: '',
     currentPage: 'command',
     projects: [],
     contacts: [],
@@ -62,6 +64,17 @@
       state[name] = rows || [];
       persist();
       window.EventBus && window.EventBus.emit(name + ':changed', state[name]);
+      window.EventBus && window.EventBus.emit('state:changed', state);
+    },
+    clearTenantData() {
+      ['projects','contacts','tasks','finance','documents','notifications','instructors','vendors','venues','staff','agencies','students','resources','accounts','templates'].forEach((name) => {
+        state[name] = [];
+      });
+      state.user = null;
+      state.tenant = null;
+      state.tenantId = '';
+      state.workspaceId = '';
+      persist();
       window.EventBus && window.EventBus.emit('state:changed', state);
     }
   };
