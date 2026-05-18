@@ -12,6 +12,21 @@
       { action: 'autoGenerateClosingReport', label: 'AI 產生結案報告' },
       { action: 'exportDocAsGoogleDoc', label: '匯出 Google 文件' }
     ],
+    rowActions: [
+      { action: 'exportDocAsGoogleDoc', label: '匯出 Doc' }
+    ],
+    actionHandlers: {
+      async autoGenerateClosingReport(page) {
+        await page.callApi('autoGenerateClosingReport', {});
+        window.RuntimeUI.toast('已依案件資料產生結案報告草稿', 'success');
+        await page.loadData();
+      },
+      async exportDocAsGoogleDoc(page, id) {
+        await page.callApi('exportDocAsGoogleDoc', id ? { 報告ID: id, reportId: id } : {});
+        window.RuntimeUI.toast('已匯出 Google 文件並回寫文件紀錄', 'success');
+        await page.loadData();
+      }
+    },
     fields: [
       { key: 'caseId', label: '案件ID' },
       { key: '前言', label: '前言', type: 'textarea' },
