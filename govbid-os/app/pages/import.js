@@ -13,6 +13,7 @@
       { key: '來源類型', label: '來源類型', type: 'select', options: ['Google Sheet','Google Form','Excel','CSV','手動貼上'] },
       { key: '來源連結', label: '來源連結' },
       { key: '目標資料表', label: '目標資料表' },
+      { key: '貼上資料', label: '貼上資料（CSV 或 JSON 陣列）', type: 'textarea' },
       { key: '匯入狀態', label: '匯入狀態', type: 'select', options: ['待匯入','匯入中','已完成','失敗'] },
       { key: '備註', label: '備註', type: 'textarea' }
     ],

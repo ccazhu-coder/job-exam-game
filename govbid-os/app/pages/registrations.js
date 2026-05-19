@@ -51,7 +51,7 @@
     },
     actionHandlers: {
       approve: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '符合資格' }).then(() => page.loadData()),
-      admit: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '已錄取', 錄取狀態: '已錄取' }).then(() => page.loadData()),
+      admit: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 錄取狀態: '已錄取' }).then(() => page.loadData()),
       waitlist: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '備取', 錄取狀態: '備取' }).then(() => page.loadData()),
       reject: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 資格審查狀態: '不符合資格', 錄取狀態: '未錄取' }).then(() => page.loadData())
     }

@@ -51,6 +51,18 @@
     systemSettings: { label: '系統設定', sheet: '系統設定總表', page: 'settings', api: { list: 'health', update: 'updateRecord' } }
   };
 
+  Object.assign(cfg, {
+    dashboard: { label: 'AI 指揮中心', sheet: '', page: 'dashboard', api: { list: 'generateAIOSCommandCenterSnapshot' } },
+    adminDocuments: { label: '行政文件', sheet: '行政文件中心', page: 'documents', collection: 'documents', idField: '文件ID', api: { list: 'getDocuments', create: 'createAdminDocument', update: 'updateDocument', archive: 'archiveDocument', generateAttendanceSheet: 'generateAttendanceSheet', generateReimbursementSheet: 'generateReimbursementSheet' } },
+    documents: { label: '行政文件', sheet: '行政文件中心', page: 'documents', collection: 'documents', idField: '文件ID', api: { list: 'getDocuments', create: 'createAdminDocument', update: 'updateDocument', archive: 'archiveDocument', generateDocument: 'generateAttendanceSheet' } },
+    closing: { label: '結案檢核', sheet: '結案檢核', page: 'closing', collection: 'closingItems', idField: '結案檢核ID', api: { list: 'getClosingChecklist', create: 'initClosingChecklist', update: 'updateClosingItem', archive: 'archiveClosingItem', generateReport: 'generateClosingSummary' } },
+    manpowerSchedule: { label: '人力排班', sheet: '人力排班', page: 'manpowerSchedule', collection: 'manpowerSchedule', idField: '排班ID', api: { list: 'getManpowerSchedules', create: 'createManpowerSchedule', update: 'updateManpowerSchedule', archive: 'archiveManpowerSchedule', checkConflict: 'checkManpowerScheduleConflict', generateDocument: 'generateStaffReceipt' } },
+    staffScheduling: { label: '人力排班', sheet: '人力排班', page: 'manpowerSchedule', collection: 'manpowerSchedule', idField: '排班ID', api: { list: 'getManpowerSchedules', create: 'createManpowerSchedule', update: 'updateManpowerSchedule', archive: 'archiveManpowerSchedule', checkConflict: 'checkManpowerScheduleConflict' } },
+    officialDocs: { label: '公文管理', sheet: '公文資料', page: 'officialDocs', collection: 'officialDocs', idField: '公文ID', api: { list: 'getOfficialDocs', create: 'createOfficialDoc', update: 'updateOfficialDoc', archive: 'deleteOfficialDoc', stats: 'getOfficialDocStats' } },
+    files: { label: '檔案管理', sheet: '檔案管理', page: 'fileManager', collection: 'files', idField: '檔案ID', api: { list: 'getFiles', create: 'createFile', update: 'updateFile', archive: 'deleteFile', scanMissing: 'scanMissingFiles', exportPackage: 'exportProjectZip' } },
+    finalReport: { label: '結案報告', sheet: '結案報告', page: 'reportGenerator', collection: 'reports', idField: '報告ID', api: { list: 'getReportData', create: 'saveReportDraft', update: 'saveReportDraft', archive: 'archiveReportDraft', generateReport: 'autoGenerateClosingReport', exportDoc: 'exportDocAsGoogleDoc' } }
+  });
+
   window.moduleConfig = cfg;
   window.getModuleConfig = function (module) {
     return cfg[module] || null;

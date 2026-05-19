@@ -204,16 +204,19 @@ const Auth={
 
 function clearClientRuntimeCache(){
  localStorage.removeItem('GovOps_runtime_state_v1');
- if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
+ if(window.AppStateStore&&window.AppStateStore.hardReset) window.AppStateStore.hardReset();
+ else if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
  Object.keys(S.cache).forEach(k=>S.cache[k]=[]);
 }
 function clearClientSession(){
+ if(window.clearGovOpsRuntimeSession){window.clearGovOpsRuntimeSession('legacy clearClientSession');return;}
  Object.values(SK).forEach(k=>localStorage.removeItem(k));
  localStorage.removeItem('GovOps_runtime_state_v1');
  Object.keys(sessionStorage).filter(k=>k.indexOf('GovOps_')===0).forEach(k=>sessionStorage.removeItem(k));
  S.token='';S.user=null;S.tenantId='';S.workspaceId='';
  Object.keys(S.cache).forEach(k=>S.cache[k]=[]);
- if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
+ if(window.AppStateStore&&window.AppStateStore.hardReset) window.AppStateStore.hardReset();
+ else if(window.AppStateStore&&window.AppStateStore.clearTenantData) window.AppStateStore.clearTenantData();
 }
 
 const App={

@@ -18,7 +18,24 @@
     templates: '模板ID',
     questionnaires: '問卷ID',
     paperArchives: '紙本ID',
-    templateCases: '範本案例ID'
+    templateCases: '範本案例ID',
+    cases: '專案ID',
+    sessions: '活動ID',
+    registrationsWorkflow: '報名ID',
+    reviewWorkflow: '報名ID',
+    admissionsWorkflow: '報名ID',
+    manpower: '人力ID',
+    manpowerSchedule: '排班ID',
+    importJobs: '匯入ID',
+    caseRequirements: '需求ID',
+    changeLogs: '變更ID',
+    calendarItems: '日曆ID',
+    officialDocs: '公文ID',
+    files: '檔案ID',
+    closingItems: '結案項目ID',
+    reports: '報告ID',
+    tenders: '標案ID',
+    tenantUsers: 'userId'
   };
 
   function uid(prefix) {
@@ -27,6 +44,39 @@
 
   function isAuthenticated() {
     return !!(window.S?.token || localStorage.getItem('GovOps_token'));
+  }
+
+  function clearAuthRuntime(reason) {
+    window.DebugPanel?.log({ type: 'auth:clear-runtime', error: reason || '' });
+    if (window.AppStateStore?.hardReset) window.AppStateStore.hardReset();
+    else if (window.AppStateStore?.clearTenantData) window.AppStateStore.clearTenantData();
+    [
+      'GovOps_token',
+      'GovOps_code',
+      'GovOps_tid',
+      'GovOps_workspace',
+      'GovOps_user',
+      'GovOps_runtime_state_v1'
+    ].forEach((key) => localStorage.removeItem(key));
+    Object.keys(sessionStorage || {}).filter((key) => key.indexOf('GovOps_') === 0).forEach((key) => sessionStorage.removeItem(key));
+    if (window.S) {
+      window.S.token = '';
+      window.S.tenantId = '';
+      window.S.workspaceId = '';
+      window.S.user = null;
+      if (window.S.cache) Object.keys(window.S.cache).forEach((key) => { window.S.cache[key] = []; });
+    }
+  }
+
+  function isAuthError(message) {
+    return /session|token|未登入|授權|UNAUTHORIZED|FORBIDDEN|權限|過期/i.test(String(message || ''));
+  }
+
+  function redactPayload(payload) {
+    const copy = Object.assign({}, payload || {});
+    if (copy.token) copy.token = copy.token.slice(0, 8) + '...';
+    if (copy.authToken) copy.authToken = copy.authToken.slice(0, 8) + '...';
+    return copy;
   }
 
   function getMock(collection) {
@@ -54,17 +104,22 @@
   }
 
   async function callApi(action, data = {}) {
+    const token = window.S?.token || localStorage.getItem('GovOps_token') || '';
     const payload = {
       action,
       tenantId: window.AppState?.tenantId || window.S?.tenantId || window.S?.tid || localStorage.getItem('GovOps_tid') || '',
       workspaceId: window.AppState?.workspaceId || window.S?.workspaceId || localStorage.getItem('GovOps_workspace') || '',
       userId: window.AppState?.userId || window.S?.user?.userId || '',
-      authToken: window.S?.token || localStorage.getItem('GovOps_token') || '',
-      token: window.S?.token || localStorage.getItem('GovOps_token') || '',
+      authToken: token,
+      token,
       companyCode: window.S?.companyCode || localStorage.getItem('GovOps_code') || '',
       data
     };
-    window.DebugPanel?.log({ type: 'api:request', action, payload });
+    if (!payload.token && !['health', 'login', 'registerTenant'].includes(action)) {
+      clearAuthRuntime('missing token before api call');
+      throw new Error('尚未登入，請重新登入後再操作');
+    }
+    window.DebugPanel?.log({ type: 'api:request', action, payload: redactPayload(payload) });
     const url = window.S?.apiUrl || window.DEFAULT_API;
     if (!url) throw new Error('尚未設定 API URL');
     let res;
@@ -78,9 +133,20 @@
       window.DebugPanel?.log({ type: 'api:error', action, error: error.message });
       throw new Error('目前無法連線到系統後端');
     }
-    const json = await res.json();
+    let json;
+    try {
+      json = await res.json();
+    } catch (error) {
+      window.DebugPanel?.log({ type: 'api:error', action, error: error.message });
+      throw new Error('API 回傳格式錯誤');
+    }
     window.DebugPanel?.log({ type: 'api:response', action, response: json });
-    return apiEnvelope(json);
+    try {
+      return apiEnvelope(json);
+    } catch (error) {
+      if (isAuthError(error.message)) clearAuthRuntime(error.message);
+      throw error;
+    }
   }
 
   async function safeGas(action, data) {
@@ -105,6 +171,7 @@
   }
 
   window.callApi = callApi;
+  window.clearGovOpsRuntimeSession = clearAuthRuntime;
 
   window.RuntimeAPI = {
     idField(collection) {

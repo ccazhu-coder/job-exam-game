@@ -18,6 +18,22 @@
     columns: [
       { key: 'userId', label: '使用者ID' }, { key: 'displayName', label: '姓名' }, { key: 'email', label: 'Email' },
       { key: 'role', label: '角色' }, { key: 'status', label: '狀態' }
-    ]
+    ],
+    rowActions: [
+      { action: 'changePassword', label: '重設密碼' }
+    ],
+    actionHandlers: {
+      changePassword(page, id) {
+        window.RuntimeUI.openModal({
+          title: '重設使用者密碼',
+          body: '<div class="form-grid"><div><label>新密碼</label><input data-key="password" type="password"></div></div>',
+          onSave: async (data) => {
+            await page.callApi('changePassword', { userId: id, password: data.password });
+            window.RuntimeUI.closeModal();
+            window.RuntimeUI.toast('密碼已更新', 'success');
+          }
+        });
+      }
+    }
   });
 })(window);

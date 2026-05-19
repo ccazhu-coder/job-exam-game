@@ -8,6 +8,9 @@
     idField: '公文ID',
     api: { list: 'getOfficialDocs', create: 'createOfficialDoc', update: 'updateOfficialDoc', archive: 'deleteOfficialDoc' },
     searchPlaceholder: '搜尋公文編號、主旨、發文單位、承辦窗口',
+    actions: [
+      { action: 'getOfficialDocStats', label: '更新公文統計' }
+    ],
     fields: [
       { key: '公文類型', label: '公文類型', type: 'select', options: ['來文','發文'] },
       { key: '公文編號', label: '公文編號' },
@@ -30,6 +33,13 @@
     columns: [
       { key: '公文ID', label: '公文ID' }, { key: '公文類型', label: '類型' }, { key: '公文編號', label: '編號' },
       { key: '主旨', label: '主旨' }, { key: '辦理期限', label: '期限' }, { key: '處理狀態', label: '狀態' }
-    ]
+    ],
+    actionHandlers: {
+      getOfficialDocStats: (page) => page.callApi('getOfficialDocStats', {}).then((result) => {
+        const stats = result.stats || result.data || {};
+        window.RuntimeUI.toast(`公文統計：共 ${stats.total || 0} 件，待處理 ${stats.pending || 0} 件，逾期 ${stats.overdue || 0} 件`, 'success');
+        return page.loadData();
+      })
+    }
   });
 })(window);

@@ -2,7 +2,7 @@
   'use strict';
 
   const routes = {
-    dashboard: 'command',
+    dashboard: 'dashboard',
     command: 'command',
     projects: 'projects',
     cases: 'projects',
@@ -19,6 +19,9 @@
     calendar: 'calendar',
     officialDocs: 'officialDocs',
     fileManager: 'fileManager',
+    questionnaire: 'questionnaire',
+    paperArchive: 'paperArchive',
+    templateCase: 'templateCase',
     closing: 'closing',
     reportGenerator: 'reportGenerator',
     tenderPool: 'tenderPool',

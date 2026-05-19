@@ -30,8 +30,11 @@
       { action: 'reject', label: '未錄取' }
     ],
     actionHandlers: {
-      generateSigninSheet: (page) => page.callApi('generateSigninSheet', {}).then(() => window.RuntimeUI.toast('已送出簽到表產生流程', 'success')),
-      admit: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 錄取狀態: '已錄取', 資格審查狀態: '已錄取' }).then(() => page.loadData()),
+      generateSigninSheet: (page) => page.callApi('generateSigninSheet', {}).then(() => {
+        window.RuntimeUI.toast('簽到表已依錄取名單產生', 'success');
+        return page.loadData();
+      }),
+      admit: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 錄取狀態: '已錄取' }).then(() => page.loadData()),
       waitlist: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 錄取狀態: '備取', 資格審查狀態: '備取' }).then(() => page.loadData()),
       reject: (page, id) => page.callApi('updateRegistrationStatus', { regId: id, 報名ID: id, 錄取狀態: '未錄取', 資格審查狀態: '未錄取' }).then(() => page.loadData())
     }

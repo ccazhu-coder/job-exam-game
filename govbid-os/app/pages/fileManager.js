@@ -11,7 +11,8 @@
     actions: [
       { action: 'testCloudStorage', label: '測試雲端連線' },
       { action: 'scanMissingFiles', label: '檢查缺件' },
-      { action: 'createClosingPackageFolder', label: '建立結案資料包' }
+      { action: 'createClosingPackageFolder', label: '建立結案資料包' },
+      { action: 'exportProjectZip', label: '建立雲端匯出包' }
     ],
     fields: [
       { key: 'caseId', label: '案件ID' }, { key: 'sessionId', label: '場次ID' },
@@ -29,6 +30,24 @@
     columns: [
       { key: '檔案ID', label: '檔案ID' }, { key: '檔案名稱', label: '檔案名稱' }, { key: '檔案類型', label: '類型' },
       { key: '上傳日期', label: '上傳日期' }, { key: '上傳人', label: '上傳人' }, { key: 'GoogleDrive連結', label: '連結' }
-    ]
+    ],
+    actionHandlers: {
+      testCloudStorage: (page) => page.callApi('testCloudStorage', {}).then((result) => {
+        window.RuntimeUI.toast(result.message || '雲端連線正常', 'success');
+        return page.loadData();
+      }),
+      scanMissingFiles: (page) => page.callApi('scanMissingFiles', {}).then((result) => {
+        window.RuntimeUI.toast(result.message || '缺件掃描完成', result.count ? 'warn' : 'success');
+        return page.loadData();
+      }),
+      createClosingPackageFolder: (page) => page.callApi('createClosingPackageFolder', {}).then((result) => {
+        window.RuntimeUI.toast(result.message || '結案資料包已建立', 'success');
+        return page.loadData();
+      }),
+      exportProjectZip: (page) => page.callApi('exportProjectZip', {}).then((result) => {
+        window.RuntimeUI.toast(result.message || '雲端匯出資料包已建立', 'success');
+        return page.loadData();
+      })
+    }
   });
 })(window);
