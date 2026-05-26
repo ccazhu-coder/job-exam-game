@@ -410,7 +410,10 @@
 
     function isLocalDemoSession() {
       var auth = state.auth || {};
-      return String(auth.sessionToken || '').indexOf('LOCAL-DEMO-') === 0;
+      var session = state.session || {};
+      var token = String(auth.sessionToken || auth.token || session.sessionToken || session.token || '');
+      var email = String(auth.email || session.email || '').toLowerCase();
+      return token.indexOf('LOCAL-DEMO-') === 0 || email === 'demo@govops.local';
     }
 
     function isLocalDevHost() {
