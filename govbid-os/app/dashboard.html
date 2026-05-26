@@ -32,6 +32,11 @@
       <div class="module-grid" id="moduleCards"></div>
     </article>
 
+    <article class="card span12 hidden" id="moduleWorkspace">
+      <h2 id="moduleWorkspaceTitle">模組工作區</h2>
+      <div class="list" id="moduleWorkspaceBody"></div>
+    </article>
+
     <article class="card span8">
       <h2>待辦與風險</h2>
       <div class="list" id="riskList"></div>
@@ -184,13 +189,13 @@
   }
   function renderModules(s){
     var cards=[
-      {title:'標案生命週期',desc:'管理開案、需求、場次、變更、執行與結案節點。',btn:'查看進度',click:"location.href='./index.html#dashboard'",open:true,primary:false},
+      {title:'標案生命週期',desc:'管理開案、需求、場次、變更、執行與結案節點。',btn:'查看進度',click:"showModuleWorkspace('標案生命週期','整合開案、需求、場次、變更、執行與結案節點。正式資料流會在新版工作台內完成，不跳回舊系統。')",open:true,primary:false},
       {title:'報名管理',desc:'查詢報名資料、同步線上表單、審核入選與候補名單。',btn:'進入報名管理',click:'showRegistrationModule()',open:canViewRegistration(s),primary:true},
       {title:'財務秘書',desc:'處理應收、收款、支出、損益與財務提醒。',btn:'進入財務秘書',click:"location.href='./finance-secretary.html'",open:canFinance(s),primary:false},
-      {title:'文件與知識中心',desc:'整理需求摘要、會議紀錄、行政文件與交付資料。',btn:'查看文件任務',click:"location.href='./index.html#files'",open:true,primary:false},
-      {title:'結案報告',desc:'彙整活動成果、報名統計、財務紀錄與交付項目。',btn:'準備結案',click:"location.href='./index.html#closeout'",open:true,primary:false},
-      {title:'人力與排班',desc:'追蹤講師、工作人員、外部支援與場次排班。',btn:'查看人力',click:"location.href='./index.html#staffing'",open:true,primary:false},
-      {title:'客戶與關係',desc:'沉澱機關、廠商、學員與合作單位互動紀錄。',btn:'查看關係資料',click:"location.href='./index.html#crm'",open:true,primary:false},
+      {title:'文件與知識中心',desc:'整理需求摘要、會議紀錄、行政文件與交付資料。',btn:'查看文件任務',click:"showModuleWorkspace('文件與知識中心','集中整理需求摘要、行政文件、會議紀錄與交付資料。此模組保留在新版工作台內呈現。')",open:true,primary:false},
+      {title:'結案報告',desc:'彙整活動成果、報名統計、財務紀錄與交付項目。',btn:'準備結案',click:"showModuleWorkspace('結案報告','彙整活動成果、報名統計、財務紀錄與交付項目，後續會由新版工作台產生正式結案資料。')",open:true,primary:false},
+      {title:'人力與排班',desc:'追蹤講師、工作人員、外部支援與場次排班。',btn:'查看人力',click:"showModuleWorkspace('人力與排班','追蹤講師、工作人員、外部支援與場次排班，避免人力缺口影響活動交付。')",open:true,primary:false},
+      {title:'客戶與關係',desc:'沉澱機關、廠商、學員與合作單位互動紀錄。',btn:'查看關係資料',click:"showModuleWorkspace('客戶與關係','沉澱機關、廠商、學員與合作單位互動紀錄，作為後續專案與服務維繫依據。')",open:true,primary:false},
       {title:'營運指標',desc:'查看風險、待辦、使用量、方案與權限狀態。',btn:'查看摘要',click:"document.getElementById('riskList').scrollIntoView({behavior:'smooth'})",open:true,primary:false}
     ];
     document.getElementById('moduleCards').innerHTML=cards.map(function(c){
@@ -220,10 +225,22 @@
     var html='';
     if(canAdmin(s))html+='<a href="./admin-console.html">管理控制台</a>';
     if(canDev(s)){html+='<a href="./frontend-qa.html">前端驗收</a><a href="./runtime-health.html">系統健康檢查</a>';}
-    html+='<a href="./index.html">舊版功能入口</a><button class="danger" onclick="logout()">登出</button>';
+    if(canDev(s))html+='<a href="./index.html">舊版功能入口</a>';
+    html+='<button class="danger" onclick="logout()">登出</button>';
     document.getElementById('toolLinks').innerHTML=html;
     document.getElementById('managementTools').style.display=html?'':'none';
   }
+  window.showModuleWorkspace=function(title,desc){
+    var box=document.getElementById('moduleWorkspace');
+    document.getElementById('moduleWorkspaceTitle').textContent=title;
+    document.getElementById('moduleWorkspaceBody').innerHTML=[
+      ['目前狀態','此模組已列入新版營運工作台，不再導回舊版主系統。'],
+      ['營運說明',desc],
+      ['下一步','請先使用報名管理、財務秘書與管理工具完成目前上線主線；其餘模組會在新版工作台內逐步接入。']
+    ].map(function(r){return '<div class="row"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';}).join('');
+    box.classList.remove('hidden');
+    box.scrollIntoView({behavior:'smooth',block:'start'});
+  };
   function renderMode(s){
     var badge=document.getElementById('modeBadge');
     badge.textContent=s.isDemo?'本機測試模式':'正式登入模式';
