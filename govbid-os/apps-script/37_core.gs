@@ -112,6 +112,11 @@ function router(action, data) {
     }
   }
 
+  if (typeof handleActionBridgePatch === 'function') {
+    var bridgeHandled = handleActionBridgePatch(action, data);
+    if (bridgeHandled) return bridgeHandled;
+  }
+
   switch (action) {
     case '初始化系統': return 初始化系統();
     case '系統健康檢查': return success('系統連線正常。', { version: GOVOPS_VERSION });

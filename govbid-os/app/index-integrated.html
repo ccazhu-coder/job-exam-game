@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
@@ -18,7 +18,7 @@
 </main>
 <nav class="footerbar"><a href="#dashboard">首頁</a><a href="#project-management">專案</a><a href="#session-management">場次</a><a href="#notification-center">通知</a><a href="#finance">財務</a></nav>
 <script>
-const API_URL='https://script.google.com/macros/s/AKfycbwNWbHwPs9lw1qpbOi6HeQhNn3kHNfs6Ap9ybTnOX_u2bssBGKwtwfygwwGpYblj-vt2Q/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbzEayaKAUTk5C0s_3fSGQe49KmuJmsZNhYCoia2cjpYSmlYqnnZKIRHZh1GQZT4JpDy5g/exec';
 function show(id,msg){const el=document.getElementById(id);if(el)el.textContent=msg||''}
 function getProfile(){try{return Object.assign({tenantId:'TENANT-DEMO',userId:'USR-DEMO',orgName:'知己知途',role:'owner',roleLabel:'負責人／系統管理者',plan:'internal',status:'active'},JSON.parse(localStorage.getItem('govops_profile')||'{}'))}catch(e){return{tenantId:'TENANT-DEMO',userId:'USR-DEMO',orgName:'知己知途',role:'owner',roleLabel:'負責人／系統管理者',plan:'internal',status:'active'}}}
 function saasParams(params){const p=getProfile();return Object.assign({tenantId:p.tenantId,userId:p.userId,userRole:p.role,plan:'internal'},params)}

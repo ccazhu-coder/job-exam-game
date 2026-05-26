@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
@@ -30,7 +30,7 @@
 <section class="card span-6"><h2>十四、報名審核</h2><label>報名ID</label><input id="reviewRegId"><label>審核結果</label><select id="reviewStatus"><option>已入選</option><option>候補</option><option>資格不符</option><option>已取消</option><option>已確認參加</option><option>未回覆</option></select><button onclick="reviewRegistration()">更新審核結果</button><div id="reviewResult" class="status">尚未審核。</div></section>
 </div></main>
 <script>
-const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbxSRLOXnMcWULDmI_w0Zluirb_i5tZllEYrrcno-MUMafqVSF4p-4W3UKh_WQMA5Q4sTQ/exec';
+const DEFAULT_API_URL='https://script.google.com/macros/s/AKfycbzEayaKAUTk5C0s_3fSGQe49KmuJmsZNhYCoia2cjpYSmlYqnnZKIRHZh1GQZT4JpDy5g/exec';
 const API_STORAGE_KEY='GOVOPS_API_URL_V2';let 系統已初始化=false;
 window.addEventListener('load',()=>{document.getElementById('apiUrl').value=localStorage.getItem(API_STORAGE_KEY)||(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||DEFAULT_API_URL;renderRuntimeInfo();});
 function getApiUrl(){return document.getElementById('apiUrl').value.trim()||(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL)||DEFAULT_API_URL}

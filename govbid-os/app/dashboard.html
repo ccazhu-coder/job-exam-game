@@ -3,262 +3,301 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GovOps OS｜儀表板｜SaaS 商業版 MVP</title>
-<link rel="stylesheet" href="./erp-page-style.css">
-<script src="./config.js"></script>
+<title>GovOps OS｜SaaS 首頁</title>
+<script src="./config.js?v=p0-api"></script>
+<script src="./govops-api-client.js?v=p0-api"></script>
 <style>
-/* dashboard SaaS MVP */
+:root{--bg:#f7f4ef;--panel:#fff;--ink:#172033;--muted:#667085;--line:#e4ded4;--gold:#b8963e;--navy:#0d2340;--ok:#1d6a3a;--risk:#c0392b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f7f4ef,#efe8dc);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+.shell{max-width:1180px;margin:0 auto;padding:24px 18px 44px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:18px}.eyebrow{font-size:.82rem;font-weight:900;color:var(--gold);letter-spacing:.04em;text-transform:uppercase}h1{margin:6px 0 8px;color:var(--navy);font-size:2.15rem;line-height:1.15}.subtitle{color:var(--muted);font-size:1rem}.mode-badge{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--navy);box-shadow:0 4px 14px rgba(13,35,64,.08)}.mode-badge.demo{background:#fff8e6;border-color:#e0c987;color:#604b1f}
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.span7{grid-column:span 7}.span5{grid-column:span 5}.span12{grid-column:span 12}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:0 8px 24px rgba(13,35,64,.08)}.card h2{margin:0 0 14px;color:var(--navy);font-size:1.18rem;display:flex;gap:8px;align-items:center}.card h2:before{content:"";width:4px;height:1.05em;background:var(--gold);border-radius:2px}
+.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfaf7}.label{font-size:.78rem;color:var(--muted);font-weight:900;margin-bottom:4px}.value{font-weight:900;overflow-wrap:anywhere}.value.good{color:var(--ok)}.value.warn{color:#9a6700}
+.feature-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}.feature-box{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfaf7}.feature-box h3{margin:0 0 8px;color:var(--navy);font-size:.95rem}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.8rem;font-weight:900;background:#eef2f6;color:#344054}.chip.ok{background:#eaf5ee;color:var(--ok)}.chip.lock{background:#f7ecea;color:var(--risk)}.upgrade{margin-top:12px;padding:12px 14px;border-radius:8px;background:#fff8e6;border:1px solid #e0c987;color:#604b1f;font-weight:800;line-height:1.6}
+.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.action-btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:14px 12px;font-size:1rem;font-weight:900;cursor:pointer;min-height:56px}.action-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.action-btn.gold{background:var(--gold);border-color:var(--gold);color:#111}.action-btn.danger{color:var(--risk)}
+.role-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.role-card{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fbfaf7;min-height:152px}.role-card.active{border-color:var(--gold);background:#fff8e6}.role-name{font-weight:900;color:var(--navy);margin-bottom:8px}.role-card ul{margin:0;padding-left:18px;color:var(--muted);font-size:.86rem;line-height:1.7}
+.module-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}.module-head p{margin:0;color:var(--muted);line-height:1.6}.module-badge{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:999px;padding:8px 12px;font-weight:900;white-space:nowrap}.module-nav{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}.module-nav button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:9px 13px;font-weight:900;cursor:pointer}
+.reg-toolbar{display:grid;grid-template-columns:1.1fr .9fr auto;gap:10px;align-items:end;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:14px;margin-bottom:14px}.reg-toolbar label,.reg-panel label{display:block;font-size:.86rem;font-weight:900;color:var(--navy);margin:0 0 6px}.reg-toolbar input,.reg-panel input,.reg-panel select,.reg-panel textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:12px;font-size:1rem;color:var(--ink)}.reg-panel textarea{min-height:92px;resize:vertical}.reg-tenant{color:var(--muted);font-weight:800;line-height:1.5}
+.reg-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.reg-stat{border:1px solid var(--line);border-radius:10px;background:#fff;padding:13px}.reg-stat b{display:block;font-size:1.55rem;color:var(--navy);line-height:1}.reg-stat span{display:block;color:var(--muted);font-size:.82rem;font-weight:900;margin-top:6px}.reg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.reg-panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-width:0}.reg-panel h3{font-size:1.05rem;margin:0 0 12px;color:var(--navy)}.reg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reg-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.reg-buttons button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:11px 13px;font-weight:900;cursor:pointer}.reg-buttons button.primary{background:var(--navy);border-color:var(--navy);color:#fff}.reg-buttons button.gold{background:var(--gold);border-color:var(--gold);color:#111}.reg-msg{margin-top:12px;border:1px dashed var(--line);background:#fbfaf7;border-radius:8px;padding:12px;color:var(--muted);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow:auto}.reg-wide{grid-column:span 3}.reg-table{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-x:auto}.reg-table table{width:100%;min-width:980px;border-collapse:collapse}.reg-table th,.reg-table td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:.92rem}.reg-table th{background:#fbfaf7;color:var(--navy);white-space:nowrap}.status-badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:900;white-space:nowrap;background:#eef2f6;color:#344054}.status-badge.pending{background:#fff8e6;color:#8a5a00}.status-badge.registered{background:#eef6ff;color:#16436f}.status-badge.selected{background:#eaf5ee;color:var(--ok)}.status-badge.waitlist{background:#f4ecff;color:#6941c6}.status-badge.rejected{background:#f7ecea;color:var(--risk)}.readonly-note{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:10px;padding:12px 14px;font-weight:900;line-height:1.6;margin-bottom:14px}.reg-empty{padding:16px;color:var(--muted);font-weight:900}.hidden{display:none!important}.is-readonly .reg-operate,.is-readonly .reg-operate-panel,.is-readonly .reg-operate-nav{display:none!important}.empty-note{padding:20px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--muted);font-weight:800}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.span7,.span5{grid-column:span 12}.actions{grid-template-columns:1fr 1fr}.role-grid{grid-template-columns:1fr 1fr}.summary,.feature-list{grid-template-columns:1fr}.module-head{display:block}.module-badge{display:inline-flex;margin-top:10px;white-space:normal}.reg-toolbar,.reg-grid{grid-template-columns:1fr}.reg-wide{grid-column:span 1}.reg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.reg-row{grid-template-columns:1fr}h1{font-size:1.75rem}}@media(max-width:560px){.shell{padding:18px 12px 30px}.card{padding:16px}.actions,.role-grid{grid-template-columns:1fr}.mode-badge{width:100%}.reg-stats{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<!-- ══ 主系統畫面 ══ -->
-<div id="appScreen">
-  <header><div class="wrap">
-    <div class="brand">GovOps OS <span style="font-size:.65rem;font-weight:500;background:rgba(184,150,62,.18);color:#b8963e;border-radius:4px;padding:2px 7px;margin-left:6px;vertical-align:middle">SaaS MVP</span></div>
-    <div class="sub" id="dashSub">政府標案全流程營運系統</div>
-    <nav id="nav"></nav>
-  </div></header>
-
-  <main class="wrap">
-    <div class="page-title">
-      <h1>營運儀表板</h1>
-      <p id="dashSubtitle">—</p>
+<main class="shell">
+  <section class="hero">
+    <div>
+      <div class="eyebrow">GovOps OS SaaS Home</div>
+      <h1>營運首頁</h1>
+      <div class="subtitle">從這裡確認租戶、方案、角色權限，並進入主要工作區。</div>
     </div>
+    <div class="mode-badge" id="modeBadge">讀取登入狀態</div>
+  </section>
 
-    <div id="kpis" class="kpis" style="margin-bottom:16px">
-      <div class="kpi"><div class="num">—</div><div class="name">載入中</div></div>
-    </div>
+  <section class="grid" id="dashboardApp" style="display:none">
+    <article class="card span7"><h2>Tenant Summary</h2><div class="summary" id="tenantSummary"></div></article>
+    <article class="card span5">
+      <h2>Plan Summary</h2>
+      <div class="feature-list">
+        <div class="feature-box"><h3>可用功能</h3><div class="chips" id="enabledFeatures"></div></div>
+        <div class="feature-box"><h3>不可用功能</h3><div class="chips" id="disabledFeatures"></div></div>
+      </div>
+      <div class="upgrade" id="upgradeText"></div>
+    </article>
+    <article class="card span12"><h2>Quick Actions</h2><div class="actions" id="quickActions"></div></article>
+    <article class="card span12"><h2>Role Permission Cards</h2><div class="role-grid" id="roleCards"></div></article>
 
-    <div class="grid">
-      <section class="card span8">
-        <h2>業務案件總覽</h2>
-        <div id="caseKpiRow" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:12px">
-          <div class="kpi"><div class="num" id="dk_total">—</div><div class="name">全部案件</div></div>
-          <div class="kpi"><div class="num" id="dk_active">—</div><div class="name">進行中</div></div>
-          <div class="kpi warn"><div class="num" id="dk_urgent">—</div><div class="name">需行動</div></div>
-          <div class="kpi ok"><div class="num" id="dk_closed">—</div><div class="name">已結案</div></div>
-        </div>
-        <div class="btns" style="margin-bottom:10px">
-          <button onclick="loadCaseStats()">刷新案件統計</button>
-          <button class="secondary" onclick="loadSchedule()">近期行程</button>
-          <button class="secondary" onclick="loadOverview()">案件總覽</button>
-        </div>
-        <div id="dashMsg" class="msg" style="margin-top:8px">—</div>
-        <div id="table" style="margin-top:10px"></div>
-      </section>
-
-      <!-- 圖表列 -->
-      <section class="card span8" style="padding:16px 20px">
-        <h2 style="margin-bottom:12px">案件狀態分布</h2>
-        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-          <canvas id="caseDonut" width="160" height="160"></canvas>
-          <div id="caseDonutLegend" style="font-size:.82rem;line-height:2;color:var(--text-main,#ccd6f6)"></div>
-        </div>
-      </section>
-
-      <section class="card span4" style="padding:16px 20px">
-        <h2 style="margin-bottom:12px">財務摘要</h2>
-        <div id="finBarChart" style="font-size:.82rem"></div>
-      </section>
-
-      <section class="card span4">
-        <h2>快速操作</h2>
-        <div class="btns" style="flex-direction:column;align-items:stretch;gap:6px">
-          <button class="gold" onclick="location.href='./cases.html'">＋ 新增業務案件</button>
-          <button class="secondary" onclick="location.href='./sessions.html'">場次管理</button>
-          <button class="secondary" onclick="location.href='./registrations.html'">報名管理</button>
-          <button class="secondary" onclick="location.href='./documents.html'">文件產生</button>
-          <button class="secondary" onclick="location.href='./calendar.html'">日曆管理</button>
-          <button class="secondary" onclick="location.href='./finance.html'">財務收支</button>
-          <button class="secondary" onclick="location.href='./closing.html'">結案管理</button>
-          <button class="secondary" onclick="location.href='./master-data.html'">基本資料</button>
-          <button class="secondary" onclick="location.href='./users.html'">成員管理</button>
-        </div>
-        <div class="section-sep" style="margin-top:16px"><span>系統狀態</span></div>
-        <div id="healthMsg" class="msg" style="font-size:.78rem;min-height:40px">—</div>
-        <div class="btns" style="margin-top:8px">
-          <button class="secondary" onclick="healthCheck()" style="font-size:.78rem;padding:6px 12px">健康檢查</button>
+    <article class="card span12 hidden" id="registrationModule">
+      <div class="module-head">
+        <div><h2>報名管理</h2><p>新版 SaaS 主系統模組。集中處理活動選擇、手動新增、Google Form 同步、審核名單與狀態更新。</p></div>
+        <span class="module-badge" id="registrationMode">讀取登入模式</span>
+      </div>
+      <div class="module-nav">
+        <button type="button" onclick="scrollReg('regActivity')">活動選擇</button>
+        <button class="reg-operate-nav" type="button" onclick="scrollReg('regManual')">手動新增</button>
+        <button class="reg-operate-nav" type="button" onclick="scrollReg('regSync')">Google Form 同步</button>
+        <button type="button" onclick="scrollReg('regReview')">審核名單</button>
+        <button type="button" onclick="scrollReg('regDatabase')">報名資料表格</button>
+      </div>
+      <div class="readonly-note hidden" id="registrationPermissionNote"></div>
+      <section class="reg-toolbar" id="regActivity">
+        <div><label>活動選擇</label><input id="registrationActivityId" placeholder="輸入或貼上系統活動編號"></div>
+        <div class="reg-tenant" id="registrationTenantLine">讀取租戶資訊</div>
+        <div class="reg-buttons">
+          <button type="button" onclick="applyRegistrationActivity()">套用活動</button>
+          <button type="button" onclick="queryRegistrationList()">查詢報名資料</button>
+          <button type="button" onclick="queryReviewList('')">查詢審核名單</button>
         </div>
       </section>
-    </div>
-  </main>
-</div>
+      <section class="reg-stats" id="registrationStats"></section>
+      <section class="reg-grid">
+        <div class="reg-panel reg-operate-panel" id="regSync">
+          <h3>Google Form 同步報名</h3>
+          <label>線上報名表單連結 / 回覆試算表連結</label><input id="formUrl" placeholder="貼上 Google 試算表網址，系統會自動抓 ID">
+          <label>表單回覆試算表 ID</label><input id="responseSheetId" placeholder="貼上網址後自動帶入">
+          <label>表單回覆分頁名稱</label><input id="responseSheetName" value="Form_Responses">
+          <div class="reg-buttons reg-operate">
+            <button type="button" onclick="autoFillSheetId()">自動抓試算表 ID</button>
+            <button type="button" onclick="saveFormSetting()">儲存表單設定</button>
+            <button class="gold" type="button" onclick="syncRegistration()">同步 Google Form</button>
+          </div>
+          <div class="reg-msg" id="formMsg">尚未同步。</div>
+        </div>
+        <div class="reg-panel reg-operate-panel" id="regManual">
+          <h3>手動新增報名</h3>
+          <label>系統活動編號</label><input id="regActivityId">
+          <div class="reg-row"><div><label>姓名</label><input id="regName"></div><div><label>電話</label><input id="regPhone"></div></div>
+          <label>Email</label><input id="regEmail">
+          <div class="reg-row"><div><label>身分別</label><input id="identity"></div><div><label>來源渠道</label><input id="source"></div></div>
+          <label>服務單位</label><input id="orgName">
+          <label>備註</label><textarea id="regNote"></textarea>
+          <div class="reg-buttons"><button class="primary reg-operate" type="button" onclick="createRegistration()">新增報名</button><button type="button" onclick="queryRegistrationList()">查詢報名資料</button></div>
+          <div class="reg-msg" id="regMsg">尚未新增。</div>
+        </div>
+        <div class="reg-panel" id="regReview">
+          <h3>報名審核名單</h3>
+          <label>報名ID</label><input id="reviewRegId" placeholder="輸入要更新的報名ID">
+          <label>報名狀態</label><select id="reviewStatus"><option>待審核</option><option>已報名</option><option>已入選</option><option>候補</option><option>未錄取</option></select>
+          <div class="reg-buttons">
+            <button type="button" onclick="queryReviewList('')">查詢審核名單</button>
+            <button class="primary reg-operate" type="button" onclick="reviewRegistration()">更新報名狀態</button>
+            <button class="reg-operate" type="button" onclick="setReviewStatus('已入選')">設為已入選</button>
+            <button class="reg-operate" type="button" onclick="setReviewStatus('候補')">設為候補</button>
+            <button class="reg-operate" type="button" onclick="setReviewStatus('未錄取')">設為未錄取</button>
+          </div>
+          <div class="reg-msg" id="reviewMsg">尚未查詢。</div>
+        </div>
+        <div class="reg-panel reg-wide" id="regDatabase">
+          <h3>報名資料列表</h3>
+          <div class="reg-table" id="registrationTable"><div class="reg-empty">尚未查詢報名資料。</div></div>
+          <h3 style="margin-top:18px">報名審核名單</h3>
+          <div class="reg-table" id="reviewTable"><div class="reg-empty">尚未查詢審核名單。</div></div>
+        </div>
+      </section>
+    </article>
+  </section>
+  <section class="empty-note" id="emptyState" style="display:none">尚未登入，正在導回登入頁。</section>
+</main>
 
-<script src="./govops-api-client.js"></script>
-<script src="./erp-aligned-core.js"></script>
 <script>
-const ROLE_LABELS = {owner:'負責人',admin:'管理者',finance:'財務人員',staff:'行政人員',viewer:'檢視者'};
-function makeId(p){return p+'-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*1000);}
-function safeJSON(k){try{var r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;}}
-
-// ── SaaS 啟動 ─────────────────────────────────────────
-function checkAuth(){
-  var auth = safeJSON('govops_auth');
-  if (auth && auth.sessionToken && auth.isLoggedIn) {
-    enterApp(auth);
-  } else {
-    // 無有效 session → 導到登入頁
-    window.location.href = './login.html';
-  }
-}
-
-function enterApp(auth){
-  document.getElementById('nav').innerHTML = ERPALIGNED.nav();
-  var name = auth.userName || auth.email || '使用者';
-  var ws   = auth.workspaceName || auth.tenantId || '';
-  var role = auth.role || '';
-  document.getElementById('dashSubtitle').textContent = ws + '　' + name + (role ? '　[' + (ROLE_LABELS[role] || role) + ']' : '');
-  document.getElementById('dashSub').textContent = '政府標案全流程營運系統｜SaaS 商業版 MVP';
-  ERPALIGNED.appendUserChip('#appScreen header .wrap');
-  loadDashboard();
-  healthCheck();
-}
-
-function doLogout(){
-  if(window.GovOpsAPI && GovOpsAPI.doLogout){ GovOpsAPI.doLogout(); }
-  else {
-    ['govops_auth','govops_profile'].forEach(function(k){ try{localStorage.removeItem(k);}catch(e){} });
-    window.location.href='./login.html';
-  }
-}
-
-// ── 舊版相容 stub（移除嵌入表單後保留供外部呼叫） ─────
-function doRegister(){
-  window.location.href='./register.html';
-}
-function showRegister(){ doRegister(); }
-function showLoginScreen(){ window.location.href='./login.html'; }
-
-
-function doQuickLogin(){
-  var auth = safeJSON('govops_auth');
-  if(auth && auth.sessionToken) enterApp(auth);
-  else window.location.href='./login.html';
-}
-
-function showErr(msg){ console.warn('[dashboard]', msg); }
-
-// ── 儀表板 ────────────────────────────────────────────
-async function loadDashboard(){
-  loadCaseStats();
-  loadFinanceSummary();
-  loadSchedule();
-}
-
-// ── 純 Canvas 圓餅圖 ─────────────────────────────────
-function drawDonut(canvasId, segments) {
-  var canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  var ctx = canvas.getContext('2d');
-  var cx = canvas.width / 2, cy = canvas.height / 2, r = 62, ir = 38;
-  var total = segments.reduce(function(s, seg) { return s + (seg.value || 0); }, 0);
-  if (!total) { ctx.fillStyle = '#2a4060'; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); return; }
-  var angle = -Math.PI / 2;
-  segments.forEach(function(seg) {
-    var slice = (seg.value / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, angle, angle + slice);
-    ctx.fillStyle = seg.color;
-    ctx.fill();
-    angle += slice;
-  });
-  ctx.beginPath(); ctx.arc(cx, cy, ir, 0, Math.PI*2); ctx.fillStyle = '#0e1e31'; ctx.fill();
-  ctx.fillStyle = '#b8963e'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(total, cx, cy - 8);
-  ctx.fillStyle = '#7a9bc5'; ctx.font = '11px sans-serif';
-  ctx.fillText('案件', cx, cy + 12);
-}
-
-// ── 財務水平條形圖 ────────────────────────────────────
-function renderFinBar(income, expense) {
-  var el = document.getElementById('finBarChart');
-  if (!el) return;
-  var max = Math.max(income, expense, 1);
-  var fmt = function(n) { return (n || 0).toLocaleString(); };
-  var bar = function(v, color, label) {
-    var pct = Math.round((v / max) * 100);
-    return '<div style="margin-bottom:10px">'
-      + '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-      + '<span style="color:#aac">' + label + '</span><span style="color:' + color + ';font-weight:700">NT$' + fmt(v) + '</span></div>'
-      + '<div style="background:#162035;border-radius:4px;height:12px"><div style="width:' + pct + '%;background:' + color + ';height:12px;border-radius:4px;transition:width .5s"></div></div>'
-      + '</div>';
+(function(){
+  'use strict';
+  var API_URL = (window.GOVOPS_CONFIG && window.GOVOPS_CONFIG.API_URL) || 'https://script.google.com/macros/s/AKfycbzEayaKAUTk5C0s_3fSGQe49KmuJmsZNhYCoia2cjpYSmlYqnnZKIRHZh1GQZT4JpDy5g/exec';
+  var currentSession = null;
+  var ROLE_PERMISSIONS = {
+    owner: ['報名管理','Admin Console','主系統','財務秘書','Runtime Health'],
+    admin: ['報名管理','Admin Console','主系統','財務秘書'],
+    finance: ['財務秘書','主系統'],
+    staff: ['報名管理','主系統'],
+    viewer: ['報名管理唯讀','主系統唯讀']
   };
-  var profit = income - expense;
-  el.innerHTML = bar(income, '#22c55e', '總收入') + bar(expense, '#ef4444', '總支出')
-    + '<div style="border-top:1px solid #2a4060;padding-top:8px;margin-top:4px;display:flex;justify-content:space-between">'
-    + '<span style="color:#aac">損益</span><span style="color:' + (profit >= 0 ? '#22c55e' : '#ef4444') + ';font-weight:700">NT$' + fmt(profit) + '</span></div>';
-}
-
-async function loadCaseStats(){
-  const r=await ERPALIGNED.api({action:'getCaseStats'});
-  if(!r.success) return;
-  const d=r.data||{};
-  const bs=d.byStatus||{};
-  // 更新頂部 KPI
-  const kpiDefs=[
-    ['進行中案件', d.active||0, ''],
-    ['待請款', bs['待請款']||0, 'warn'],
-    ['待收款', bs['待收款']||0, 'warn'],
-    ['待結案', bs['待結案']||0, 'warn'],
-    ['已結案', bs['已結案']||0, 'ok'],
-    ['草稿中', bs['草稿']||0, ''],
-    ['全部案件', d.total||0, ''],
-    ['封存', d.archived||0, '']
-  ];
-  document.getElementById('kpis').innerHTML=kpiDefs.map(([k,v,cls])=>'<div class="kpi'+(cls?' '+cls:'')+'"><div class="num">'+v+'</div><div class="name">'+k+'</div></div>').join('');
-  // 更新案件卡片內小 KPI
-  const el=function(id,v){var e=document.getElementById(id);if(e)e.textContent=v;};
-  el('dk_total',d.total||0); el('dk_active',d.active||0); el('dk_urgent',d.urgent||0); el('dk_closed',bs['已結案']||0);
-  // 圓餅圖
-  var segments=[
-    {label:'進行中', value:(bs['執行中']||0)+(bs['已簽約']||0)+(bs['洽談中']||0)+(bs['提案中']||0), color:'#2563eb'},
-    {label:'待處理', value:(bs['待請款']||0)+(bs['待收款']||0)+(bs['待結案']||0), color:'#b8963e'},
-    {label:'已結案', value:bs['已結案']||0, color:'#22c55e'},
-    {label:'草稿',   value:bs['草稿']||0,   color:'#64748b'},
-    {label:'暫停/取消', value:(bs['暫停']||0)+(bs['取消']||0), color:'#ef4444'}
-  ].filter(function(s){return s.value>0;});
-  drawDonut('caseDonut', segments);
-  var legend=document.getElementById('caseDonutLegend');
-  if(legend) legend.innerHTML=segments.map(function(s){
-    return '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+s.color+';margin-right:6px"></span>'+s.label+'<span style="color:#b8963e;font-weight:700;margin-left:8px">'+s.value+'</span></div>';
-  }).join('');
-  // 顯示需行動案件清單
-  const urgentList=['待請款','待收款','待結案'];
-  const r2=await ERPALIGNED.api({action:'getCases',status:''});
-  if(!r2.success) return;
-  const urgent=(r2.data||[]).filter(c=>urgentList.includes(c['狀態']));
-  if(urgent.length){
-    const msg=document.getElementById('dashMsg');
-    msg.textContent='';
-    ERPALIGNED.renderTable({data:{rows:urgent.map(c=>({'案件':c['專案計畫名稱'],'客戶':c['主辦單位']||'—','狀態':c['狀態'],'預估收入':c['契約金額']||'—'}))}}, 'table');
-  } else {
-    document.getElementById('dashMsg').textContent='目前無需行動案件';
-    document.getElementById('table').innerHTML='';
+  var ROLE_LABELS = { owner:'owner｜負責人', admin:'admin｜管理者', finance:'finance｜財務', staff:'staff｜行政／執行', viewer:'viewer｜檢視' };
+  var ALL_FEATURES = ['主系統','報名管理','Admin Console','財務秘書','前端驗收','Runtime Health'];
+  function esc(x){ return String(x == null ? '' : x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function readJson(k){ try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch(e){ return {}; } }
+  function normalizeRole(role){ var r=String(role||'viewer').toLowerCase(); if(r==='administrator')r='admin'; if(r==='accounting')r='finance'; return ['owner','admin','finance','staff','viewer'].indexOf(r)>=0?r:'viewer'; }
+  function normalizePlan(plan){ return String(plan||'free').toLowerCase(); }
+  function readSession(){
+    var auth=readJson('govops_auth'), profile=readJson('govops_profile');
+    var merged=Object.assign({}, profile, auth);
+    merged.role=normalizeRole(merged.userRole||merged.role);
+    merged.userRole=merged.role;
+    merged.plan=normalizePlan(merged.plan||merged.planId);
+    merged.organizationName=merged.organizationName||merged.orgName||merged.workspaceName||'GovOps Demo Organization';
+    merged.userName=merged.userName||merged.name||merged.email||'GovOps User';
+    merged.tenantId=merged.tenantId||merged.workspaceId||'';
+    merged.userId=merged.userId||'';
+    merged.sessionToken=merged.sessionToken||auth.token||'';
+    merged.hasSession=!!(merged.sessionToken||merged.userId||merged.tenantId);
+    merged.isDemo=String(merged.sessionToken||'').indexOf('LOCAL-DEMO-')===0;
+    return merged;
   }
-}
-
-async function loadFinanceSummary(){
-  const r=await ERPALIGNED.api({action:'getFinanceSummary'});
-  if(!r||!r.success) return;
-  const d=r.data||{};
-  renderFinBar(d.totalIncome||0, d.totalExpense||0);
-}
-
-async function loadSchedule(){
-  const msg=document.getElementById('dashMsg');
-  msg.textContent='查詢近期行程…';
-  const r=await ERPALIGNED.api({action:'getUpcomingSchedule',days:'14'});
-  msg.textContent='';
-  if(!r.success||!r.data||!r.data.length){document.getElementById('table').innerHTML='<div class="empty">近14天無排定場次</div>';return;}
-  const today=new Date().toISOString().substring(0,10);
-  ERPALIGNED.renderTable({data:{rows:r.data.map(e=>({'日期':e['日期'],'場次名稱':e['名稱'],'時間':e['時間'],'地點':e['地點']||'—','狀態':e['狀態']}))}}, 'table');
-}
-
-async function loadOverview(){const r=await ERPALIGNED.api({action:'getCases'},'dashMsg');ERPALIGNED.renderTable(r,'table')}
-async function healthCheck(){await ERPALIGNED.api({action:'正式平台健康檢查'},'healthMsg')}
-
-checkAuth();
+  function canAdmin(s){ return s.role==='owner'||s.role==='admin'; }
+  function canFinance(s){ return canAdmin(s)||s.role==='finance'; }
+  function canViewRegistration(s){ return ['owner','admin','staff','viewer','finance'].indexOf(s.role)>=0; }
+  function canOperateRegistration(s){ return ['owner','admin','staff'].indexOf(s.role)>=0; }
+  function canDev(s){ return s.isDemo || canAdmin(s); }
+  function finalEnabledFeatures(s){
+    var enabled=['主系統'];
+    if(canViewRegistration(s))enabled.push('報名管理');
+    if(canAdmin(s))enabled.push('Admin Console');
+    if(canFinance(s))enabled.push('財務秘書');
+    if(canDev(s))enabled.push('前端驗收','Runtime Health');
+    return enabled;
+  }
+  function field(label,value,cls){ return '<div class="field"><div class="label">'+esc(label)+'</div><div class="value '+(cls||'')+'">'+esc(value||'-')+'</div></div>'; }
+  function renderTenant(s){
+    var token=s.sessionToken ? (s.isDemo?'LOCAL-DEMO session':'sessionToken 已建立') : '無 sessionToken';
+    document.getElementById('tenantSummary').innerHTML=[
+      field('organizationName',s.organizationName),
+      field('tenantId',s.tenantId),
+      field('userName',s.userName),
+      field('userRole',ROLE_LABELS[s.role]||s.role),
+      field('plan',s.plan),
+      field('sessionToken 狀態',token,s.sessionToken?'good':'warn')
+    ].join('');
+  }
+  function renderPlan(s){
+    var enabled=finalEnabledFeatures(s);
+    var disabled=ALL_FEATURES.filter(function(f){return enabled.indexOf(f)<0;});
+    document.getElementById('enabledFeatures').innerHTML=enabled.map(function(f){return '<span class="chip ok">'+esc(f)+'</span>';}).join('');
+    document.getElementById('disabledFeatures').innerHTML=(disabled.length?disabled:['無']).map(function(f){return '<span class="chip lock">'+esc(f)+'</span>';}).join('');
+    var text='目前方案：'+s.plan+'。';
+    if(s.role==='viewer')text+='此帳號為檢視角色，建議由 owner/admin 調整角色後再執行管理或財務作業。';
+    else if(disabled.length)text+='若需要 '+disabled.join('、')+'，請由管理員調整角色或方案。';
+    else text+='此帳號已具備目前首頁所需的主要操作權限。';
+    document.getElementById('upgradeText').textContent=text;
+  }
+  function action(label,href,cls){ return '<button class="action-btn '+(cls||'')+'" onclick="location.href=\''+href+'\'">'+esc(label)+'</button>'; }
+  function renderActions(s){
+    var html='';
+    if(canViewRegistration(s))html+='<button class="action-btn primary" onclick="showRegistrationModule()">報名管理</button>';
+    if(canAdmin(s))html+=action('進入 Admin Console','./admin-console.html','gold');
+    if(canFinance(s))html+=action('進入財務秘書','./finance-secretary.html','');
+    if(canDev(s)){ html+=action('前端驗收 frontend-qa.html','./frontend-qa.html',''); html+=action('Runtime Health runtime-health.html','./runtime-health.html',''); }
+    html+='<button class="action-btn danger" onclick="logout()">登出</button>';
+    document.getElementById('quickActions').innerHTML=html;
+  }
+  function renderRoles(s){
+    document.getElementById('roleCards').innerHTML=['owner','admin','finance','staff','viewer'].map(function(role){
+      return '<div class="role-card '+(s.role===role?'active':'')+'"><div class="role-name">'+esc(ROLE_LABELS[role])+'</div><ul>'+ROLE_PERMISSIONS[role].map(function(i){return '<li>'+esc(i)+'</li>';}).join('')+'</ul></div>';
+    }).join('');
+  }
+  function renderMode(s){
+    var badge=document.getElementById('modeBadge');
+    badge.textContent=s.isDemo?'本機 Demo 模式':'正式登入模式';
+    badge.className='mode-badge'+(s.isDemo?' demo':'');
+  }
+  function val(id){ var el=document.getElementById(id); return el&&el.value ? el.value.trim() : ''; }
+  function show(id,msg){ var el=document.getElementById(id); if(el)el.textContent=msg||''; }
+  function currentActivityId(){ return val('registrationActivityId')||val('regActivityId')||'DEMO-ACT-001'; }
+  function demoKey(){ return 'govops_demo_registrations_'+((currentSession&&currentSession.tenantId)||'TENANT-DEMO'); }
+  function loadDemoRegs(){ try{var rows=JSON.parse(localStorage.getItem(demoKey())||'[]');return Array.isArray(rows)?rows:[];}catch(e){return[];} }
+  function saveDemoRegs(rows){ localStorage.setItem(demoKey(),JSON.stringify(rows)); }
+  function ensureDemoRows(activityId){
+    var rows=loadDemoRegs(); if(rows.length)return rows;
+    var now=new Date().toLocaleString('zh-TW',{hour12:false});
+    rows=[
+      {報名ID:'REG-DEMO-001',活動ID:activityId,姓名:'林明哲',電話:'0912-345-678',Email:'ming@example.com',身分別:'一般民眾',服務單位:'璞策顧問',來源渠道:'LINE',報名狀態:'待審核',建立時間:now},
+      {報名ID:'REG-DEMO-002',活動ID:activityId,姓名:'陳怡君',電話:'0988-000-168',Email:'ijun@example.com',身分別:'學生',服務單位:'台北大學',來源渠道:'Facebook',報名狀態:'已報名',建立時間:now},
+      {報名ID:'REG-DEMO-003',活動ID:activityId,姓名:'王浩宇',電話:'0977-111-222',Email:'hao@example.com',身分別:'企業代表',服務單位:'城市科技',來源渠道:'官網',報名狀態:'候補',建立時間:now}
+    ];
+    saveDemoRegs(rows); return rows;
+  }
+  function normalizeRegStatus(s){ s=String(s||'待審核').trim(); if(s==='入選')return'已入選'; return s; }
+  function statusClass(status){ var s=normalizeRegStatus(status); return s==='待審核'?'pending':s==='已報名'?'registered':s==='已入選'?'selected':s==='候補'?'waitlist':s==='未錄取'?'rejected':''; }
+  function getRows(resp){ var d=resp&&resp.data; if(Array.isArray(d))return d; return d&&(d.rows||d.data||d.items)||[]; }
+  function renderStats(rows){
+    rows=Array.isArray(rows)?rows:[];
+    var c={總報名:rows.length,待審核:0,已入選:0,候補:0,未錄取:0};
+    rows.forEach(function(r){ var s=normalizeRegStatus(r.報名狀態); if(c[s]!=null)c[s]++; });
+    document.getElementById('registrationStats').innerHTML=[['總報名',c.總報名],['待審核',c.待審核],['已入選',c.已入選],['候補',c.候補],['未錄取',c.未錄取]].map(function(x){return '<div class="reg-stat"><b>'+x[1]+'</b><span>'+esc(x[0])+'</span></div>';}).join('');
+  }
+  function renderTable(resp,id){
+    var box=document.getElementById(id); if(!box)return;
+    var rows=getRows(resp);
+    if(!rows.length){ box.innerHTML='<div class="reg-empty">目前沒有可顯示的報名資料。</div>'; if(id==='registrationTable')renderStats([]); return; }
+    if(id==='registrationTable')renderStats(rows);
+    var keys=['報名ID','姓名','電話','Email','身分別','服務單位','來源渠道','報名狀態','建立時間'];
+    box.innerHTML='<table><thead><tr>'+keys.map(function(k){return '<th>'+esc(k)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.slice(0,80).map(function(r){return '<tr>'+keys.map(function(k){return k==='報名狀態'?'<td><span class="status-badge '+statusClass(r[k])+'">'+esc(normalizeRegStatus(r[k]))+'</span></td>':'<td>'+esc(r[k])+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+  }
+  async function api(payload,target){
+    show(target,'處理中，請稍候...');
+    if(currentSession && currentSession.isDemo){
+      var rows=ensureDemoRows(currentActivityId()), actionName=payload.action, result={success:true,message:'Demo 操作完成。',data:{rows:rows}};
+      if(actionName==='新增報名'){
+        var row={報名ID:'REG-DEMO-'+Date.now().toString(36).toUpperCase(),活動ID:payload.活動ID,姓名:payload.姓名,電話:payload.電話,Email:payload.Email,身分別:payload.身分別,服務單位:payload.服務單位,來源渠道:payload.來源渠道,報名狀態:'待審核',建立時間:new Date().toLocaleString('zh-TW',{hour12:false})};
+        rows.unshift(row); saveDemoRegs(rows); result={success:true,message:'Demo 報名已新增。',data:{rows:rows,報名ID:row.報名ID}};
+      } else if(actionName==='審核報名') {
+        rows=rows.map(function(r){return String(r.報名ID)===String(payload.報名ID)?Object.assign({},r,{報名狀態:normalizeRegStatus(payload.報名狀態)}):r;}); saveDemoRegs(rows); result={success:true,message:'Demo 報名狀態已更新。',data:{rows:rows}};
+      } else if(actionName==='從報名表單同步報名資料') {
+        rows=[{報名ID:'REG-FORM-'+Date.now().toString(36).toUpperCase(),活動ID:currentActivityId(),姓名:'Google 表單學員',電話:'0900-123-001',Email:'form@example.com',身分別:'一般民眾',服務單位:'表單來源單位',來源渠道:'Google Form',報名狀態:'待審核',建立時間:new Date().toLocaleString('zh-TW',{hour12:false})}].concat(rows); saveDemoRegs(rows); result={success:true,message:'Demo Google Form 同步完成。',data:{rows:rows}};
+      }
+      show(target,result.message); return result;
+    }
+    try {
+      var params=Object.assign({tenantId:currentSession.tenantId,userId:currentSession.userId,userRole:currentSession.role,plan:currentSession.plan,sessionToken:currentSession.sessionToken},payload);
+      var res=await fetch(API_URL+'?'+new URLSearchParams(params).toString());
+      var data=await res.json();
+      show(target,data.message||'操作完成。');
+      return data;
+    } catch(e) {
+      show(target,'系統暫時無法完成操作，請稍後再試。');
+      return {success:false,data:{rows:[]}};
+    }
+  }
+  function requireOperate(target){ if(canOperateRegistration(currentSession))return true; show(target,'目前角色為唯讀權限，只能查詢報名資料，不能新增、同步或審核。'); return false; }
+  window.applyRegistrationActivity=function(){ var id=currentActivityId(); document.getElementById('registrationActivityId').value=id; document.getElementById('regActivityId').value=id; show('regMsg','已套用活動：'+id); };
+  window.autoFillSheetId=function(){ var s=val('formUrl'), m=s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/); if(m){document.getElementById('responseSheetId').value=m[1]; show('formMsg','已抓取試算表 ID。'); return true;} show('formMsg','請貼上 Google 試算表網址。'); return false; };
+  window.saveFormSetting=function(){ if(!requireOperate('formMsg'))return; show('formMsg','表單設定已儲存。'); };
+  window.syncRegistration=async function(){ if(!requireOperate('formMsg'))return; var r=await api({action:'從報名表單同步報名資料',活動ID:currentActivityId()},'formMsg'); renderTable(r,'registrationTable'); };
+  window.createRegistration=async function(){ if(!requireOperate('regMsg'))return; if(!val('regName')||!val('regPhone')){show('regMsg','請先填寫姓名與電話。');return;} var r=await api({action:'新增報名',活動ID:currentActivityId(),姓名:val('regName'),電話:val('regPhone'),Email:val('regEmail'),身分別:val('identity'),來源渠道:val('source'),服務單位:val('orgName'),備註:val('regNote')},'regMsg'); renderTable(r,'registrationTable'); };
+  window.queryRegistrationList=async function(){ var r=await api({action:'查詢報名資料列表',活動ID:currentActivityId()},'regMsg'); renderTable(r,'registrationTable'); };
+  window.reviewRegistration=async function(){ if(!requireOperate('reviewMsg'))return; if(!val('reviewRegId')){show('reviewMsg','請輸入報名ID。');return;} var r=await api({action:'審核報名',報名ID:val('reviewRegId'),活動ID:currentActivityId(),報名狀態:normalizeRegStatus(val('reviewStatus'))},'reviewMsg'); renderTable(r,'reviewTable'); renderTable(r,'registrationTable'); };
+  window.setReviewStatus=function(status){ document.getElementById('reviewStatus').value=status; window.reviewRegistration(); };
+  window.queryReviewList=async function(status){ var r=await api({action:'查詢報名審核名單',活動ID:currentActivityId(),報名狀態:status||''},'reviewMsg'); renderTable(r,'reviewTable'); };
+  window.scrollReg=function(id){ var el=document.getElementById(id); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); };
+  window.showRegistrationModule=function(){ var mod=document.getElementById('registrationModule'); mod.classList.remove('hidden'); renderRegistrationModule(currentSession); if(location.hash!=='#registration')history.replaceState(null,'','#registration'); setTimeout(function(){mod.scrollIntoView({behavior:'smooth',block:'start'});},20); };
+  function renderRegistrationModule(s){
+    var mod=document.getElementById('registrationModule'); mod.classList.toggle('is-readonly',!canOperateRegistration(s));
+    document.getElementById('registrationMode').textContent=s.isDemo?'本機 Demo 模式':'正式登入模式';
+    document.getElementById('registrationTenantLine').textContent=s.organizationName+'｜'+s.userName+'｜'+s.role;
+    if(!val('registrationActivityId'))document.getElementById('registrationActivityId').value='DEMO-ACT-001';
+    if(!val('regActivityId'))document.getElementById('regActivityId').value=currentActivityId();
+    var note=document.getElementById('registrationPermissionNote');
+    if(canOperateRegistration(s)){note.classList.add('hidden');note.textContent='';}
+    else{note.classList.remove('hidden');note.textContent='目前角色為唯讀權限，只能查詢報名資料，不能新增、同步或審核。';}
+    renderStats([]);
+    if(s.isDemo)renderTable({success:true,data:{rows:ensureDemoRows(currentActivityId())}},'registrationTable');
+  }
+  window.logout=function(){ ['govops_auth','govops_profile','govops_usage'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}}); location.href='./login.html'; };
+  function boot(){
+    currentSession=readSession();
+    if(!currentSession.hasSession){ document.getElementById('emptyState').style.display='block'; setTimeout(function(){location.href='./login.html?redirect='+encodeURIComponent('/govbid-os/app/dashboard.html');},500); return; }
+    document.getElementById('dashboardApp').style.display='';
+    renderMode(currentSession); renderTenant(currentSession); renderPlan(currentSession); renderActions(currentSession); renderRoles(currentSession); renderRegistrationModule(currentSession);
+    if(location.hash==='#registration')setTimeout(function(){window.showRegistrationModule();},50);
+  }
+  boot();
+})();
 </script>
 </body>
 </html>
