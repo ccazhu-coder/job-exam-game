@@ -454,8 +454,8 @@
       var html = '';
       html += '<div><strong>' + escapeHtml(s.organizationName || s['組織名稱'] || '政務營運系統') + '</strong></div>';
       html += '<div>使用者：' + escapeHtml(s.ownerName || s.userName || s.name || '管理者') + '</div>';
-      html += '<div>角色：' + escapeHtml(s.userRole || s.role || 'owner') + '</div>';
-      html += '<div>方案：' + escapeHtml(s.plan || 'FREE') + '</div>';
+      html += '<div>角色：' + escapeHtml(displayStatus(s.userRole || s.role || 'owner')) + '</div>';
+      html += '<div>方案：' + escapeHtml(displayStatus(s.plan || 'free')) + '</div>';
       html += '<div>組織狀態：' + escapeHtml(s.tenantId ? '已綁定' : '未綁定') + '</div>';
       document.getElementById('profileBox').innerHTML = html;
     }
