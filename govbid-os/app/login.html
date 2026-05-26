@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GovOps OS｜SaaS 組織登入</title>
+<title>政務營運系統｜組織登入</title>
 <link rel="stylesheet" href="./erp-page-style.css">
 <script src="./config.js"></script>
 <style>
@@ -52,27 +52,27 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
 <div class="auth-shell">
   <section class="intro">
     <div>
-      <div class="eyebrow">GovOps OS SaaS MVP</div>
+      <div class="eyebrow">政務營運系統</div>
       <h1>政府標案全流程營運系統</h1>
-      <p>正式版入口會先確認組織、角色、方案與使用量，再進入標案、課程、CRM、財務、結案與文件中心。</p>
+      <p>正式版入口會先確認組織、角色、方案與使用量，再進入標案、課程、客戶管理、財務、結案與文件中心。</p>
       <div class="feature-grid">
         <div class="feature"><strong>多組織</strong><span>以工作室或公司為租戶隔離資料。</span></div>
         <div class="feature"><strong>角色權限</strong><span>負責人、專案、財務、行政與檢視者。</span></div>
-        <div class="feature"><strong>方案限制</strong><span>活動、CRM、AI 查詢與使用者數控管。</span></div>
-        <div class="feature"><strong>正式 API</strong><span>可接 Apps Script、Supabase 或會員資料表。</span></div>
+        <div class="feature"><strong>方案限制</strong><span>活動、客戶管理、智慧查詢與使用者數控管。</span></div>
+        <div class="feature"><strong>正式服務</strong><span>可串接正式資料服務與會員資料表。</span></div>
       </div>
-      <div class="status-panel">開發期間可使用右側 Demo 工作區先進入主系統測試；正式帳號登入仍走 Apps Script 後端。</div>
+      <div class="status-panel">測試期間可使用右側本機工作區先進入主系統檢查；正式帳號登入會走正式資料服務。</div>
     </div>
     <div class="plan-row" aria-label="方案摘要">
-      <div class="plan"><b>免費體驗版</b><span>3 場活動、50 筆 CRM</span></div>
-      <div class="plan"><b>專業版</b><span>100 場活動、AI 300 次</span></div>
+      <div class="plan"><b>免費體驗版</b><span>3 場活動、50 筆客戶資料</span></div>
+      <div class="plan"><b>專業版</b><span>100 場活動、智慧查詢 300 次</span></div>
       <div class="plan"><b>企業版</b><span>多帳號與客製上限</span></div>
     </div>
   </section>
 
   <main class="card">
-    <div class="brand">GovOps OS</div>
-    <div class="tagline">SaaS 組織登入與開發測試入口</div>
+    <div class="brand">政務營運系統</div>
+    <div class="tagline">組織登入與測試入口</div>
 
     <div class="saved-box" id="savedBox">
       <div class="saved-name" id="savedName"></div>
@@ -82,7 +82,7 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
     </div>
 
     <div id="loginForm">
-      <div class="fi"><label>Email</label><input id="l_email" type="email" placeholder="your@email.com" autocomplete="email"></div>
+      <div class="fi"><label>電子信箱</label><input id="l_email" type="email" placeholder="請輸入電子信箱" autocomplete="email"></div>
       <div class="fi"><label>密碼</label><input id="l_pwd" type="password" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="err" id="errMsg"></div>
       <button class="btn" id="loginBtn" onclick="doLogin()">登入</button>
@@ -92,11 +92,11 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
 
     <div class="demo-box">
       <div class="field-row">
-        <div class="fi"><label>Demo 組織</label><input id="demo_org" value="璞策顧問工作室"></div>
+        <div class="fi"><label>測試組織</label><input id="demo_org" value="璞策顧問工作室"></div>
         <div class="fi"><label>角色</label><select id="demo_role"><option value="owner">負責人</option><option value="admin">專案管理者</option><option value="finance">財務人員</option><option value="staff">行政／講師</option><option value="viewer">只讀檢視者</option></select></div>
       </div>
-      <p>建立本機 session，不呼叫後端，適合檢查 dashboard、模組入口與權限狀態。</p>
-      <button class="btn ghost" onclick="createDemoSession()">建立 Demo 工作區並進入</button>
+      <p>建立本機登入狀態，不呼叫正式資料服務，適合檢查營運首頁、模組入口與權限狀態。</p>
+      <button class="btn ghost" onclick="createDemoSession()">建立測試工作區並進入</button>
     </div>
 
     <button class="btn ghost" onclick="location.href='./register.html'">建立正式組織帳號</button>
@@ -118,9 +118,9 @@ function normalizeSessionData(d){
     userId:d.userId||('USR-'+Date.now().toString(36).toUpperCase()),
     tenantId:tenantId,
     workspaceId:workspaceId,
-    workspaceName:d.workspaceName||d.orgName||'GovOps Demo 工作區',
-    userName:d.userName||d.name||'Demo 使用者',
-    email:d.email||'demo@govops.local',
+    workspaceName:d.workspaceName||d.orgName||'本機測試工作區',
+    userName:d.userName||d.name||'測試使用者',
+    email:d.email||'test@example.local',
     role:role,
     userRole:role,
     planId:planId,
@@ -144,6 +144,7 @@ function saveSession(d){
 }
 function showErr(msg){var e=document.getElementById('errMsg');e.textContent=msg;e.style.display='';}
 function showLoginForm(){document.getElementById('savedBox').style.display='none';document.getElementById('loginForm').style.display='';}
+function planLabel(plan){return {enterprise:'企業版',pro:'專業版',free:'免費版'}[String(plan||'').toLowerCase()]||plan||'未標示';}
 function getRedirectTarget(){
   var p=new URLSearchParams(location.search).get('redirect')||'';
   var target=p?decodeURIComponent(p):'./dashboard.html';
@@ -168,26 +169,26 @@ async function doQuickLogin(){
 async function doLogin(){
   var email=document.getElementById('l_email').value.trim();
   var pwd=document.getElementById('l_pwd').value;
-  if(!email||!pwd){showErr('請填寫 Email 和密碼');return;}
+  if(!email||!pwd){showErr('請填寫電子信箱和密碼');return;}
   var btn=document.getElementById('loginBtn');
   btn.textContent='登入中...';btn.disabled=true;document.getElementById('errMsg').style.display='none';
   var r=await GovOpsAPI.post({action:'loginUser',email:email,password:pwd});
   btn.textContent='登入';btn.disabled=false;
-  if(!r.success){showErr(r.message||'登入失敗，請確認 Email 和密碼');return;}
+  if(!r.success){showErr(r.message||'登入失敗，請確認電子信箱和密碼');return;}
   saveSession(r.data);window.location.href=getRedirectTarget();
 }
 function createDemoSession(){
-  var org=document.getElementById('demo_org').value.trim()||'GovOps Demo 工作區';
+  var org=document.getElementById('demo_org').value.trim()||'本機測試工作區';
   var role=document.getElementById('demo_role').value||'owner';
-  saveSession({workspaceName:org,orgName:org,userName:'Demo 管理者',email:'demo@govops.local',role:role,planId:'pro',planName:'專業版',status:'active'});
+  saveSession({workspaceName:org,orgName:org,userName:'測試管理者',email:'test@example.local',role:role,planId:'pro',planName:'專業版',status:'active'});
   window.location.href=getRedirectTarget();
 }
 (function(){
   try{
     var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
     if(auth.sessionToken&&auth.isLoggedIn&&(auth.userName||auth.email)){
-      document.getElementById('savedName').textContent=(auth.userName||auth.email)+'（'+(auth.workspaceName||auth.tenantId||'工作區')+'）';
-      document.getElementById('savedSub').textContent=(auth.email||'')+'　方案：'+(auth.planName||auth.planId||auth.plan||'');
+      document.getElementById('savedName').textContent=(auth.userName||'使用者')+'（'+(auth.workspaceName||'工作區')+'）';
+      document.getElementById('savedSub').textContent='方案：'+(auth.planName||planLabel(auth.planId||auth.plan));
       document.getElementById('savedBox').style.display='block';
       document.getElementById('loginForm').style.display='none';
     }

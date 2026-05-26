@@ -1,35 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GovOps OS｜Runtime Health Check</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>政務營運系統｜系統健康檢查</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;background:#f4f7fb;color:#182033}.wrap{max-width:1080px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#102542,#1d4e89);color:#fff;border-radius:24px;padding:26px 20px;margin:16px 0}.hero h1{margin:0;font-size:26px}.hero p{line-height:1.7;opacity:.92}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:#fff;border:1px solid #e7edf5;border-radius:18px;padding:16px;box-shadow:0 10px 28px rgba(16,37,66,.08)}.span2{grid-column:span 2}h2{font-size:18px;margin:0 0 12px}.btns{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}button,a.btn{border:0;border-radius:12px;padding:12px 16px;font-size:16px;font-weight:900;cursor:pointer;background:#1d4e89;color:#fff;text-decoration:none;display:inline-block}.secondary{background:#e8eef7!important;color:#1d3557!important}.status{display:inline-block;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}.ok{background:#ecfdf3;color:#067647}.bad{background:#fef3f2;color:#b42318}.warn{background:#fff7ed;color:#9a3412}.msg{background:#f8fafc;border:1px dashed #cfd8e6;border-radius:12px;padding:12px;white-space:pre-wrap;line-height:1.65;min-height:80px;overflow:auto}.kv{display:grid;grid-template-columns:180px 1fr;gap:8px 10px;font-size:14px}.kv b{color:#344054}.small{font-size:13px;color:#667085;line-height:1.6}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;word-break:break-all}@media(max-width:760px){.grid{grid-template-columns:1fr}.span2{grid-column:span 1}.kv{grid-template-columns:1fr}}
+    *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",Arial,sans-serif;background:#f4f7fb;color:#182033}.wrap{max-width:1080px;margin:0 auto;padding:18px}.hero{background:linear-gradient(135deg,#102542,#1d4e89);color:#fff;border-radius:24px;padding:26px 20px;margin:16px 0}.hero h1{margin:0;font-size:26px}.hero p{line-height:1.7;opacity:.92}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:#fff;border:1px solid #e7edf5;border-radius:18px;padding:16px;box-shadow:0 10px 28px rgba(16,37,66,.08)}.span2{grid-column:span 2}h2{font-size:18px;margin:0 0 12px}.btns{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}button,a.btn{border:0;border-radius:12px;padding:12px 16px;font-size:16px;font-weight:900;cursor:pointer;background:#1d4e89;color:#fff;text-decoration:none;display:inline-block}.secondary{background:#e8eef7!important;color:#1d3557!important}.status{display:inline-block;border-radius:999px;padding:6px 10px;font-weight:900;font-size:13px}.ok{background:#ecfdf3;color:#067647}.bad{background:#fef3f2;color:#b42318}.warn{background:#fff7ed;color:#9a3412}.msg{background:#f8fafc;border:1px dashed #cfd8e6;border-radius:12px;padding:12px;white-space:pre-wrap;line-height:1.65;min-height:80px;overflow:auto}.kv{display:grid;grid-template-columns:180px 1fr;gap:8px 10px;font-size:14px}.kv b{color:#344054}@media(max-width:760px){.grid{grid-template-columns:1fr}.span2{grid-column:span 1}.kv{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="hero">
-      <h1>GovOps OS｜Runtime Health Check</h1>
-      <p>安全測試頁，不修改正式大型 HTML。用於檢查 Shared Config、SaaS Runtime、API Client、localStorage Session 與 Apps Script 後端健康狀態。</p>
+      <h1>系統健康檢查</h1>
+      <p>安全測試頁，只顯示中文摘要，不顯示系統內部資料或技術欄位。</p>
       <div class="btns">
         <button onclick="runAllTests()">一鍵測試</button>
         <button class="secondary" onclick="seedDemoSession()">建立測試登入資料</button>
-        <button class="secondary" onclick="clearSession()">清除本機 Session</button>
-        <a class="btn secondary" href="./login.html">回登入頁</a>
-        <a class="btn secondary" href="./index.html">回主系統</a>
+        <button class="secondary" onclick="clearSession()">清除本機登入</button>
+        <a class="btn secondary" href="./login.html">返回登入頁</a>
+        <a class="btn secondary" href="./dashboard.html">回營運首頁</a>
         <a class="btn secondary" href="./finance-secretary.html">回財務秘書</a>
       </div>
     </section>
 
     <section class="grid">
-      <div class="card"><h2>Config 狀態</h2><div id="configStatus" class="msg">尚未測試。</div></div>
-      <div class="card"><h2>SaaS Runtime 狀態</h2><div id="runtimeStatus" class="msg">尚未測試。</div></div>
-      <div class="card"><h2>API Client 狀態</h2><div id="apiStatus" class="msg">尚未測試。</div></div>
-      <div class="card"><h2>Session 狀態</h2><div id="sessionStatus" class="msg">尚未測試。</div></div>
-      <div class="card span2"><h2>送出的 SaaS 參數</h2><div id="payloadStatus" class="msg mono">尚未測試。</div></div>
-      <div class="card span2"><h2>後端健康檢查結果</h2><div id="backendStatus" class="msg">尚未測試。</div></div>
+      <div class="card"><h2>設定狀態</h2><div id="configStatus" class="msg">尚未測試。</div></div>
+      <div class="card"><h2>核心程式狀態</h2><div id="runtimeStatus" class="msg">尚未測試。</div></div>
+      <div class="card"><h2>資料服務狀態</h2><div id="apiStatus" class="msg">尚未測試。</div></div>
+      <div class="card"><h2>登入狀態</h2><div id="sessionStatus" class="msg">尚未測試。</div></div>
+      <div class="card span2"><h2>送出參數摘要</h2><div id="payloadStatus" class="msg">尚未測試。</div></div>
+      <div class="card span2"><h2>正式服務健康檢查</h2><div id="backendStatus" class="msg">尚未測試。</div></div>
       <div class="card span2"><h2>總結</h2><div id="summaryStatus" class="msg">尚未測試。</div></div>
     </section>
   </main>
@@ -39,20 +39,19 @@
 <script src="./govops-api-client.js?v=p0-api"></script>
 <script>
 function setBox(id, text, state){
-  const el=document.getElementById(id);
+  var el=document.getElementById(id);
   if(!el)return;
-  const badge=state?'<span class="status '+state.cls+'">'+state.label+'</span>\n\n':'';
+  var badge=state?'<span class="status '+state.cls+'">'+state.label+'</span>\n\n':'';
   el.innerHTML=badge+escapeHtml(String(text||''));
 }
-function escapeHtml(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function pretty(obj){try{return JSON.stringify(obj,null,2)}catch(e){return String(obj)}}
-function safeParse(key){try{return JSON.parse(localStorage.getItem(key)||'null')}catch(e){return null}}
-function status(ok){return ok?{label:'PASS',cls:'ok'}:{label:'FAIL',cls:'bad'}}
-function warn(){return {label:'WARN',cls:'warn'}}
+function escapeHtml(s){return s.replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function safeParse(key){try{return JSON.parse(localStorage.getItem(key)||'null');}catch(e){return null;}}
+function status(ok){return ok?{label:'通過',cls:'ok'}:{label:'未通過',cls:'bad'};}
+function warn(){return {label:'需注意',cls:'warn'};}
 function seedDemoSession(){
-  const profile={tenantId:'QA-TENANT',userId:'QA-USER',orgName:'GovOps QA 測試組織',role:'owner',roleLabel:'負責人／系統管理者',plan:'PRO',planLabel:'專業版',status:'active',savedAt:new Date().toISOString()};
+  var profile={tenantId:'QA-TENANT',userId:'QA-USER',orgName:'測試組織',role:'owner',roleLabel:'負責人',plan:'pro',planLabel:'專業版',status:'active',savedAt:new Date().toISOString()};
   localStorage.setItem('govops_profile',JSON.stringify(profile));
-  localStorage.setItem('govops_auth',JSON.stringify({tenantId:profile.tenantId,userId:profile.userId,userRole:profile.role,plan:profile.plan,status:'active'}));
+  localStorage.setItem('govops_auth',JSON.stringify({tenantId:profile.tenantId,userId:profile.userId,userRole:profile.role,plan:profile.plan,status:'active',sessionToken:'LOCAL-DEMO-HEALTH'}));
   localStorage.setItem('govops_usage',JSON.stringify({events:0,crm:0,users:1,ai:0}));
   if(window.GovOpsSaaS&&window.GovOpsSaaS.repairStoredSession)window.GovOpsSaaS.repairStoredSession();
   runAllTests();
@@ -63,47 +62,57 @@ function clearSession(){
   localStorage.removeItem('govops_usage');
   runAllTests();
 }
+function summarizeSession(profile,auth){
+  return '組織狀態：'+(profile&&profile.tenantId?'已綁定':'未綁定')+'\n使用者狀態：'+(profile&&profile.userId?'已建立':'未建立')+'\n角色：'+roleLabel((profile&&profile.role)||(auth&&auth.userRole))+'\n方案：'+planLabel((profile&&profile.plan)||(auth&&auth.plan));
+}
+function roleLabel(role){return {owner:'負責人',admin:'管理者',finance:'財務',staff:'行政／執行',viewer:'檢視'}[String(role||'').toLowerCase()]||'未設定';}
+function planLabel(plan){return {enterprise:'企業版',pro:'專業版',free:'免費版'}[String(plan||'').toLowerCase()]||plan||'-';}
+function safeMessage(msg,ok){
+  var text=String(msg||'');
+  if(!text)return ok?'正式服務回應正常。':'正式服務回應異常。';
+  if(/[A-Za-z]{2,}|https?:|script\.google|exception|stack|undefined|JSON|API|Backend|Debug/i.test(text))return ok?'正式服務回應正常。':'正式服務回應異常，請稍後再試。';
+  return text;
+}
 async function runAllTests(){
-  const results=[];
+  var results=[];
 
-  const configOk=!!(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL);
-  results.push(['Config',configOk]);
-  setBox('configStatus',pretty(window.GOVOPS_CONFIG||{錯誤:'找不到 window.GOVOPS_CONFIG'}),status(configOk));
+  var configOk=!!(window.GOVOPS_CONFIG&&window.GOVOPS_CONFIG.API_URL);
+  results.push(['設定狀態',configOk]);
+  setBox('configStatus',configOk?'設定已載入，正式服務位置已設定。':'找不到設定檔或正式服務位置。',status(configOk));
 
-  const runtimeOk=!!(window.GovOpsSaaS&&window.GovOpsSaaS.getProfile&&window.GovOpsSaaS.toBackendParams);
-  results.push(['SaaS Runtime',runtimeOk]);
-  const profile=runtimeOk?window.GovOpsSaaS.getProfile():safeParse('govops_profile');
-  setBox('runtimeStatus',runtimeOk?'GovOpsSaaS 已載入。\n\n目前 Profile：\n'+pretty(profile):'找不到 GovOpsSaaS 或必要函式。',status(runtimeOk));
+  var runtimeOk=!!(window.GovOpsSaaS&&window.GovOpsSaaS.getProfile&&window.GovOpsSaaS.toBackendParams);
+  results.push(['核心程式',runtimeOk]);
+  setBox('runtimeStatus',runtimeOk?'核心程式已載入。':'找不到核心程式或必要函式。',status(runtimeOk));
 
-  const apiOk=!!(window.GovOpsAPI&&window.GovOpsAPI.request&&window.GovOpsAPI.getDefaultApiUrl);
-  results.push(['API Client',apiOk]);
-  setBox('apiStatus',apiOk?'GovOpsAPI 已載入。\nAPI URL：\n'+window.GovOpsAPI.getDefaultApiUrl():'找不到 GovOpsAPI 或必要函式。',status(apiOk));
+  var apiOk=!!(window.GovOpsAPI&&window.GovOpsAPI.request);
+  results.push(['資料服務',apiOk]);
+  setBox('apiStatus',apiOk?'資料服務已載入。':'找不到資料服務。',status(apiOk));
 
-  const session={govops_profile:safeParse('govops_profile'),govops_auth:safeParse('govops_auth'),govops_usage:safeParse('govops_usage')};
-  const sessionOk=!!(session.govops_profile&&session.govops_auth);
-  results.push(['Session',sessionOk]);
-  setBox('sessionStatus',pretty(session),sessionOk?status(true):warn());
+  var profile=safeParse('govops_profile');
+  var auth=safeParse('govops_auth');
+  var sessionOk=!!(profile&&auth);
+  results.push(['登入狀態',sessionOk]);
+  setBox('sessionStatus',sessionOk?summarizeSession(profile,auth):'目前沒有登入狀態，可先建立測試登入資料。',sessionOk?status(true):warn());
 
-  const payload=window.GovOpsSaaS&&window.GovOpsSaaS.toBackendParams?window.GovOpsSaaS.toBackendParams({action:'系統健康檢查',runtimeHealthCheck:'Y'}):{action:'系統健康檢查',錯誤:'GovOpsSaaS.toBackendParams 不存在'};
-  const payloadOk=!!(payload.tenantId&&payload.userId&&payload.userRole&&payload.plan);
-  results.push(['Payload',payloadOk]);
-  setBox('payloadStatus',pretty(payload),status(payloadOk));
+  var payloadOk=!!(profile&&profile.tenantId&&profile.userId&&(profile.role||profile.userRole)&&profile.plan);
+  results.push(['送出參數',payloadOk]);
+  setBox('payloadStatus',payloadOk?'已具備組織、使用者、角色與方案資料。':'缺少組織、使用者、角色或方案資料。',payloadOk?status(true):warn());
 
   if(!apiOk){
-    results.push(['Backend',false]);
-    setBox('backendStatus','GovOpsAPI 不存在，無法測試後端。',status(false));
+    results.push(['正式服務',false]);
+    setBox('backendStatus','資料服務不存在，無法測試正式服務。',status(false));
   }else{
-    setBox('backendStatus','正在呼叫 Apps Script 系統健康檢查...',warn());
-    const backend=await window.GovOpsAPI.request({action:'系統健康檢查',runtimeHealthCheck:'Y'});
-    const backendOk=!!(backend&&backend.success===true);
-    results.push(['Backend',backendOk]);
-    setBox('backendStatus',pretty(backend),status(backendOk));
+    setBox('backendStatus','正在呼叫正式服務健康檢查...',warn());
+    var backend=await window.GovOpsAPI.request({action:'系統健康檢查',runtimeHealthCheck:'Y'});
+    var backendOk=!!(backend&&backend.success===true);
+    results.push(['正式服務',backendOk]);
+    setBox('backendStatus',safeMessage(backend&&backend.message,backendOk),status(backendOk));
   }
 
-  const pass=results.filter(function(x){return x[1]}).length;
-  const total=results.length;
-  const failed=results.filter(function(x){return !x[1]}).map(function(x){return x[0]}).join('、')||'無';
-  setBox('summaryStatus','測試完成。\nPASS：'+pass+' / '+total+'\n未通過項目：'+failed+'\n\n提醒：Session 未建立時可先按「建立測試登入資料」。',pass===total?status(true):warn());
+  var pass=results.filter(function(x){return x[1];}).length;
+  var total=results.length;
+  var failed=results.filter(function(x){return !x[1];}).map(function(x){return x[0];}).join('、')||'無';
+  setBox('summaryStatus','測試完成。\n通過：'+pass+' / '+total+'\n未通過項目：'+failed+'\n\n提醒：登入狀態未建立時可先按「建立測試登入資料」。',pass===total?status(true):warn());
 }
 window.addEventListener('DOMContentLoaded',runAllTests);
 </script>

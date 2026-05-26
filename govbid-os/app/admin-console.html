@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GovOps SaaS Admin Console</title>
+  <title>政務營運系統｜管理控制台</title>
   <script src="./config.js?v=p0-api"></script>
   <script src="./saas-runtime.js"></script>
   <script src="./govops-api-client.js?v=p0-api"></script>
@@ -265,8 +265,8 @@
   <div id="app" class="app" style="display:none;">
     <section class="hero">
       <div>
-        <h1>GovOps SaaS Admin Console</h1>
-        <p>正式商用營運控制中心｜Production Health、Recovery、Tenant、Billing、Feature、API 統一管理</p>
+        <h1>管理控制台</h1>
+        <p>正式商用營運控制中心｜系統健康、復原、組織、帳務、功能與使用量統一管理</p>
       </div>
       <div class="profile" id="profileBox">
         <div>登入狀態檢查中...</div>
@@ -276,12 +276,12 @@
     <div id="notice" class="notice"></div>
 
     <section class="toolbar">
-      <button onclick="runSelfCheck()">執行 Production Self Check</button>
-      <button onclick="runRecovery()">執行 Runtime Recovery</button>
+      <button onclick="runSelfCheck()">執行正式環境自檢</button>
+      <button onclick="runRecovery()">執行系統復原檢查</button>
       <button onclick="loadTenantStatus()">查詢租戶狀態</button>
       <button onclick="loadBillingSummary()">查詢帳單狀態</button>
-      <button onclick="loadFeatureMatrix()">查詢 Feature Matrix</button>
-      <button onclick="loadApiUsage()">查詢 API Usage</button>
+      <button onclick="loadFeatureMatrix()">查詢功能權限</button>
+      <button onclick="loadApiUsage()">查詢服務使用量</button>
       <button class="danger" onclick="logout()">登出</button>
     </section>
 
@@ -297,48 +297,48 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Runtime Dependency 狀態</h2><span id="runtimeBadge" class="badge">待檢查</span></div>
+        <div class="card-header"><h2>系統依賴狀態</h2><span id="runtimeBadge" class="badge">待檢查</span></div>
         <div class="card-body"><div id="runtimeDependencies" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Production Health Snapshot</h2><span class="badge">Snapshot</span></div>
+        <div class="card-header"><h2>正式環境健康摘要</h2><span class="badge">摘要</span></div>
         <div class="card-body"><div id="snapshotBox" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Tenant Operation Status</h2><span class="badge">Tenant</span></div>
+        <div class="card-header"><h2>組織營運狀態</h2><span class="badge">組織</span></div>
         <div class="card-body"><div id="tenantStatus" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Error Analytics</h2><span id="errorBadge" class="badge">Errors</span></div>
+        <div class="card-header"><h2>錯誤分析</h2><span id="errorBadge" class="badge">錯誤</span></div>
         <div class="card-body"><div id="errorAnalytics" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Recovery Report</h2><span id="recoveryBadge" class="badge">Recovery</span></div>
+        <div class="card-header"><h2>復原報告</h2><span id="recoveryBadge" class="badge">復原</span></div>
         <div class="card-body"><div id="recoveryReport" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Billing Summary</h2><span id="billingBadge" class="badge">Billing</span></div>
+        <div class="card-header"><h2>帳務摘要</h2><span id="billingBadge" class="badge">帳務</span></div>
         <div class="card-body"><div id="billingSummary" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>Feature Matrix</h2><span class="badge">Features</span></div>
+        <div class="card-header"><h2>功能權限</h2><span class="badge">功能</span></div>
         <div class="card-body"><div id="featureMatrix" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>API Usage Summary</h2><span class="badge">API</span></div>
+        <div class="card-header"><h2>服務使用量摘要</h2><span class="badge">使用量</span></div>
         <div class="card-body"><div id="apiUsage" class="list"><div class="empty">尚未載入資料</div></div></div>
       </div>
 
       <div class="card full">
-        <div class="card-header"><h2>原始回應資料</h2><span class="badge">Debug Safe View</span></div>
-        <div class="card-body"><pre id="rawBox">尚未載入資料</pre></div>
+        <div class="card-header"><h2>操作摘要</h2><span class="badge">安全摘要</span></div>
+        <div class="card-body"><pre id="rawBox">尚未執行操作</pre></div>
       </div>
     </section>
   </div>
@@ -346,7 +346,7 @@
   <div id="deny" class="deny" style="display:none;">
     <div class="deny-card">
       <h1>你沒有系統管理權限</h1>
-      <p>此頁面僅允許 owner / admin 使用。</p>
+      <p>此頁面僅允許負責人或管理者使用。</p>
       <button onclick="logout()">返回登入</button>
     </div>
   </div>
@@ -413,7 +413,7 @@
       var session = state.session || {};
       var token = String(auth.sessionToken || auth.token || session.sessionToken || session.token || '');
       var email = String(auth.email || session.email || '').toLowerCase();
-      return token.indexOf('LOCAL-DEMO-') === 0 || email === 'demo@govops.local';
+      return token.indexOf('LOCAL-DEMO-') === 0 || email === 'demo@govops.local' || email === 'test@example.local';
     }
 
     function isLocalDevHost() {
@@ -427,20 +427,20 @@
           ok: 3,
           total: 3,
           dependencies: [
-            { runtimeName: 'Session', status: 'OK', description: 'Local demo session' },
-            { runtimeName: 'Dashboard', status: 'OK', description: 'Frontend route verified' },
-            { runtimeName: 'API Client', status: 'DEMO', description: 'Backend calls mocked locally' }
+            { runtimeName: '登入狀態', status: '正常', description: '本機測試登入' },
+            { runtimeName: '營運首頁', status: '正常', description: '前台路由已驗證' },
+            { runtimeName: '資料服務', status: '測試', description: '本機測試不呼叫正式資料服務' }
           ]
         },
-        latestSnapshot: { systemStatus: 'DEMO', tenantCount: 1, errorCount: 0 },
-        tenantStatus: { tenants: [{ tenantId: s.tenantId || 'TENANT-DEMO', organizationName: s.workspaceName || s.orgName || 'Demo 工作區', status: 'ACTIVE', plan: s.planId || s.plan || 'pro' }] },
+        latestSnapshot: { systemStatus: '測試', tenantCount: 1, errorCount: 0 },
+        tenantStatus: { tenants: [{ tenantId: s.tenantId || 'TENANT-DEMO', organizationName: s.workspaceName || s.orgName || '測試工作區', status: 'ACTIVE', plan: s.planId || s.plan || 'pro' }] },
         errorAnalytics: { errorCount: 0, latest: [] },
-        recommendations: ['Demo 模式未呼叫正式後端。'],
+        recommendations: ['測試模式未呼叫正式資料服務。'],
         warnings: []
       };
       renderDashboard(data);
-      renderRaw({ success: true, message: '本機 Demo 管理控制台已載入', data: data });
-      showNotice('本機 Demo 管理控制台已載入。', 'success');
+      renderRaw({ success: true, message: '本機測試管理控制台已載入', data: data });
+      showNotice('本機測試管理控制台已載入。', 'success');
       setBusy(false);
     }
 
@@ -452,11 +452,11 @@
     function renderProfile() {
       var s = state.session || {};
       var html = '';
-      html += '<div><strong>' + escapeHtml(s.organizationName || s['組織名稱'] || 'GovOps') + '</strong></div>';
-      html += '<div>使用者：' + escapeHtml(s.ownerName || s.userName || s.name || s.email || '管理者') + '</div>';
+      html += '<div><strong>' + escapeHtml(s.organizationName || s['組織名稱'] || '政務營運系統') + '</strong></div>';
+      html += '<div>使用者：' + escapeHtml(s.ownerName || s.userName || s.name || '管理者') + '</div>';
       html += '<div>角色：' + escapeHtml(s.userRole || s.role || 'owner') + '</div>';
       html += '<div>方案：' + escapeHtml(s.plan || 'FREE') + '</div>';
-      html += '<div>Tenant：' + escapeHtml(s.tenantId || '-') + '</div>';
+      html += '<div>組織狀態：' + escapeHtml(s.tenantId ? '已綁定' : '未綁定') + '</div>';
       document.getElementById('profileBox').innerHTML = html;
     }
 
@@ -474,7 +474,7 @@
 
     async function request(action, payload) {
       if (!window.GovOpsAPI || typeof GovOpsAPI.request !== 'function') {
-        return { success: false, message: 'API Client 尚未載入。', data: {} };
+        return { success: false, message: '資料服務尚未載入。', data: {} };
       }
       try {
         return await GovOpsAPI.request(Object.assign({ action: action }, sessionPayload(payload)));
@@ -504,9 +504,9 @@
       var res = await request('runProductionSelfCheck');
       renderRaw(res);
       if (res.success) {
-        showNotice('Production Self Check 已完成。', 'success');
+        showNotice('正式環境自檢已完成。', 'success');
         await loadDashboard();
-      } else showNotice(res.message || 'Production Self Check 失敗。', 'error');
+      } else showNotice(res.message || '正式環境自檢失敗。', 'error');
       setBusy(false);
     }
 
@@ -516,7 +516,7 @@
       var report = await request('createRecoveryReport');
       renderRaw({ repair: repair, report: report });
       renderRecovery(report.data || {});
-      showNotice(repair.success ? 'Runtime Recovery 已完成。' : (repair.message || 'Runtime Recovery 失敗。'), repair.success ? 'success' : 'error');
+      showNotice(repair.success ? '系統復原檢查已完成。' : (repair.message || '系統復原檢查失敗。'), repair.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -544,7 +544,7 @@
       var res = await request('getTenantFeatureMatrix');
       renderRaw(res);
       renderFeatures(res.data || {});
-      showNotice(res.success ? 'Feature Matrix 已更新。' : (res.message || 'Feature Matrix 查詢失敗。'), res.success ? 'success' : 'error');
+      showNotice(res.success ? '功能權限已更新。' : (res.message || '功能權限查詢失敗。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -553,7 +553,7 @@
       var res = await request('getAPIUsageSummary');
       renderRaw(res);
       renderApiUsage(res.data || {});
-      showNotice(res.success ? 'API Usage 已更新。' : (res.message || 'API Usage 查詢失敗。'), res.success ? 'success' : 'error');
+      showNotice(res.success ? '服務使用量已更新。' : (res.message || '服務使用量查詢失敗。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -564,7 +564,7 @@
       renderTenantStatus(data.tenantStatus || {});
       renderErrors(data.errorAnalytics || {});
       renderRecovery({ recommendations: data.recommendations || [], warnings: data.warnings || [], status: (data.warnings || []).length ? 'WARNING' : 'OK' });
-      if (data.warnings && data.warnings.length) showNotice(data.warnings.join('｜'), 'error');
+      if (data.warnings && data.warnings.length) showNotice('系統有項目需要管理者確認。', 'error');
     }
 
     function renderKpis(data) {
@@ -574,7 +574,7 @@
       var snap = data.latestSnapshot || {};
       var cards = [
         ['系統狀態', snap['系統狀態'] || '待檢查'],
-        ['Runtime OK', (dep.ok || 0) + '/' + (dep.total || 0)],
+        ['系統依賴正常', (dep.ok || 0) + '/' + (dep.total || 0)],
         ['租戶數', tenants.length || snap['tenant數'] || 0],
         ['錯誤數', err.errorCount || snap.errorCount || 0]
       ];
@@ -588,21 +588,23 @@
       var list = data.dependencies || [];
       setBadge('runtimeBadge', data.missing ? 'WARNING' : 'OK');
       document.getElementById('runtimeDependencies').innerHTML = list.length ? list.map(function(r) {
-        return row(r.runtimeName || '-', r['狀態'] || '-', r['錯誤訊息'] || '');
-      }).join('') : empty('尚無 Runtime Dependency 資料');
+        return row('系統依賴', displayStatus(r['狀態'] || r.status || '-'), safeText(r['錯誤訊息'] || r.message || ''));
+      }).join('') : empty('尚無系統依賴資料');
     }
 
     function renderSnapshot(data) {
-      document.getElementById('snapshotBox').innerHTML = Object.keys(data || {}).length ? Object.keys(data).map(function(k) {
-        return row(k, data[k], '');
-      }).join('') : empty('尚無 Health Snapshot');
+      document.getElementById('snapshotBox').innerHTML = Object.keys(data || {}).length ? [
+        row('系統狀態', displayStatus(data['系統狀態'] || data.status || data.health || '-'), ''),
+        row('租戶數', data['tenant數'] || data.tenantCount || data.tenants || 0, ''),
+        row('錯誤數', data.errorCount || data['錯誤數'] || 0, '')
+      ].join('') : empty('尚無健康摘要');
     }
 
     function renderTenantStatus(data) {
       var tenants = Array.isArray(data.tenants) ? data.tenants : [];
       if (!tenants.length && data.租戶) tenants = [data.租戶];
       document.getElementById('tenantStatus').innerHTML = tenants.length ? tenants.map(function(t) {
-        return row(t['組織名稱'] || t.organizationName || t.tenantId || 'Tenant', '狀態：' + (t['狀態'] || t.status || t.tenantStatus || '-'), '方案：' + (t.plan || '-') + '｜帳務：' + (t.billingState || '-'));
+        return row(safeText(t['組織名稱'] || t.organizationName || '組織'), '狀態：' + displayStatus(t['狀態'] || t.status || t.tenantStatus || '-'), '方案：' + displayStatus(t.plan || '-') + '｜帳務：' + displayStatus(t.billingState || '-'));
       }).join('') : empty('尚無租戶狀態資料');
     }
 
@@ -610,25 +612,25 @@
       setBadge('errorBadge', Number(data.errorCount || 0) > 0 ? 'RISK' : 'OK');
       var latest = data.latest || [];
       document.getElementById('errorAnalytics').innerHTML = latest.length ? latest.map(function(e) {
-        return row(e.action || e['錯誤類型'] || 'Error', e['錯誤訊息'] || '-', e['來源'] || '');
+        return row('待處理項目', safeText(e['錯誤訊息'] || e.message || '需要管理者確認'), '');
       }).join('') : empty('目前沒有錯誤分析資料');
     }
 
     function renderRecovery(data) {
       setBadge('recoveryBadge', data.status || 'UNKNOWN');
       var items = [];
-      (data.warnings || []).forEach(function(x) { items.push(row('Warning', x, '')); });
-      (data.recommendations || []).forEach(function(x) { items.push(row('Recommendation', x, '')); });
-      if (data.missingTables && data.missingTables.length) items.push(row('Missing Tables', data.missingTables.join('、'), ''));
-      if (data.missingFunctions && data.missingFunctions.length) items.push(row('Missing Functions', data.missingFunctions.join('、'), ''));
-      document.getElementById('recoveryReport').innerHTML = items.length ? items.join('') : empty('尚無 Recovery Report');
+      (data.warnings || []).forEach(function(x) { items.push(row('警示', safeText(x), '')); });
+      (data.recommendations || []).forEach(function(x) { items.push(row('建議', safeText(x), '')); });
+      if (data.missingTables && data.missingTables.length) items.push(row('缺少資料表', data.missingTables.length + ' 項', ''));
+      if (data.missingFunctions && data.missingFunctions.length) items.push(row('缺少功能', data.missingFunctions.length + ' 項', ''));
+      document.getElementById('recoveryReport').innerHTML = items.length ? items.join('') : empty('尚無復原報告');
     }
 
     function renderBilling(data) {
       setBadge('billingBadge', data.billingState || 'UNKNOWN');
       document.getElementById('billingSummary').innerHTML = Object.keys(data || {}).length ? [
-        row('方案', data.plan || '-', 'Tenant：' + (data.tenantId || '-')),
-        row('帳務狀態', data.billingState || '-', '下次帳單日：' + (data.nextBillingDate || '-')),
+        row('方案', displayStatus(data.plan || '-'), '組織狀態：' + (data.tenantId ? '已綁定' : '未綁定')),
+        row('帳務狀態', displayStatus(data.billingState || '-'), '下次帳單日：' + (data.nextBillingDate || '-')),
         row('帳單統計', '未付：' + (data.unpaidInvoices || 0) + '｜已付：' + (data.paidInvoices || 0) + '｜逾期：' + (data.overdueInvoices || 0), '總收入：' + (data.totalRevenue || 0))
       ].join('') : empty('尚無帳單狀態資料');
     }
@@ -636,15 +638,15 @@
     function renderFeatures(data) {
       var features = data.features || [];
       document.getElementById('featureMatrix').innerHTML = features.length ? features.map(function(f) {
-        return row(f.featureName || f.featureKey, f.enabled ? '已啟用' : '未啟用', '方案：' + (f.currentPlan || '-') + ' / 最低：' + (f.minPlan || '-') + '｜來源：' + (f.source || '-'));
-      }).join('') : empty('尚無 Feature Matrix 資料');
+        return row(safeText(f.featureName || '功能項目'), f.enabled ? '已啟用' : '未啟用', '方案：' + displayStatus(f.currentPlan || '-') + ' / 最低：' + displayStatus(f.minPlan || '-') + '｜來源：' + displayStatus(f.source || '-'));
+      }).join('') : empty('尚無功能權限資料');
     }
 
     function renderApiUsage(data) {
       document.getElementById('apiUsage').innerHTML = Object.keys(data || {}).length ? [
-        row('API 總數', data.total || 0, '成功：' + (data.success || 0) + '｜失敗：' + (data.failed || 0)),
-        row('平均延遲', (data.avgLatency || 0) + ' ms', 'Tenant：' + (data.tenantId || '-'))
-      ].join('') : empty('尚無 API Usage 資料');
+        row('服務呼叫總數', data.total || 0, '成功：' + (data.success || 0) + '｜失敗：' + (data.failed || 0)),
+        row('平均回應時間', (data.avgLatency || 0) + ' 毫秒', '組織狀態：' + (data.tenantId ? '已綁定' : '未綁定'))
+      ].join('') : empty('尚無服務使用量資料');
     }
 
     function setBadge(id, status) {
@@ -653,6 +655,7 @@
       var s = String(status || 'UNKNOWN').toUpperCase();
       el.textContent = s;
       el.className = 'badge';
+      el.textContent = displayStatus(s);
       if (['OK','HEALTHY','GOOD_STANDING','ACTIVE','ENABLED'].indexOf(s) >= 0) el.classList.add('ok');
       else if (['WARNING','MISSING_DEPENDENCIES','PAST_DUE','UNKNOWN'].indexOf(s) >= 0) el.classList.add('warn');
       else el.classList.add('risk');
@@ -662,17 +665,51 @@
       return '<div class="row"><div><div class="row-title">' + escapeHtml(title) + '</div><div class="row-sub">' + escapeHtml(value) + '</div>' + (sub ? '<div class="row-sub">' + escapeHtml(sub) + '</div>' : '') + '</div></div>';
     }
 
+    function displayStatus(value) {
+      var map = {
+        OK: '正常',
+        HEALTHY: '健康',
+        GOOD_STANDING: '正常',
+        ACTIVE: '啟用中',
+        ENABLED: '已啟用',
+        WARNING: '需注意',
+        MISSING_DEPENDENCIES: '缺少依賴',
+        PAST_DUE: '逾期',
+        UNKNOWN: '尚未確認',
+        RISK: '風險',
+        DEMO: '測試',
+        ENTERPRISE: '企業版',
+        PRO: '專業版',
+        FREE: '免費版',
+        OWNER: '負責人',
+        ADMIN: '管理者',
+        FINANCE: '財務',
+        STAFF: '作業人員',
+        VIEWER: '唯讀'
+      };
+      var key = String(value === undefined || value === null ? '' : value).toUpperCase();
+      return map[key] || safeText(value) || '-';
+    }
+
+    function safeText(value) {
+      var text = String(value === undefined || value === null ? '' : value);
+      if (!text) return '';
+      if (/[A-Za-z]{2,}|https?:|script\.google|exception|stack|undefined|JSON|API|Backend|Debug/i.test(text)) return '已隱藏系統細節';
+      return text;
+    }
+
     function empty(text) {
       return '<div class="empty">' + escapeHtml(text) + '</div>';
     }
 
     function renderRaw(data) {
-      document.getElementById('rawBox').textContent = JSON.stringify(data || {}, null, 2);
+      var ok = data && data.success !== false;
+      document.getElementById('rawBox').textContent = (ok ? '操作已完成。' : '操作未完成。') + '\n' + safeText(data && data.message ? data.message : '已隱藏系統原始回應資料。');
     }
 
     function showNotice(text, type) {
       var el = document.getElementById('notice');
-      el.textContent = text || '';
+      el.textContent = safeText(text || '');
       el.className = 'notice show';
       if (type) el.classList.add(type);
     }

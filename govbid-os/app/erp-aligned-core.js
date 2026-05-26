@@ -10,7 +10,7 @@
     try{
       let res;
       if(window.GovOpsAPI&&GovOpsAPI.request)res=await GovOpsAPI.request(params(obj));
-      else{const url=(window.GOVOPS_CONFIG&&GOVOPS_CONFIG.API_URL)||'';if(!url){const r={success:false,message:'API_URL 未設定'};if(t){t.textContent=r.message;t.style.opacity='1'}return r}const rsp=await fetch(url+'?'+new URLSearchParams(params(obj)).toString());res=await rsp.json()}
+      else{const url=(window.GOVOPS_CONFIG&&GOVOPS_CONFIG.API_URL)||'';if(!url){const r={success:false,message:'資料服務尚未載入'};if(t){t.textContent=r.message;t.style.opacity='1'}return r}const rsp=await fetch(url+'?'+new URLSearchParams(params(obj)).toString());res=await rsp.json()}
       if(t){t.textContent=format(res);t.style.opacity='1'}
       return res
     }catch(e){
@@ -23,14 +23,21 @@
   function format(res){
     if(!res)return'系統沒有回應';
     const ok=res.success!==false;
-    let s=(ok?'✅ ':'❌ ')+(res.message||'操作完成');
+    let s=(ok?'完成：':'未完成：')+safeDisplay(res.message||'操作完成');
     const d=res.data||{};
-    ['專案ID','活動ID','廠商ID','學員ID','CRM_ID','講師ID','人員ID','報名ID','driveUrl'].forEach(k=>{if(d[k])s+='\n'+k+'：'+d[k]});
     if(d.新增筆數!==undefined)s+='\n新增筆數：'+d.新增筆數;
     return s
   }
 
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function safeDisplay(v){
+    const text=String(v==null?'':v);
+    if(!text)return '';
+    if(/[A-Za-z]{2,}|https?:|script\.google|exception|stack|undefined|JSON|API|Backend|Debug/i.test(text))return '已隱藏系統細節';
+    return text;
+  }
+  function labelKey(k){return ({Email:'電子信箱',CRM_ID:'客戶編號',driveUrl:'檔案連結',folderId:'資料夾連結',_row:'資料列'}[k]||String(k).replace(/ID/g,'編號'))}
+  function cellValue(k,v){if(/Email|mail|Url|URL|連結|folderId|driveUrl/i.test(k))return v?'已隱藏':'';return safeDisplay(v)}
 
   // ── 標準表格 ────────────────────────────────────────────
   function renderTable(res,id){
@@ -39,7 +46,7 @@
     const arr=d.rows||d.資料||d.專案||d.廠商||d.學員||d.歸檔清單||d.核銷缺件||d.文件||d.簽到表||d.行銷名單||d.回流學員||[];
     if(!Array.isArray(arr)||!arr.length){box.innerHTML='<div class="empty">查無資料</div>';return}
     const keys=Object.keys(arr[0]).filter(k=>k!=='_row').slice(0,10);
-    box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+arr.slice(0,200).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(r[k]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
+    box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(labelKey(k))+'</th>').join('')+'</tr></thead><tbody>'+arr.slice(0,200).map(r=>'<tr>'+keys.map(k=>'<td>'+esc(cellValue(k,r[k]??''))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'
   }
 
   // ── 可編輯表格（每行有「編輯」按鈕） ────────────────────
@@ -50,7 +57,7 @@
     if(!Array.isArray(arr)||!arr.length){box.innerHTML='<div class="empty">查無資料</div>';return}
     const keys=displayKeys||Object.keys(arr[0]).filter(k=>k!=='_row').slice(0,8);
     window.__editRows__=arr;window.__onEditRow__=onEdit;
-    box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'<th style="width:58px;text-align:center">操作</th></tr></thead><tbody>'+arr.slice(0,200).map((r,i)=>'<tr>'+keys.map(k=>'<td>'+esc(r[k]??'')+'</td>').join('')+'<td style="text-align:center"><button class="ghost" style="padding:3px 10px;font-size:.76rem" onclick="window.__onEditRow__(window.__editRows__['+i+'])">編輯</button></td></tr>').join('')+'</tbody></table></div>'
+    box.innerHTML='<div class="table-wrap"><table><thead><tr>'+keys.map(k=>'<th>'+esc(labelKey(k))+'</th>').join('')+'<th style="width:58px;text-align:center">操作</th></tr></thead><tbody>'+arr.slice(0,200).map((r,i)=>'<tr>'+keys.map(k=>'<td>'+esc(cellValue(k,r[k]??''))+'</td>').join('')+'<td style="text-align:center"><button class="ghost" style="padding:3px 10px;font-size:.76rem" onclick="window.__onEditRow__(window.__editRows__['+i+'])">編輯</button></td></tr>').join('')+'</tbody></table></div>'
   }
 
   // ── 編輯 Modal ────────────────────────────────────────
@@ -187,7 +194,7 @@
     try{
       const auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
       const p=JSON.parse(localStorage.getItem('govops_profile')||'{}');
-      const name=auth.userName||p.userName||p.orgName||p.email||'使用者';
+      const name=auth.userName||p.userName||p.orgName||'使用者';
       const ws=auth.workspaceName||p.orgName||'';
       const LABELS={'tenant_owner':'擁有者','sys_admin':'系統管理','admin':'管理者','project':'專案','admin_staff':'行政','finance':'財務','viewer':'檢視者',owner:'負責人',staff:'行政'};
       const role=LABELS[auth.role||p.role||p.userRole]||'';
