@@ -144,7 +144,19 @@ function saveSession(d){
 }
 function showErr(msg){var e=document.getElementById('errMsg');e.textContent=msg;e.style.display='';}
 function showLoginForm(){document.getElementById('savedBox').style.display='none';document.getElementById('loginForm').style.display='';}
-function getRedirectTarget(){var p=new URLSearchParams(location.search).get('redirect')||'';return(p&&!p.includes('login')&&!p.includes('register'))?decodeURIComponent(p):'./dashboard.html';}
+function getRedirectTarget(){
+  var p=new URLSearchParams(location.search).get('redirect')||'';
+  var target=p?decodeURIComponent(p):'./dashboard.html';
+  if(!target||target.includes('login')||target.includes('register'))return'./dashboard.html';
+  if(target.indexOf('/govbid-os/')===0&&location.pathname.indexOf('/job-exam-game/')===0){
+    target='/job-exam-game'+target;
+  }
+  try{
+    var u=new URL(target,location.href);
+    if(u.origin!==location.origin)return'./dashboard.html';
+  }catch(e){return'./dashboard.html';}
+  return target;
+}
 async function doQuickLogin(){
   var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
   if(!auth.sessionToken){showLoginForm();return;}
