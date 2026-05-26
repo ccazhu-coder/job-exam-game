@@ -3,171 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GovOps OS｜建立帳號</title>
-<link rel="stylesheet" href="./erp-page-style.css">
+<title>政務營運系統｜建立組織帳號</title>
 <script src="./config.js"></script>
 <style>
-body{min-height:100vh;background:linear-gradient(135deg,#0d1f37 0%,#1a3a6c 100%);display:flex;align-items:center;justify-content:center;padding:20px}
-.reg-card{background:#0e1e31;border:1.5px solid #1e3a5c;border-radius:16px;padding:36px 32px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.brand{font-size:1.1rem;font-weight:700;color:#b8963e;margin-bottom:2px;display:flex;align-items:center;gap:8px}
-.brand::before{content:'';display:block;width:4px;height:1.1em;background:#b8963e;border-radius:2px}
-.subtitle{font-size:.82rem;color:#7a9bc5;margin-bottom:24px}
-.badge{display:inline-block;background:rgba(184,150,62,.15);border:1px solid rgba(184,150,62,.4);color:#b8963e;border-radius:4px;font-size:.72rem;padding:2px 8px;margin-bottom:20px}
-.section-sep{font-size:.75rem;font-weight:700;color:#4a6a8c;text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px}
-.fi label{display:block;font-size:.8rem;font-weight:600;color:#7a9bc5;margin-bottom:4px}
-.fi input,.fi select{width:100%;padding:9px 12px;background:#0a1628;border:1.5px solid #1e3a5c;border-radius:6px;color:#ccd6f6;font-size:.9rem;font-family:inherit;box-sizing:border-box}
-.fi input:focus,.fi select:focus{outline:none;border-color:#b8963e;box-shadow:0 0 0 3px rgba(184,150,62,.12)}
-.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.plan-card{border:1.5px solid #1e3a5c;border-radius:8px;padding:10px 12px;cursor:pointer;transition:.2s}
-.plan-card:hover{border-color:#b8963e}
-.plan-card.active{border-color:#b8963e;background:rgba(184,150,62,.08)}
-.plan-card input{display:none}
-.plan-name{font-size:.85rem;font-weight:700;color:#ccd6f6}
-.plan-price{font-size:.75rem;color:#7a9bc5;margin-top:2px}
-.plan-badge{font-size:.68rem;background:#b8963e;color:#000;border-radius:3px;padding:1px 6px;float:right}
-.submit-btn{width:100%;margin-top:20px;padding:13px;background:#b8963e;color:#000;border:none;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
-.submit-btn:hover{background:#d4a84e}
-.submit-btn:disabled{opacity:.5;cursor:wait}
-.err{background:rgba(192,57,43,.12);color:#e74c3c;border:1px solid rgba(192,57,43,.3);border-radius:6px;padding:10px 14px;font-size:.83rem;margin-top:12px;display:none}
-.login-link{text-align:center;margin-top:14px;font-size:.82rem;color:#7a9bc5}
-.login-link a{color:#b8963e;text-decoration:none;font-weight:600}
-.login-link a:hover{text-decoration:underline}
+:root{--navy:#0d2340;--navy2:#152f52;--gold:#b8963e;--ink:#172033;--muted:#667085;--line:#e5ded2;--panel:#fff;--danger:#c0392b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(145deg,#0d2340 0%,#173a63 54%,#0b1728 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif;display:flex;align-items:center;justify-content:center;padding:22px}
+.shell{width:100%;max-width:1040px;display:grid;grid-template-columns:.9fr 1.1fr;gap:18px;align-items:stretch}
+.intro,.card{border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 22px 60px rgba(0,0,0,.26)}
+.intro{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));padding:34px;color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:560px}
+.eyebrow{color:var(--gold);font-weight:900;font-size:.9rem;margin-bottom:12px}.intro h1{margin:0;font-size:2.25rem;line-height:1.15}.intro p{color:rgba(255,255,255,.78);line-height:1.8;font-size:1.02rem}.steps{display:grid;gap:10px;margin-top:28px}.step{border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;background:rgba(255,255,255,.06)}.step b{display:block;color:#fff;margin-bottom:4px}.step span{color:rgba(255,255,255,.72);font-size:.9rem;line-height:1.55}
+.card{background:#f8f5ef;padding:28px}.card h2{font-size:1.45rem;color:var(--navy);margin:0 0 8px}.hint{color:var(--muted);line-height:1.7;margin-bottom:18px}.section{margin:18px 0 10px;color:var(--navy);font-weight:900;font-size:.92rem;display:flex;gap:8px;align-items:center}.section:before{content:"";width:4px;height:1em;background:var(--gold);border-radius:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin-bottom:12px}.field label{display:block;font-size:.88rem;color:var(--navy);font-weight:900;margin-bottom:6px}.field input,.field select{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:13px 12px;font-size:1rem;color:var(--ink);font-family:inherit}.field input:focus,.field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,150,62,.15)}
+.plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.plan{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fff;cursor:pointer;transition:.18s;min-height:92px}.plan:hover,.plan.active{border-color:var(--gold);box-shadow:0 8px 20px rgba(13,35,64,.08)}.plan input{display:none}.plan b{display:block;color:var(--navy);font-size:1rem}.plan span{display:block;color:var(--muted);font-size:.86rem;line-height:1.55;margin-top:5px}
+.err{display:none;border:1px solid rgba(192,57,43,.25);background:#fff1ef;color:var(--danger);border-radius:8px;padding:12px 14px;line-height:1.6;margin-top:12px;font-weight:800}.submit{width:100%;border:0;border-radius:9px;background:var(--gold);color:#111;padding:14px 16px;font-size:1.05rem;font-weight:900;cursor:pointer;margin-top:16px}.submit:disabled{opacity:.55;cursor:wait}.login{margin-top:14px;text-align:center;color:var(--muted);font-size:.92rem}.login a{color:var(--navy);font-weight:900;text-decoration:none}.login a:hover{text-decoration:underline}
+@media(max-width:860px){.shell{grid-template-columns:1fr}.intro{min-height:0}.grid,.plans{grid-template-columns:1fr}.intro h1{font-size:1.8rem}}@media(max-width:520px){body{padding:12px}.intro,.card{padding:22px 18px;border-radius:10px}.submit{font-size:1rem}}
 </style>
 </head>
 <body>
-<div class="reg-card">
-  <div class="brand">GovOps OS</div>
-  <div class="subtitle">政府標案全流程營運系統｜SaaS 商業版 MVP</div>
-  <div class="badge">建立新租戶帳號</div>
-
-  <div class="section-sep">組織資訊</div>
-  <div style="display:flex;flex-direction:column;gap:10px">
-    <div class="fi"><label>公司／工作室／單位名稱 *</label><input id="r_org" placeholder="例如：璞策顧問工作室" autocomplete="organization"></div>
-    <div class="fr">
-      <div class="fi"><label>組織類型</label>
-        <select id="r_orgType">
-          <option value="顧問工作室">顧問工作室</option>
-          <option value="顧問公司">顧問公司</option>
-          <option value="訓練機構">訓練機構</option>
-          <option value="協會公會">協會公會</option>
-          <option value="政府機關">政府機關</option>
-          <option value="個人工作者">個人工作者</option>
-        </select>
-      </div>
-      <div class="fi"><label>主要聯絡電話</label><input id="r_phone" placeholder="選填" type="tel"></div>
+<main class="shell">
+  <section class="intro">
+    <div>
+      <div class="eyebrow">政務營運系統</div>
+      <h1>建立你的組織工作區</h1>
+      <p>用一個工作台管理標案、活動、報名、財務、文件與結案流程。註冊後會直接進入營運首頁。</p>
     </div>
-  </div>
-
-  <div class="section-sep">使用者資訊</div>
-  <div style="display:flex;flex-direction:column;gap:10px">
-    <div class="fi"><label>姓名 *</label><input id="r_name" placeholder="您的真實姓名" autocomplete="name"></div>
-    <div class="fi"><label>Email（登入用）*</label><input id="r_email" type="email" placeholder="your@email.com" autocomplete="email"></div>
-    <div class="fr">
-      <div class="fi"><label>密碼 *（至少 6 字元）</label><input id="r_pwd" type="password" placeholder="●●●●●●" autocomplete="new-password"></div>
-      <div class="fi"><label>確認密碼 *</label><input id="r_pwd2" type="password" placeholder="●●●●●●" autocomplete="new-password"></div>
+    <div class="steps">
+      <div class="step"><b>組織資料</b><span>建立工作區名稱與聯絡方式。</span></div>
+      <div class="step"><b>管理者帳號</b><span>設定第一位負責人，後續可再邀請團隊成員。</span></div>
+      <div class="step"><b>方案選擇</b><span>先從適合的方案開始，之後可依營運量調整。</span></div>
     </div>
-  </div>
+  </section>
 
-  <div class="section-sep">訂閱方案</div>
-  <div class="plan-grid" id="planGrid">
-    <label class="plan-card active" onclick="selectPlan('free',this)">
-      <input type="radio" name="plan" value="free" checked>
-      <span class="plan-badge">推薦</span>
-      <div class="plan-name">Free 試用</div>
-      <div class="plan-price">免費｜5案件 · 2用戶</div>
-    </label>
-    <label class="plan-card" onclick="selectPlan('basic',this)">
-      <input type="radio" name="plan" value="basic">
-      <div class="plan-name">Basic</div>
-      <div class="plan-price">NT$990/月｜20案件 · 5用戶</div>
-    </label>
-    <label class="plan-card" onclick="selectPlan('pro',this)">
-      <input type="radio" name="plan" value="pro">
-      <div class="plan-name">Pro</div>
-      <div class="plan-price">NT$2,490/月｜50案件 · 10用戶</div>
-    </label>
-    <label class="plan-card" onclick="selectPlan('team',this)">
-      <input type="radio" name="plan" value="team">
-      <div class="plan-name">Team</div>
-      <div class="plan-price">NT$5,990/月｜200案件 · 30用戶</div>
-    </label>
-  </div>
-  <div style="font-size:.73rem;color:#4a6a8c;margin-top:4px">v0.1 MVP 期間所有方案均免費使用，金流後續開放。</div>
+  <section class="card">
+    <h2>建立組織帳號</h2>
+    <div class="hint">請填寫以下資料，建立完成後會直接進入營運首頁。</div>
 
-  <div class="err" id="errMsg"></div>
-  <button class="submit-btn" id="submitBtn" onclick="doRegister()">建立帳號並進入系統</button>
-  <div class="login-link">已有帳號？<a href="./login.html">立即登入 →</a></div>
-</div>
+    <div class="section">組織資料</div>
+    <div class="field"><label>組織名稱</label><input id="r_org" autocomplete="organization" placeholder="例如：璞策顧問工作室"></div>
+    <div class="grid">
+      <div class="field"><label>組織類型</label><select id="r_orgType"><option>顧問公司</option><option>教育訓練單位</option><option>非營利組織</option><option>政府合作廠商</option><option>其他</option></select></div>
+      <div class="field"><label>聯絡電話</label><input id="r_phone" type="tel" placeholder="可稍後補填"></div>
+    </div>
+
+    <div class="section">管理者帳號</div>
+    <div class="field"><label>姓名</label><input id="r_name" autocomplete="name" placeholder="請輸入管理者姓名"></div>
+    <div class="field"><label>電子信箱</label><input id="r_email" type="email" autocomplete="email" placeholder="請輸入可收信的電子信箱"></div>
+    <div class="grid">
+      <div class="field"><label>密碼</label><input id="r_pwd" type="password" autocomplete="new-password" placeholder="至少六個字元"></div>
+      <div class="field"><label>確認密碼</label><input id="r_pwd2" type="password" autocomplete="new-password" placeholder="再次輸入密碼"></div>
+    </div>
+
+    <div class="section">方案選擇</div>
+    <div class="plans" id="planGrid">
+      <label class="plan active" onclick="selectPlan('free',this)"><input type="radio" name="plan" value="free" checked><b>免費版</b><span>適合初期試用與小型工作區。</span></label>
+      <label class="plan" onclick="selectPlan('basic',this)"><input type="radio" name="plan" value="basic"><b>基礎版</b><span>適合固定活動與報名管理。</span></label>
+      <label class="plan" onclick="selectPlan('pro',this)"><input type="radio" name="plan" value="pro"><b>專業版</b><span>適合完整專案、財務與文件流程。</span></label>
+      <label class="plan" onclick="selectPlan('team',this)"><input type="radio" name="plan" value="team"><b>團隊版</b><span>適合多人協作與跨模組管理。</span></label>
+    </div>
+
+    <div class="err" id="errMsg"></div>
+    <button class="submit" id="submitBtn" onclick="doRegister()">建立帳號並進入營運首頁</button>
+    <div class="login">已經有帳號？ <a href="./login.html">返回登入</a></div>
+  </section>
+</main>
 
 <script src="./govops-api-client.js"></script>
 <script>
-var _selectedPlan = 'free';
+var selectedPlan = 'free';
 function selectPlan(id, el) {
-  _selectedPlan = id;
-  document.querySelectorAll('.plan-card').forEach(function(c){ c.classList.remove('active'); });
+  selectedPlan = id;
+  document.querySelectorAll('.plan').forEach(function(c){ c.classList.remove('active'); });
   el.classList.add('active');
 }
-
-async function doRegister() {
-  var org    = document.getElementById('r_org').value.trim();
-  var name   = document.getElementById('r_name').value.trim();
-  var email  = document.getElementById('r_email').value.trim();
-  var pwd    = document.getElementById('r_pwd').value;
-  var pwd2   = document.getElementById('r_pwd2').value;
-  var orgType = document.getElementById('r_orgType').value;
-  var err = document.getElementById('errMsg');
-  err.style.display = 'none';
-
-  if (!org)   { showErr('請填寫公司／工作室名稱'); return; }
-  if (!name)  { showErr('請填寫您的姓名'); return; }
-  if (!email) { showErr('請填寫 Email'); return; }
-  if (pwd.length < 6) { showErr('密碼至少 6 個字元'); return; }
-  if (pwd !== pwd2)   { showErr('兩次密碼不一致'); return; }
-
-  var btn = document.getElementById('submitBtn');
-  btn.textContent = '建立中…'; btn.disabled = true;
-
-  var r = await GovOpsAPI.post({
-    action: 'registerTenant',
-    tenantName: org, orgType: orgType,
-    userName: name, email: email, password: pwd, planId: _selectedPlan
-  });
-
-  btn.textContent = '建立帳號並進入系統'; btn.disabled = false;
-
-  if (!r.success) { showErr(r.message || '建立失敗，請稍後再試'); return; }
-
-  // 儲存 session
-  saveSession(r.data);
-  window.location.href = './dashboard.html';
+function value(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
 }
-
 function showErr(msg) {
   var el = document.getElementById('errMsg');
-  el.textContent = msg; el.style.display = '';
+  el.textContent = msg;
+  el.style.display = '';
 }
-
+function safeMessage(msg) {
+  var text = String(msg || '');
+  if (!text) return '建立帳號失敗，請稍後再試。';
+  if (/[A-Za-z]{2,}|https?:|script\.google|exception|stack|undefined|JSON|API|Backend|Debug/i.test(text)) return '建立帳號失敗，請稍後再試。';
+  return text;
+}
 function saveSession(d) {
+  d = d || {};
   localStorage.setItem('govops_auth', JSON.stringify({
-    sessionToken: d.sessionToken, userId: d.userId, tenantId: d.tenantId,
-    workspaceId: d.workspaceId, workspaceName: d.workspaceName,
-    userName: d.userName, email: d.email, role: d.role,
-    planId: d.planId, planName: d.planName, isLoggedIn: true,
-    loginTime: d.loginTime, expireTime: d.expireTime
+    sessionToken: d.sessionToken,
+    userId: d.userId,
+    tenantId: d.tenantId,
+    workspaceId: d.workspaceId || d.tenantId,
+    workspaceName: d.workspaceName || d.organizationName,
+    userName: d.userName,
+    email: d.email,
+    role: d.role || d.userRole || 'owner',
+    userRole: d.userRole || d.role || 'owner',
+    planId: d.planId || selectedPlan,
+    plan: d.plan || d.planId || selectedPlan,
+    planName: d.planName,
+    isLoggedIn: true,
+    loginTime: d.loginTime,
+    expireTime: d.expireTime
   }));
   localStorage.setItem('govops_profile', JSON.stringify({
-    userId: d.userId, userName: d.userName, email: d.email,
-    role: d.role, tenantId: d.tenantId, workspaceId: d.workspaceId,
-    orgName: d.workspaceName, plan: d.planId, isLoggedIn: true
+    userId: d.userId,
+    userName: d.userName,
+    email: d.email,
+    role: d.role || d.userRole || 'owner',
+    userRole: d.userRole || d.role || 'owner',
+    tenantId: d.tenantId,
+    workspaceId: d.workspaceId || d.tenantId,
+    organizationName: d.workspaceName || d.organizationName,
+    orgName: d.workspaceName || d.organizationName,
+    plan: d.plan || d.planId || selectedPlan,
+    sessionToken: d.sessionToken,
+    isLoggedIn: true
   }));
 }
+async function doRegister() {
+  var org = value('r_org');
+  var name = value('r_name');
+  var email = value('r_email');
+  var pwd = document.getElementById('r_pwd').value;
+  var pwd2 = document.getElementById('r_pwd2').value;
+  var orgType = value('r_orgType');
+  document.getElementById('errMsg').style.display = 'none';
 
-// 已登入直接進入 dashboard
-(function(){ try {
-  var auth = JSON.parse(localStorage.getItem('govops_auth')||'{}');
-  if (auth.sessionToken && auth.isLoggedIn) window.location.href = './dashboard.html';
-} catch(e) {} })();
+  if (!org) { showErr('請輸入組織名稱。'); return; }
+  if (!name) { showErr('請輸入管理者姓名。'); return; }
+  if (!email) { showErr('請輸入電子信箱。'); return; }
+  if (pwd.length < 6) { showErr('密碼至少需要六個字元。'); return; }
+  if (pwd !== pwd2) { showErr('兩次輸入的密碼不一致。'); return; }
+
+  var btn = document.getElementById('submitBtn');
+  btn.textContent = '正在建立帳號...';
+  btn.disabled = true;
+  try {
+    var r = await GovOpsAPI.post({
+      action: 'registerTenant',
+      tenantName: org,
+      orgType: orgType,
+      userName: name,
+      email: email,
+      password: pwd,
+      planId: selectedPlan
+    });
+    if (!r || !r.success) {
+      showErr(safeMessage(r && r.message));
+      return;
+    }
+    saveSession(r.data || {});
+    window.location.href = './dashboard.html';
+  } catch(e) {
+    showErr('建立帳號失敗，請稍後再試。');
+  } finally {
+    btn.textContent = '建立帳號並進入營運首頁';
+    btn.disabled = false;
+  }
+}
+(function(){
+  try {
+    var auth = JSON.parse(localStorage.getItem('govops_auth') || '{}');
+    if (auth.sessionToken && auth.isLoggedIn) window.location.href = './dashboard.html';
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>
