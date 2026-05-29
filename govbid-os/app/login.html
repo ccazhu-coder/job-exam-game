@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>政務營運系統｜組織登入</title>
+<title>GovOps OS｜正式登入</title>
 <link rel="stylesheet" href="./erp-page-style.css">
 <script src="./config.js"></script>
 <style>
@@ -27,10 +27,10 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
 .brand{font-size:1.35rem;font-weight:800;color:#d4af6a;display:flex;align-items:center;gap:10px;margin-bottom:4px}
 .brand::before{content:'';display:block;width:5px;height:1.35em;background:#d4af6a;border-radius:3px}
 .tagline{font-size:.83rem;color:#7a9bc5;margin-bottom:22px}
-.saved-box,.demo-box{background:rgba(184,150,62,.07);border:1px solid rgba(184,150,62,.3);border-radius:8px;padding:12px 14px;margin-bottom:16px}
+.saved-box{background:rgba(184,150,62,.07);border:1px solid rgba(184,150,62,.3);border-radius:8px;padding:12px 14px;margin-bottom:16px}
 .saved-box{display:none}
 .saved-name{font-size:.95rem;font-weight:800;color:#fff}
-.saved-sub,.demo-box p{font-size:.78rem;color:#9fb5d1;margin:3px 0 0}
+.saved-sub{font-size:.78rem;color:#9fb5d1;margin:3px 0 0}
 .fi{margin-bottom:14px}
 .fi label{display:block;font-size:.8rem;font-weight:700;color:#9fb5d1;margin:0 0 5px}
 .fi input,.fi select{width:100%;padding:10px 13px;background:#0a1628;border:1.5px solid #1e3a5c;border-radius:6px;color:#eef3ff;font-size:.9rem;font-family:inherit;box-sizing:border-box}
@@ -52,32 +52,32 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
 <div class="auth-shell">
   <section class="intro">
     <div>
-      <div class="eyebrow">政務營運系統</div>
-      <h1>政府標案全流程營運系統</h1>
-      <p>正式版入口會先確認組織、角色、方案與使用量，再進入標案、課程、客戶管理、財務、結案與文件中心。</p>
+      <div class="eyebrow">GovOps OS</div>
+      <h1>政府專案長期營運 ERP SaaS</h1>
+      <p>以專案與活動為核心，串接主辦單位、履約任務、報名簽到、文件缺件、領據核銷、請款收款與結案成果。</p>
       <div class="feature-grid">
-        <div class="feature"><strong>多組織</strong><span>以工作室或公司為租戶隔離資料。</span></div>
-        <div class="feature"><strong>角色權限</strong><span>負責人、專案、財務、行政與檢視者。</span></div>
-        <div class="feature"><strong>方案限制</strong><span>活動、客戶管理、智慧查詢與使用者數控管。</span></div>
-        <div class="feature"><strong>正式服務</strong><span>可串接正式資料服務與會員資料表。</span></div>
+        <div class="feature"><strong>專案主線</strong><span>客戶、專案、活動與履約進度集中管理。</span></div>
+        <div class="feature"><strong>活動作業</strong><span>一個專案可管理多場活動與各自任務。</span></div>
+        <div class="feature"><strong>核銷請款</strong><span>領據、憑證、請款與收款狀態清楚追蹤。</span></div>
+        <div class="feature"><strong>AI 戰情</strong><span>提醒缺件、逾期、異動與結案風險。</span></div>
       </div>
-      <div class="status-panel">測試期間可使用右側本機工作區先進入主系統檢查；正式帳號登入會走正式資料服務。</div>
+      <div class="status-panel">正式登入會檢查帳號、角色、租戶與登入憑證。未登入或憑證失效時會自動回到登入頁。</div>
     </div>
-    <div class="plan-row" aria-label="方案摘要">
-      <div class="plan"><b>免費體驗版</b><span>3 場活動、50 筆客戶資料</span></div>
-      <div class="plan"><b>專業版</b><span>100 場活動、智慧查詢 300 次</span></div>
-      <div class="plan"><b>企業版</b><span>多帳號與客製上限</span></div>
+    <div class="plan-row" aria-label="系統主軸">
+      <div class="plan"><b>專案</b><span>合約、期程、缺件、成果與結案。</span></div>
+      <div class="plan"><b>活動</b><span>場次、講師、場地、任務與報名。</span></div>
+      <div class="plan"><b>財務</b><span>領據、核銷、請款與收款。</span></div>
     </div>
   </section>
 
   <main class="card">
-    <div class="brand">政務營運系統</div>
-    <div class="tagline">組織登入與測試入口</div>
+    <div class="brand">GovOps OS</div>
+    <div class="tagline">請使用正式帳號登入營運戰情中心</div>
 
     <div class="saved-box" id="savedBox">
       <div class="saved-name" id="savedName"></div>
       <div class="saved-sub" id="savedSub"></div>
-      <button class="btn" id="quickBtn" onclick="doQuickLogin()">使用此工作區進入</button>
+      <button class="btn" id="quickBtn" onclick="doQuickLogin()">使用目前登入狀態進入</button>
       <button class="btn ghost" onclick="showLoginForm()">改用其他帳號登入</button>
     </div>
 
@@ -88,24 +88,12 @@ body{min-height:100vh;background:linear-gradient(135deg,#0d2340 0%,#24566f 52%,#
       <button class="btn" id="loginBtn" onclick="doLogin()">登入</button>
     </div>
 
-    <div class="sep"><span>或</span></div>
-
-    <div class="demo-box">
-      <div class="field-row">
-        <div class="fi"><label>測試組織</label><input id="demo_org" value="璞策顧問工作室"></div>
-        <div class="fi"><label>角色</label><select id="demo_role"><option value="owner">負責人</option><option value="admin">專案管理者</option><option value="finance">財務人員</option><option value="staff">行政／講師</option><option value="viewer">只讀檢視者</option></select></div>
-      </div>
-      <p>建立本機登入狀態，不呼叫正式資料服務，適合檢查營運首頁、模組入口與權限狀態。</p>
-      <button class="btn ghost" onclick="createDemoSession()">建立測試工作區並進入</button>
-    </div>
-
-    <button class="btn ghost" onclick="location.href='./register.html'">建立正式組織帳號</button>
+    <div class="sep"><span>正式營運入口</span></div>
   </main>
 </div>
 
 <script src="./govops-api-client.js?v=p0-api"></script>
-<script>
-function nowISO(){return new Date().toISOString();}
+<script>function nowISO(){return new Date().toISOString();}
 function addDaysISO(days){var d=new Date();d.setDate(d.getDate()+days);return d.toISOString();}
 function normalizeSessionData(d){
   d=d||{};
@@ -114,18 +102,18 @@ function normalizeSessionData(d){
   var tenantId=d.tenantId||('TENANT-'+Date.now().toString(36).toUpperCase());
   var workspaceId=d.workspaceId||tenantId;
   return {
-    sessionToken:d.sessionToken||('LOCAL-DEMO-'+Date.now().toString(36).toUpperCase()),
+    sessionToken:d.sessionToken||'',
     userId:d.userId||('USR-'+Date.now().toString(36).toUpperCase()),
     tenantId:tenantId,
     workspaceId:workspaceId,
-    workspaceName:d.workspaceName||d.orgName||'本機測試工作區',
-    userName:d.userName||d.name||'測試使用者',
-    email:d.email||'test@example.local',
+    workspaceName:d.workspaceName||d.orgName||d.organizationName||'GovOps OS',
+    userName:d.userName||d.name||'使用者',
+    email:d.email||'',
     role:role,
     userRole:role,
     planId:planId,
     plan:planId,
-    planName:d.planName||'專業版',
+    planName:d.planName||'專業方案',
     status:d.status||'active',
     isLoggedIn:true,
     loginTime:d.loginTime||nowISO(),
@@ -134,6 +122,7 @@ function normalizeSessionData(d){
 }
 function saveSession(d){
   var data=normalizeSessionData(d);
+  if(!data.sessionToken)throw new Error('登入未完成，請重新登入。');
   localStorage.setItem('govops_auth',JSON.stringify(data));
   localStorage.setItem('govops_profile',JSON.stringify({
     userId:data.userId,userName:data.userName,email:data.email,role:data.role,userRole:data.userRole,
@@ -144,56 +133,50 @@ function saveSession(d){
 }
 function showErr(msg){var e=document.getElementById('errMsg');e.textContent=msg;e.style.display='';}
 function showLoginForm(){document.getElementById('savedBox').style.display='none';document.getElementById('loginForm').style.display='';}
-function planLabel(plan){return {enterprise:'企業版',pro:'專業版',free:'免費版'}[String(plan||'').toLowerCase()]||plan||'未標示';}
+function planLabel(plan){return {enterprise:'企業方案',pro:'專業方案',free:'試用方案'}[String(plan||'').toLowerCase()]||plan||'未設定';}
 function getRedirectTarget(){
   var p=new URLSearchParams(location.search).get('redirect')||'';
-  var target=p?decodeURIComponent(p):'./dashboard.html';
-  if(!target||target.includes('login')||target.includes('register'))return'./dashboard.html';
-  if(target.indexOf('/govbid-os/')===0&&location.pathname.indexOf('/job-exam-game/')===0){
-    target='/job-exam-game'+target;
-  }
+  var target=p?decodeURIComponent(p):'dashboard.html';
+  target=target.replace(/^\.\//,'');
+  if(!target||target.includes('login')||target.includes('register'))return'dashboard.html';
+  if(target.charAt(0)==='/')target=target.slice(1);
   try{
     var u=new URL(target,location.href);
-    if(u.origin!==location.origin)return'./dashboard.html';
-  }catch(e){return'./dashboard.html';}
-  return target;
+    if(u.origin!==location.origin)return'dashboard.html';
+    return u.pathname.split('/').pop() + u.search + u.hash;
+  }catch(e){return'dashboard.html';}
 }
 async function doQuickLogin(){
   var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
   if(!auth.sessionToken){showLoginForm();return;}
-  if(String(auth.sessionToken).indexOf('LOCAL-DEMO-')===0){window.location.href=getRedirectTarget();return;}
-  var r=await GovOpsAPI.post({action:'getMe',sessionToken:auth.sessionToken});
+  if(String(auth.sessionToken).indexOf('LOCAL-DEMO-')===0){localStorage.removeItem('govops_auth');localStorage.removeItem('govops_profile');showLoginForm();showErr('測試登入已停用，請使用正式帳號登入。');return;}
+  var r=await GovOpsAPI.post({action:'auth.me',sessionToken:auth.sessionToken});
   if(r.success){window.location.href=getRedirectTarget();}
-  else{localStorage.removeItem('govops_auth');localStorage.removeItem('govops_profile');showLoginForm();showErr(r.message||'登入狀態已失效，請重新登入');}
+  else{localStorage.removeItem('govops_auth');localStorage.removeItem('govops_profile');showLoginForm();showErr(r.message||'登入狀態已失效，請重新登入。');}
 }
 async function doLogin(){
   var email=document.getElementById('l_email').value.trim();
   var pwd=document.getElementById('l_pwd').value;
-  if(!email||!pwd){showErr('請填寫電子信箱和密碼');return;}
+  if(!email||!pwd){showErr('請輸入 Email 與密碼。');return;}
   var btn=document.getElementById('loginBtn');
   btn.textContent='登入中...';btn.disabled=true;document.getElementById('errMsg').style.display='none';
-  var r=await GovOpsAPI.post({action:'loginUser',email:email,password:pwd});
+  var r=await GovOpsAPI.post({action:'auth.login',email:email,password:pwd});
   btn.textContent='登入';btn.disabled=false;
-  if(!r.success){showErr(r.message||'登入失敗，請確認電子信箱和密碼');return;}
-  saveSession(r.data);window.location.href=getRedirectTarget();
-}
-function createDemoSession(){
-  var org=document.getElementById('demo_org').value.trim()||'本機測試工作區';
-  var role=document.getElementById('demo_role').value||'owner';
-  saveSession({workspaceName:org,orgName:org,userName:'測試管理者',email:'test@example.local',role:role,planId:'pro',planName:'專業版',status:'active'});
+  if(!r.success){showErr(r.message||'登入未完成，請確認帳號與密碼。');return;}
+  try{saveSession(r.data);}catch(e){showErr('登入未完成，請稍後再試。');return;}
   window.location.href=getRedirectTarget();
 }
 (function(){
   try{
     var auth=JSON.parse(localStorage.getItem('govops_auth')||'{}');
     if(auth.sessionToken&&auth.isLoggedIn&&(auth.userName||auth.email)){
-      document.getElementById('savedName').textContent=(auth.userName||'使用者')+'（'+(auth.workspaceName||'工作區')+'）';
+      document.getElementById('savedName').textContent=(auth.userName||'使用者')+'｜'+(auth.workspaceName||'組織');
       document.getElementById('savedSub').textContent='方案：'+(auth.planName||planLabel(auth.planId||auth.plan));
       document.getElementById('savedBox').style.display='block';
       document.getElementById('loginForm').style.display='none';
     }
   }catch(e){}
-})();
-</script>
+})();</script>
 </body>
 </html>
+

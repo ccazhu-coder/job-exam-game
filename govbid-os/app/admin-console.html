@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>政務營運系統｜管理控制台</title>
+  <title>GovOps OS｜管理控制台</title>
   <script src="./config.js?v=p0-api"></script>
   <script src="./saas-runtime.js"></script>
   <script src="./govops-api-client.js?v=p0-api"></script>
@@ -266,29 +266,29 @@
     <section class="hero">
       <div>
         <h1>管理控制台</h1>
-        <p>正式商用營運控制中心｜系統健康、復原、組織、帳務、功能與使用量統一管理</p>
+        <p>限負責人與管理員使用，集中查看系統狀態、租戶資料、帳務摘要、功能矩陣與服務使用情形。</p>
       </div>
       <div class="profile" id="profileBox">
-        <div>登入狀態檢查中...</div>
+        <div>正在讀取登入狀態...</div>
       </div>
     </section>
 
     <div id="notice" class="notice"></div>
 
     <section class="toolbar">
-      <button onclick="runSelfCheck()">執行正式環境自檢</button>
-      <button onclick="runRecovery()">執行系統復原檢查</button>
+      <button onclick="runSelfCheck()">執行正式自檢</button>
+      <button onclick="runRecovery()">產生修復建議</button>
       <button onclick="loadTenantStatus()">查詢租戶狀態</button>
-      <button onclick="loadBillingSummary()">查詢帳單狀態</button>
-      <button onclick="loadFeatureMatrix()">查詢功能權限</button>
-      <button onclick="loadApiUsage()">查詢服務使用量</button>
+      <button onclick="loadBillingSummary()">查詢帳務摘要</button>
+      <button onclick="loadFeatureMatrix()">查詢功能矩陣</button>
+      <button onclick="loadApiUsage()">查詢服務使用</button>
       <button class="danger" onclick="logout()">登出</button>
     </section>
 
     <section class="grid">
       <div class="card full">
         <div class="card-header">
-          <h2>系統狀態</h2>
+          <h2>系統總覽</h2>
           <span id="systemBadge" class="badge">尚未檢查</span>
         </div>
         <div class="card-body">
@@ -297,57 +297,57 @@
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>系統依賴狀態</h2><span id="runtimeBadge" class="badge">待檢查</span></div>
-        <div class="card-body"><div id="runtimeDependencies" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>服務依賴狀態</h2><span id="runtimeBadge" class="badge">待確認</span></div>
+        <div class="card-body"><div id="runtimeDependencies" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>正式環境健康摘要</h2><span class="badge">摘要</span></div>
-        <div class="card-body"><div id="snapshotBox" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>營運快照</h2><span class="badge">摘要</span></div>
+        <div class="card-body"><div id="snapshotBox" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>組織營運狀態</h2><span class="badge">組織</span></div>
-        <div class="card-body"><div id="tenantStatus" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>租戶狀態</h2><span class="badge">租戶</span></div>
+        <div class="card-body"><div id="tenantStatus" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>錯誤分析</h2><span id="errorBadge" class="badge">錯誤</span></div>
-        <div class="card-body"><div id="errorAnalytics" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>錯誤紀錄</h2><span id="errorBadge" class="badge">錯誤</span></div>
+        <div class="card-body"><div id="errorAnalytics" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>復原報告</h2><span id="recoveryBadge" class="badge">復原</span></div>
-        <div class="card-body"><div id="recoveryReport" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>修復建議</h2><span id="recoveryBadge" class="badge">修復</span></div>
+        <div class="card-body"><div id="recoveryReport" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
         <div class="card-header"><h2>帳務摘要</h2><span id="billingBadge" class="badge">帳務</span></div>
-        <div class="card-body"><div id="billingSummary" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-body"><div id="billingSummary" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>功能權限</h2><span class="badge">功能</span></div>
-        <div class="card-body"><div id="featureMatrix" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>功能矩陣</h2><span class="badge">功能</span></div>
+        <div class="card-body"><div id="featureMatrix" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h2>服務使用量摘要</h2><span class="badge">使用量</span></div>
-        <div class="card-body"><div id="apiUsage" class="list"><div class="empty">尚未載入資料</div></div></div>
+        <div class="card-header"><h2>服務使用情形</h2><span class="badge">使用量</span></div>
+        <div class="card-body"><div id="apiUsage" class="list"><div class="empty">尚未載入資料。</div></div></div>
       </div>
 
       <div class="card full">
-        <div class="card-header"><h2>操作摘要</h2><span class="badge">安全摘要</span></div>
-        <div class="card-body"><pre id="rawBox">尚未執行操作</pre></div>
+        <div class="card-header"><h2>操作結果</h2><span class="badge">摘要</span></div>
+        <div class="card-body"><pre id="rawBox">尚未執行操作。</pre></div>
       </div>
     </section>
   </div>
 
   <div id="deny" class="deny" style="display:none;">
     <div class="deny-card">
-      <h1>你沒有系統管理權限</h1>
-      <p>此頁面僅允許負責人或管理者使用。</p>
-      <button onclick="logout()">返回登入</button>
+      <h1>沒有管理權限</h1>
+      <p>此頁限負責人與管理員使用，請聯繫系統管理員調整角色。</p>
+      <button onclick="logout()">回到登入頁</button>
     </div>
   </div>
 
@@ -366,7 +366,12 @@
     async function boot() {
       try {
         state.session = readSession();
-        if (!isLocalDemoSession() && window.GovOpsSessionGuard && typeof GovOpsSessionGuard.verify === 'function') {
+        if (isLocalDemoSession()) {
+          clearSession();
+          location.href = './login.html?redirect=' + encodeURIComponent('admin-console.html');
+          return;
+        }
+        if (window.GovOpsSessionGuard && typeof GovOpsSessionGuard.verify === 'function') {
           await GovOpsSessionGuard.verify();
           state.session = readSession();
         }
@@ -376,21 +381,9 @@
         }
         document.getElementById('app').style.display = 'block';
         renderProfile();
-        if (isLocalDemoSession() || isLocalDevHost()) {
-          loadLocalDemoDashboard();
-          return;
-        }
         await loadDashboard();
       } catch (err) {
-        state.session = state.session || readSession();
-        if (isAdmin(state.session)) {
-          document.getElementById('app').style.display = 'block';
-          document.getElementById('deny').style.display = 'none';
-          renderProfile();
-          loadLocalDemoDashboard();
-          return;
-        }
-        showNotice('登入狀態驗證失敗，請重新登入。', 'error');
+        showNotice('登入狀態無效，請重新登入。', 'error');
         setTimeout(function() { location.href = './login.html'; }, 900);
       }
     }
@@ -404,7 +397,7 @@
     }
 
     function isAdmin(session) {
-      var role = String((session && (session.userRole || session.role || session['使用者角色'])) || '').toLowerCase();
+      var role = String((session && (session.userRole || session.role)) || '').toLowerCase();
       return role === 'owner' || role === 'admin';
     }
 
@@ -416,32 +409,14 @@
       return token.indexOf('LOCAL-DEMO-') === 0 || email === 'demo@govops.local' || email === 'test@example.local';
     }
 
-    function isLocalDevHost() {
-      return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    function clearSession() {
+      ['govops_auth','govops_profile','govops_usage'].forEach(function(key) {
+        try { localStorage.removeItem(key); } catch (err) {}
+      });
     }
 
-    function loadLocalDemoDashboard() {
-      var s = state.session || {};
-      var data = {
-        runtimeDependencies: {
-          ok: 3,
-          total: 3,
-          dependencies: [
-            { runtimeName: '登入狀態', status: '正常', description: '本機測試登入' },
-            { runtimeName: '營運首頁', status: '正常', description: '前台路由已驗證' },
-            { runtimeName: '資料服務', status: '測試', description: '本機測試不呼叫正式資料服務' }
-          ]
-        },
-        latestSnapshot: { systemStatus: '測試', tenantCount: 1, errorCount: 0 },
-        tenantStatus: { tenants: [{ tenantId: s.tenantId || 'TENANT-DEMO', organizationName: s.workspaceName || s.orgName || '測試工作區', status: 'ACTIVE', plan: s.planId || s.plan || 'pro' }] },
-        errorAnalytics: { errorCount: 0, latest: [] },
-        recommendations: ['測試模式未呼叫正式資料服務。'],
-        warnings: []
-      };
-      renderDashboard(data);
-      renderRaw({ success: true, message: '本機測試管理控制台已載入', data: data });
-      showNotice('本機測試管理控制台已載入。', 'success');
-      setBusy(false);
+    function isLocalDevHost() {
+      return /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
     }
 
     function showDeny() {
@@ -452,11 +427,11 @@
     function renderProfile() {
       var s = state.session || {};
       var html = '';
-      html += '<div><strong>' + escapeHtml(s.organizationName || s['組織名稱'] || '政務營運系統') + '</strong></div>';
+      html += '<div><strong>' + escapeHtml(s.organizationName || s.orgName || 'GovOps OS') + '</strong></div>';
       html += '<div>使用者：' + escapeHtml(s.ownerName || s.userName || s.name || '管理者') + '</div>';
       html += '<div>角色：' + escapeHtml(displayStatus(s.userRole || s.role || 'owner')) + '</div>';
       html += '<div>方案：' + escapeHtml(displayStatus(s.plan || 'free')) + '</div>';
-      html += '<div>組織狀態：' + escapeHtml(s.tenantId ? '已綁定' : '未綁定') + '</div>';
+      html += '<div>組織狀態：' + escapeHtml(s.tenantId ? '已設定' : '未設定') + '</div>';
       document.getElementById('profileBox').innerHTML = html;
     }
 
@@ -485,17 +460,17 @@
 
     async function loadDashboard() {
       setBusy(true);
-      showNotice('正在載入管理控制台...', '');
+      showNotice('正在載入管理資料...', '');
       var res = await request('getProductionHealthDashboard');
       state.dashboard = res;
       renderRaw(res);
       if (!res.success) {
-        showNotice(res.message || '管理控制台載入失敗。', 'error');
+        showNotice(res.message || '管理資料暫時無法載入。', 'error');
         setBusy(false);
         return;
       }
       renderDashboard(res.data || {});
-      showNotice('管理控制台已載入。', 'success');
+      showNotice('管理資料已載入。', 'success');
       setBusy(false);
     }
 
@@ -504,9 +479,9 @@
       var res = await request('runProductionSelfCheck');
       renderRaw(res);
       if (res.success) {
-        showNotice('正式環境自檢已完成。', 'success');
+        showNotice('自我檢查已完成。', 'success');
         await loadDashboard();
-      } else showNotice(res.message || '正式環境自檢失敗。', 'error');
+      } else showNotice(res.message || '自我檢查未完成。', 'error');
       setBusy(false);
     }
 
@@ -516,17 +491,17 @@
       var report = await request('createRecoveryReport');
       renderRaw({ repair: repair, report: report });
       renderRecovery(report.data || {});
-      showNotice(repair.success ? '系統復原檢查已完成。' : (repair.message || '系統復原檢查失敗。'), repair.success ? 'success' : 'error');
+      showNotice(repair.success ? '修復檢查已完成。' : (repair.message || '修復檢查未完成。'), repair.success ? 'success' : 'error');
       setBusy(false);
     }
 
     async function loadTenantStatus() {
       setBusy(true);
       var res = await request('getTenantLifecycleState');
-      if (!res.success) res = await request('檢查租戶狀態');
+      if (!res.success) res = await request('getTenantLifecycleState');
       renderRaw(res);
-      renderTenantStatus(res.data && (res.data.tenants || res.data.租戶) ? res.data : { tenants: [res.data || {}] });
-      showNotice(res.success ? '租戶狀態已更新。' : (res.message || '租戶狀態查詢失敗。'), res.success ? 'success' : 'error');
+      renderTenantStatus(res.data && res.data.tenants ? res.data : { tenants: [res.data || {}] });
+      showNotice(res.success ? '租戶資料已載入。' : (res.message || '租戶資料暫時無法載入。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -535,7 +510,7 @@
       var res = await request('getTenantBillingSummary');
       renderRaw(res);
       renderBilling(res.data || {});
-      showNotice(res.success ? '帳單狀態已更新。' : (res.message || '帳單狀態查詢失敗。'), res.success ? 'success' : 'error');
+      showNotice(res.success ? '租戶資料已載入。' : (res.message || '租戶資料暫時無法載入。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -544,7 +519,7 @@
       var res = await request('getTenantFeatureMatrix');
       renderRaw(res);
       renderFeatures(res.data || {});
-      showNotice(res.success ? '功能權限已更新。' : (res.message || '功能權限查詢失敗。'), res.success ? 'success' : 'error');
+      showNotice(res.success ? '租戶資料已載入。' : (res.message || '租戶資料暫時無法載入。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
@@ -553,18 +528,18 @@
       var res = await request('getAPIUsageSummary');
       renderRaw(res);
       renderApiUsage(res.data || {});
-      showNotice(res.success ? '服務使用量已更新。' : (res.message || '服務使用量查詢失敗。'), res.success ? 'success' : 'error');
+      showNotice(res.success ? '租戶資料已載入。' : (res.message || '租戶資料暫時無法載入。'), res.success ? 'success' : 'error');
       setBusy(false);
     }
 
     function renderDashboard(data) {
-      renderKpis(data);
-      renderDependencies(data.runtimeDependencies || {});
-      renderSnapshot(data.latestSnapshot || {});
-      renderTenantStatus(data.tenantStatus || {});
-      renderErrors(data.errorAnalytics || {});
-      renderRecovery({ recommendations: data.recommendations || [], warnings: data.warnings || [], status: (data.warnings || []).length ? 'WARNING' : 'OK' });
-      if (data.warnings && data.warnings.length) showNotice('系統有項目需要管理者確認。', 'error');
+      renderKpis(data || {});
+      renderDependencies((data || {}).runtimeDependencies || {});
+      renderSnapshot((data || {}).latestSnapshot || {});
+      renderTenantStatus((data || {}).tenantStatus || {});
+      renderErrors((data || {}).errorAnalytics || {});
+      renderRecovery({ recommendations: (data || {}).recommendations || [], warnings: (data || {}).warnings || [], status: ((data || {}).warnings || []).length ? 'WARNING' : 'OK' });
+      if (data && data.warnings && data.warnings.length) showNotice('系統有需要留意的項目。', 'error');
     }
 
     function renderKpis(data) {
@@ -573,87 +548,85 @@
       var tenants = data.tenantStatus && data.tenantStatus.tenants ? data.tenantStatus.tenants : [];
       var snap = data.latestSnapshot || {};
       var cards = [
-        ['系統狀態', snap['系統狀態'] || '待檢查'],
-        ['系統依賴正常', (dep.ok || 0) + '/' + (dep.total || 0)],
-        ['租戶數', tenants.length || snap['tenant數'] || 0],
+        ['系統狀態', snap.status || snap.health || '待確認'],
+        ['服務項目正常', (dep.ok || 0) + '/' + (dep.total || 0)],
+        ['租戶數', tenants.length || snap.tenantCount || 0],
         ['錯誤數', err.errorCount || snap.errorCount || 0]
       ];
       document.getElementById('kpiBox').innerHTML = cards.map(function(c) {
         return '<div class="kpi"><div class="label">' + escapeHtml(c[0]) + '</div><div class="value">' + escapeHtml(c[1]) + '</div></div>';
       }).join('');
-      setBadge('systemBadge', snap['系統狀態'] || 'UNKNOWN');
+      setBadge('systemBadge', snap.status || snap.health || 'UNKNOWN');
     }
 
     function renderDependencies(data) {
       var list = data.dependencies || [];
       setBadge('runtimeBadge', data.missing ? 'WARNING' : 'OK');
       document.getElementById('runtimeDependencies').innerHTML = list.length ? list.map(function(r) {
-        return row('系統依賴', displayStatus(r['狀態'] || r.status || '-'), safeText(r['錯誤訊息'] || r.message || ''));
-      }).join('') : empty('尚無系統依賴資料');
+        return row('服務項目', displayStatus(r.status || '-'), safeText(r.message || r.description || ''));
+      }).join('') : empty('目前沒有服務項目資料。');
     }
 
     function renderSnapshot(data) {
       document.getElementById('snapshotBox').innerHTML = Object.keys(data || {}).length ? [
-        row('系統狀態', displayStatus(data['系統狀態'] || data.status || data.health || '-'), ''),
-        row('租戶數', data['tenant數'] || data.tenantCount || data.tenants || 0, ''),
-        row('錯誤數', data.errorCount || data['錯誤數'] || 0, '')
-      ].join('') : empty('尚無健康摘要');
+        row('系統狀態', displayStatus(data.status || data.health || '-'), ''),
+        row('租戶數', data.tenantCount || data.tenants || 0, ''),
+        row('錯誤數', data.errorCount || 0, '')
+      ].join('') : empty('目前沒有戰情快照。');
     }
 
     function renderTenantStatus(data) {
       var tenants = Array.isArray(data.tenants) ? data.tenants : [];
-      if (!tenants.length && data.租戶) tenants = [data.租戶];
       document.getElementById('tenantStatus').innerHTML = tenants.length ? tenants.map(function(t) {
-        return row(safeText(t['組織名稱'] || t.organizationName || '組織'), '狀態：' + displayStatus(t['狀態'] || t.status || t.tenantStatus || '-'), '方案：' + displayStatus(t.plan || '-') + '｜帳務：' + displayStatus(t.billingState || '-'));
-      }).join('') : empty('尚無租戶狀態資料');
+        return row(safeText(t.organizationName || '組織'), '狀態：' + displayStatus(t.status || t.tenantStatus || '-'), '方案：' + displayStatus(t.plan || '-') + '，帳務：' + displayStatus(t.billingState || '-'));
+      }).join('') : empty('目前沒有租戶資料。');
     }
 
     function renderErrors(data) {
       setBadge('errorBadge', Number(data.errorCount || 0) > 0 ? 'RISK' : 'OK');
       var latest = data.latest || [];
       document.getElementById('errorAnalytics').innerHTML = latest.length ? latest.map(function(e) {
-        return row('待處理項目', safeText(e['錯誤訊息'] || e.message || '需要管理者確認'), '');
-      }).join('') : empty('目前沒有錯誤分析資料');
+        return row('錯誤紀錄', safeText(e.message || '待處理事項'), '');
+      }).join('') : empty('目前沒有錯誤紀錄。');
     }
 
     function renderRecovery(data) {
       setBadge('recoveryBadge', data.status || 'UNKNOWN');
       var items = [];
-      (data.warnings || []).forEach(function(x) { items.push(row('警示', safeText(x), '')); });
+      (data.warnings || []).forEach(function(x) { items.push(row('提醒', safeText(x), '')); });
       (data.recommendations || []).forEach(function(x) { items.push(row('建議', safeText(x), '')); });
       if (data.missingTables && data.missingTables.length) items.push(row('缺少資料表', data.missingTables.length + ' 項', ''));
       if (data.missingFunctions && data.missingFunctions.length) items.push(row('缺少功能', data.missingFunctions.length + ' 項', ''));
-      document.getElementById('recoveryReport').innerHTML = items.length ? items.join('') : empty('尚無復原報告');
+      document.getElementById('recoveryReport').innerHTML = items.length ? items.join('') : empty('目前沒有修復建議。');
     }
 
     function renderBilling(data) {
       setBadge('billingBadge', data.billingState || 'UNKNOWN');
       document.getElementById('billingSummary').innerHTML = Object.keys(data || {}).length ? [
-        row('方案', displayStatus(data.plan || '-'), '組織狀態：' + (data.tenantId ? '已綁定' : '未綁定')),
-        row('帳務狀態', displayStatus(data.billingState || '-'), '下次帳單日：' + (data.nextBillingDate || '-')),
-        row('帳單統計', '未付：' + (data.unpaidInvoices || 0) + '｜已付：' + (data.paidInvoices || 0) + '｜逾期：' + (data.overdueInvoices || 0), '總收入：' + (data.totalRevenue || 0))
-      ].join('') : empty('尚無帳單狀態資料');
+        row('方案', displayStatus(data.plan || '-'), '組織狀態：' + (data.tenantId ? '已設定' : '未設定')),
+        row('帳務狀態', displayStatus(data.billingState || '-'), '下次帳務日：' + (data.nextBillingDate || '-')),
+        row('帳務摘要', '未付款：' + (data.unpaidInvoices || 0) + '，已付款：' + (data.paidInvoices || 0) + '，逾期：' + (data.overdueInvoices || 0), '收入：' + (data.totalRevenue || 0))
+      ].join('') : empty('目前沒有帳務資料。');
     }
 
     function renderFeatures(data) {
       var features = data.features || [];
       document.getElementById('featureMatrix').innerHTML = features.length ? features.map(function(f) {
-        return row(safeText(f.featureName || '功能項目'), f.enabled ? '已啟用' : '未啟用', '方案：' + displayStatus(f.currentPlan || '-') + ' / 最低：' + displayStatus(f.minPlan || '-') + '｜來源：' + displayStatus(f.source || '-'));
-      }).join('') : empty('尚無功能權限資料');
+        return row(safeText(f.featureName || '功能'), f.enabled ? '已啟用' : '未啟用', '方案：' + displayStatus(f.currentPlan || '-') + ' / 最低需求：' + displayStatus(f.minPlan || '-'));
+      }).join('') : empty('目前沒有功能矩陣資料。');
     }
 
     function renderApiUsage(data) {
       document.getElementById('apiUsage').innerHTML = Object.keys(data || {}).length ? [
-        row('服務呼叫總數', data.total || 0, '成功：' + (data.success || 0) + '｜失敗：' + (data.failed || 0)),
-        row('平均回應時間', (data.avgLatency || 0) + ' 毫秒', '組織狀態：' + (data.tenantId ? '已綁定' : '未綁定'))
-      ].join('') : empty('尚無服務使用量資料');
+        row('服務呼叫數', data.total || 0, '成功：' + (data.success || 0) + '，失敗：' + (data.failed || 0)),
+        row('平均回應時間', (data.avgLatency || 0) + ' 毫秒', '組織狀態：' + (data.tenantId ? '已設定' : '未設定'))
+      ].join('') : empty('目前沒有服務使用資料。');
     }
 
     function setBadge(id, status) {
       var el = document.getElementById(id);
       if (!el) return;
       var s = String(status || 'UNKNOWN').toUpperCase();
-      el.textContent = s;
       el.className = 'badge';
       el.textContent = displayStatus(s);
       if (['OK','HEALTHY','GOOD_STANDING','ACTIVE','ENABLED'].indexOf(s) >= 0) el.classList.add('ok');
@@ -666,27 +639,7 @@
     }
 
     function displayStatus(value) {
-      var map = {
-        OK: '正常',
-        HEALTHY: '健康',
-        GOOD_STANDING: '正常',
-        ACTIVE: '啟用中',
-        ENABLED: '已啟用',
-        WARNING: '需注意',
-        MISSING_DEPENDENCIES: '缺少依賴',
-        PAST_DUE: '逾期',
-        UNKNOWN: '尚未確認',
-        RISK: '風險',
-        DEMO: '測試',
-        ENTERPRISE: '企業版',
-        PRO: '專業版',
-        FREE: '免費版',
-        OWNER: '負責人',
-        ADMIN: '管理者',
-        FINANCE: '財務',
-        STAFF: '作業人員',
-        VIEWER: '唯讀'
-      };
+      var map = { OK:'正常', HEALTHY:'正常', GOOD_STANDING:'正常', ACTIVE:'啟用中', ENABLED:'已啟用', WARNING:'需留意', MISSING_DEPENDENCIES:'缺少項目', PAST_DUE:'逾期', UNKNOWN:'待確認', RISK:'風險', DEMO:'測試', ENTERPRISE:'企業方案', PRO:'專業方案', FREE:'試用方案', OWNER:'負責人', ADMIN:'管理員', FINANCE:'財務', STAFF:'作業人員', VIEWER:'檢視' };
       var key = String(value === undefined || value === null ? '' : value).toUpperCase();
       return map[key] || safeText(value) || '-';
     }
@@ -704,7 +657,7 @@
 
     function renderRaw(data) {
       var ok = data && data.success !== false;
-      document.getElementById('rawBox').textContent = (ok ? '操作已完成。' : '操作未完成。') + '\n' + safeText(data && data.message ? data.message : '已隱藏系統原始回應資料。');
+      document.getElementById('rawBox').textContent = (ok ? '操作已完成。' : '操作未完成。') + '\n' + safeText(data && data.message ? data.message : '沒有可顯示的訊息。');
     }
 
     function showNotice(text, type) {
@@ -746,3 +699,9 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+

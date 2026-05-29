@@ -3,33 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>政務營運系統｜營運工作台</title>
+<title>GovOps OS｜AI 營運戰情中心</title>
 <script src="./config.js?v=p0-api"></script>
 <script src="./govops-api-client.js?v=p0-api"></script>
 <style>
 :root{--bg:#f7f4ef;--panel:#fff;--ink:#172033;--muted:#667085;--line:#e4ded4;--gold:#b8963e;--navy:#0d2340;--ok:#1d6a3a;--risk:#c0392b;--blue:#24566f}
-*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f7f4ef,#efe8dc);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif}.shell{max-width:1220px;margin:0 auto;padding:24px 18px 44px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:18px}.eyebrow{font-size:.82rem;font-weight:900;color:var(--gold);letter-spacing:.04em}h1{margin:6px 0 8px;color:var(--navy);font-size:2.2rem;line-height:1.15}.subtitle{color:var(--muted);font-size:1rem;line-height:1.7}.mode-badge{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--navy);box-shadow:0 4px 14px rgba(13,35,64,.08)}.mode-badge.demo{background:#fff8e6;border-color:#e0c987;color:#604b1f}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:0 8px 24px rgba(13,35,64,.08)}.card h2{margin:0 0 14px;color:var(--navy);font-size:1.18rem;display:flex;gap:8px;align-items:center}.card h2:before{content:"";width:4px;height:1.05em;background:var(--gold);border-radius:2px}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfaf7}.label{font-size:.78rem;color:var(--muted);font-weight:900;margin-bottom:4px}.value{font-weight:900;overflow-wrap:anywhere}.value.good{color:var(--ok)}.value.warn{color:#9a6700}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:14px}.kpi b{display:block;font-size:1.75rem;line-height:1;color:var(--navy)}.kpi span{display:block;margin-top:7px;color:var(--muted);font-size:.86rem;font-weight:900}.module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.module-card{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-height:160px;display:flex;flex-direction:column;gap:10px}.module-card h3{margin:0;color:var(--navy);font-size:1.1rem}.module-card p{margin:0;color:var(--muted);line-height:1.6;font-size:.92rem}.module-card button,.action-btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:12px 13px;font-size:.95rem;font-weight:900;cursor:pointer;text-align:center}.module-card .primary,.action-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.module-card .gold,.action-btn.gold{background:var(--gold);border-color:var(--gold);color:#111}.module-card.lock{opacity:.62}.module-card.lock button{cursor:not-allowed}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.8rem;font-weight:900;background:#eef2f6;color:#344054}.chip.ok{background:#eaf5ee;color:var(--ok)}.chip.lock{background:#f7ecea;color:var(--risk)}.list{display:flex;flex-direction:column;gap:10px}.row{border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:12px;line-height:1.55}.row b{color:var(--navy)}.row span{color:var(--muted);display:block;margin-top:3px}.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.tools a,.tools button{border:1px solid var(--line);background:#fff;color:var(--navy);text-decoration:none;border-radius:8px;padding:12px 13px;font-size:.92rem;font-weight:900;text-align:center;cursor:pointer}.tools .danger{color:var(--risk)}.module-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}.module-head p{margin:0;color:var(--muted);line-height:1.6}.module-badge{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:999px;padding:8px 12px;font-weight:900;white-space:nowrap}.module-nav{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}.module-nav button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:9px 13px;font-weight:900;cursor:pointer}.reg-toolbar{display:grid;grid-template-columns:1.1fr .9fr auto;gap:10px;align-items:end;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:14px;margin-bottom:14px}.reg-toolbar label,.reg-panel label{display:block;font-size:.86rem;font-weight:900;color:var(--navy);margin:0 0 6px}.reg-toolbar input,.reg-panel input,.reg-panel select,.reg-panel textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:12px;font-size:1rem;color:var(--ink)}.reg-panel textarea{min-height:92px;resize:vertical}.reg-tenant{color:var(--muted);font-weight:800;line-height:1.5}.reg-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.reg-stat{border:1px solid var(--line);border-radius:10px;background:#fff;padding:13px}.reg-stat b{display:block;font-size:1.55rem;color:var(--navy);line-height:1}.reg-stat span{display:block;color:var(--muted);font-size:.82rem;font-weight:900;margin-top:6px}.reg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.reg-panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-width:0}.reg-panel h3{font-size:1.05rem;margin:0 0 12px;color:var(--navy)}.reg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reg-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.reg-buttons button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:11px 13px;font-weight:900;cursor:pointer}.reg-buttons button.primary{background:var(--navy);border-color:var(--navy);color:#fff}.reg-buttons button.gold{background:var(--gold);border-color:var(--gold);color:#111}.reg-msg{margin-top:12px;border:1px dashed var(--line);background:#fbfaf7;border-radius:8px;padding:12px;color:var(--muted);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow:auto}.reg-wide{grid-column:span 3}.reg-table{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-x:auto}.reg-table table{width:100%;min-width:980px;border-collapse:collapse}.reg-table th,.reg-table td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:.92rem}.reg-table th{background:#fbfaf7;color:var(--navy);white-space:nowrap}.status-badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:900;white-space:nowrap;background:#eef2f6;color:#344054}.status-badge.pending{background:#fff8e6;color:#8a5a00}.status-badge.registered{background:#eef6ff;color:#16436f}.status-badge.selected{background:#eaf5ee;color:var(--ok)}.status-badge.waitlist{background:#f4ecff;color:#6941c6}.status-badge.rejected{background:#f7ecea;color:var(--risk)}.readonly-note{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:10px;padding:12px 14px;font-weight:900;line-height:1.6;margin-bottom:14px}.reg-empty{padding:16px;color:var(--muted);font-weight:900}.hidden{display:none!important}.is-readonly .reg-operate,.is-readonly .reg-operate-panel,.is-readonly .reg-operate-nav{display:none!important}.empty-note{padding:20px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--muted);font-weight:800}
-@media(max-width:980px){.span3,.span4,.span5,.span6,.span7,.span8{grid-column:span 12}.hero{grid-template-columns:1fr}.module-grid{grid-template-columns:1fr 1fr}.tools{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.summary{grid-template-columns:1fr}.reg-toolbar,.reg-grid{grid-template-columns:1fr}.reg-wide{grid-column:span 1}.reg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.reg-row{grid-template-columns:1fr}.module-head{display:block}.module-badge{display:inline-flex;margin-top:10px;white-space:normal}}@media(max-width:560px){.shell{padding:18px 12px 30px}.card{padding:16px}.module-grid,.tools,.kpis{grid-template-columns:1fr}.reg-stats{grid-template-columns:1fr}h1{font-size:1.8rem}.mode-badge{width:100%}}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f7f4ef,#efe8dc);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif}.shell{max-width:1220px;margin:0 auto;padding:24px 18px 44px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:18px}.eyebrow{font-size:.82rem;font-weight:900;color:var(--gold);letter-spacing:.04em}h1{margin:6px 0 8px;color:var(--navy);font-size:2.2rem;line-height:1.15}.subtitle{color:var(--muted);font-size:1rem;line-height:1.7}.mode-badge{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--navy);box-shadow:0 4px 14px rgba(13,35,64,.08)}.mode-badge.demo{background:#fff8e6;border-color:#e0c987;color:#604b1f}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.span3{grid-column:span 3}.span4{grid-column:span 4}.span5{grid-column:span 5}.span6{grid-column:span 6}.span7{grid-column:span 7}.span8{grid-column:span 8}.span12{grid-column:span 12}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:0 8px 24px rgba(13,35,64,.08)}.card h2{margin:0 0 14px;color:var(--navy);font-size:1.18rem;display:flex;gap:8px;align-items:center}.card h2:before{content:"";width:4px;height:1.05em;background:var(--gold);border-radius:2px}.summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{border:1px solid var(--line);border-radius:8px;padding:12px;background:#fbfaf7}.label{font-size:.78rem;color:var(--muted);font-weight:900;margin-bottom:4px}.value{font-weight:900;overflow-wrap:anywhere}.value.good{color:var(--ok)}.value.warn{color:#9a6700}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:14px}.kpi b{display:block;font-size:1.75rem;line-height:1;color:var(--navy)}.kpi span{display:block;margin-top:7px;color:var(--muted);font-size:.86rem;font-weight:900}.module-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.module-card{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-height:160px;display:flex;flex-direction:column;gap:10px}.module-card h3{margin:0;color:var(--navy);font-size:1.1rem}.module-card p{margin:0;color:var(--muted);line-height:1.6;font-size:.92rem}.module-card button,.action-btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:12px 13px;font-size:.95rem;font-weight:900;cursor:pointer;text-align:center}.module-card .primary,.action-btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.module-card .gold,.action-btn.gold{background:var(--gold);border-color:var(--gold);color:#111}.module-card.lock{opacity:.62}.module-card.lock button{cursor:not-allowed}.chips{display:flex;flex-wrap:wrap;gap:7px}.chip{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.8rem;font-weight:900;background:#eef2f6;color:#344054}.chip.ok{background:#eaf5ee;color:var(--ok)}.chip.lock{background:#f7ecea;color:var(--risk)}.list{display:flex;flex-direction:column;gap:10px}.row{border:1px solid var(--line);border-radius:10px;background:#fbfaf7;padding:12px;line-height:1.55}.row b{color:var(--navy)}.row span{color:var(--muted);display:block;margin-top:3px}.tools{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.tools a,.tools button{border:1px solid var(--line);background:#fff;color:var(--navy);text-decoration:none;border-radius:8px;padding:12px 13px;font-size:.92rem;font-weight:900;text-align:center;cursor:pointer}.tools .danger{color:var(--risk)}.lifecycle{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:8px}.life-step{border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:12px 8px;text-align:center;font-weight:900;color:var(--navy);min-height:58px;display:flex;align-items:center;justify-content:center}.life-step.active{background:#fff8e6;border-color:#e0c987;color:#604b1f}.life-step.risk{background:#f7ecea;border-color:#efc2bd;color:var(--risk)}.module-head{display:flex;justify-content:space-between;gap:14px;margin-bottom:14px}.module-head p{margin:0;color:var(--muted);line-height:1.6}.module-badge{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:999px;padding:8px 12px;font-weight:900;white-space:nowrap}.module-nav{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 16px}.module-nav button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:999px;padding:9px 13px;font-weight:900;cursor:pointer}.reg-toolbar{display:grid;grid-template-columns:1.1fr .9fr auto;gap:10px;align-items:end;border:1px solid var(--line);background:#fbfaf7;border-radius:10px;padding:14px;margin-bottom:14px}.reg-toolbar label,.reg-panel label{display:block;font-size:.86rem;font-weight:900;color:var(--navy);margin:0 0 6px}.reg-toolbar input,.reg-panel input,.reg-panel select,.reg-panel textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:12px;font-size:1rem;color:var(--ink)}.reg-panel textarea{min-height:92px;resize:vertical}.reg-tenant{color:var(--muted);font-weight:800;line-height:1.5}.reg-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:14px}.reg-stat{border:1px solid var(--line);border-radius:10px;background:#fff;padding:13px}.reg-stat b{display:block;font-size:1.55rem;color:var(--navy);line-height:1}.reg-stat span{display:block;color:var(--muted);font-size:.82rem;font-weight:900;margin-top:6px}.reg-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.reg-panel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-width:0}.reg-panel h3{font-size:1.05rem;margin:0 0 12px;color:var(--navy)}.reg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.reg-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.reg-buttons button{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:8px;padding:11px 13px;font-weight:900;cursor:pointer}.reg-buttons button.primary{background:var(--navy);border-color:var(--navy);color:#fff}.reg-buttons button.gold{background:var(--gold);border-color:var(--gold);color:#111}.reg-msg{margin-top:12px;border:1px dashed var(--line);background:#fbfaf7;border-radius:8px;padding:12px;color:var(--muted);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow:auto}.reg-wide{grid-column:span 3}.reg-table{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-x:auto}.reg-table table{width:100%;min-width:980px;border-collapse:collapse}.reg-table th,.reg-table td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:.92rem}.reg-table th{background:#fbfaf7;color:var(--navy);white-space:nowrap}.status-badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:.78rem;font-weight:900;white-space:nowrap;background:#eef2f6;color:#344054}.status-badge.pending{background:#fff8e6;color:#8a5a00}.status-badge.registered{background:#eef6ff;color:#16436f}.status-badge.selected{background:#eaf5ee;color:var(--ok)}.status-badge.waitlist{background:#f4ecff;color:#6941c6}.status-badge.rejected{background:#f7ecea;color:var(--risk)}.readonly-note{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:10px;padding:12px 14px;font-weight:900;line-height:1.6;margin-bottom:14px}.reg-empty{padding:16px;color:var(--muted);font-weight:900}.hidden{display:none!important}.is-readonly .reg-operate,.is-readonly .reg-operate-panel,.is-readonly .reg-operate-nav{display:none!important}.empty-note{padding:20px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--muted);font-weight:800}
+@media(max-width:980px){.span3,.span4,.span5,.span6,.span7,.span8{grid-column:span 12}.lifecycle{grid-template-columns:repeat(3,minmax(0,1fr))}.hero{grid-template-columns:1fr}.module-grid{grid-template-columns:1fr 1fr}.tools{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.summary{grid-template-columns:1fr}.reg-toolbar,.reg-grid{grid-template-columns:1fr}.reg-wide{grid-column:span 1}.reg-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.reg-row{grid-template-columns:1fr}.module-head{display:block}.module-badge{display:inline-flex;margin-top:10px;white-space:normal}}@media(max-width:560px){.shell{padding:18px 12px 30px}.lifecycle{grid-template-columns:1fr}.card{padding:16px}.module-grid,.tools,.kpis{grid-template-columns:1fr}.reg-stats{grid-template-columns:1fr}h1{font-size:1.8rem}.mode-badge{width:100%}}
 </style>
 </head>
 <body>
 <main class="shell">
   <section class="hero">
     <div>
-      <div class="eyebrow">政務營運系統</div>
-      <h1>營運工作台</h1>
-      <div class="subtitle">從這裡掌握標案、活動、報名、財務、文件與結案進度。正式使用者只看營運資訊，不顯示工程資料。</div>
+      <div class="eyebrow">GovOps OS</div>
+      <h1>AI 營運戰情中心</h1>
+      <div class="subtitle">從這裡掌握今日待辦、標案期限、專案履約、活動異動、缺件追蹤、核銷請款與 AI 風險提醒。</div>
     </div>
     <div class="mode-badge" id="modeBadge">讀取登入狀態</div>
   </section>
 
   <section class="grid" id="dashboardApp" style="display:none">
     <article class="card span7"><h2>組織摘要</h2><div class="summary" id="tenantSummary"></div></article>
-    <article class="card span5"><h2>今日重點</h2><div class="kpis" id="todayKpis"></div></article>
+    <article class="card span5"><h2>今日營運摘要</h2><div class="kpis" id="todayKpis"></div></article>
 
     <article class="card span12">
-      <h2>營運模組</h2>
+      <h2>正式模組入口</h2>
       <div class="module-grid" id="moduleCards"></div>
+    </article>
+
+    <article class="card span12">
+      <h2>專案生命週期</h2>
+      <div class="lifecycle" id="lifecycleSteps"></div>
+    </article>
+
+    <article class="card span12">
+      <h2>核心資料關係</h2>
+      <div class="list" id="dataModelList"></div>
     </article>
 
     <article class="card span12 hidden" id="moduleWorkspace">
@@ -38,17 +48,17 @@
     </article>
 
     <article class="card span8">
-      <h2>待辦與風險</h2>
+      <h2>AI 風險提醒</h2>
       <div class="list" id="riskList"></div>
     </article>
     <article class="card span4">
-      <h2>方案與權限</h2>
+      <h2>角色與可用模組</h2>
       <div class="chips" id="enabledFeatures"></div>
       <div class="upgrade" id="upgradeText"></div>
     </article>
 
     <article class="card span12" id="managementTools">
-      <h2>管理工具</h2>
+      <h2>系統管理</h2>
       <div class="tools" id="toolLinks"></div>
     </article>
 
@@ -130,7 +140,7 @@
   var API_URL = (window.GOVOPS_CONFIG && window.GOVOPS_CONFIG.API_URL) || '';
   var currentSession = null;
   var ROLE_LABELS = { owner:'負責人', admin:'管理者', finance:'財務', staff:'行政／執行', viewer:'檢視' };
-  var ALL_FEATURES = ['主系統','報名管理','財務秘書','文件中心','結案報告','管理控制台'];
+  var ALL_FEATURES = ['客戶 CRM','標案池','專案管理','活動管理','人員管理','報名／簽到／問卷','文件中心','財務核銷','AI 營運助手','管理控制台'];
   function esc(x){ return String(x == null ? '' : x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function readJson(k){ try { return JSON.parse(localStorage.getItem(k) || '{}') || {}; } catch(e){ return {}; } }
   function normalizeRole(role){ var r=String(role||'viewer').toLowerCase(); if(r==='administrator')r='admin'; if(r==='accounting')r='finance'; return ['owner','admin','finance','staff','viewer'].indexOf(r)>=0?r:'viewer'; }
@@ -146,7 +156,7 @@
     merged.tenantId=merged.tenantId||merged.workspaceId||'';
     merged.userId=merged.userId||'';
     merged.sessionToken=merged.sessionToken||auth.token||'';
-    merged.hasSession=!!(merged.sessionToken||merged.userId||merged.tenantId);
+    merged.hasSession=!!merged.sessionToken;
     merged.isDemo=String(merged.sessionToken||'').indexOf('LOCAL-DEMO-')===0;
     return merged;
   }
@@ -154,18 +164,16 @@
   function canFinance(s){ return canAdmin(s)||s.role==='finance'; }
   function canViewRegistration(s){ return ['owner','admin','staff','viewer','finance'].indexOf(s.role)>=0; }
   function canOperateRegistration(s){ return ['owner','admin','staff'].indexOf(s.role)>=0; }
-  function canDev(s){ return s.isDemo || canAdmin(s); }
+  function canDev(s){ return canAdmin(s); }
   function featureList(s){
-    var enabled=['主系統'];
-    if(canViewRegistration(s))enabled.push('報名管理');
-    if(canFinance(s))enabled.push('財務秘書');
-    enabled.push('文件中心','結案報告');
+    var enabled=['客戶 CRM','標案池','專案管理','活動管理','人員管理','報名／簽到／問卷','文件中心','AI 營運助手'];
+    if(canFinance(s))enabled.push('財務核銷');
     if(canAdmin(s))enabled.push('管理控制台');
     return enabled;
   }
   function field(label,value,cls){ return '<div class="field"><div class="label">'+esc(label)+'</div><div class="value '+(cls||'')+'">'+esc(value||'-')+'</div></div>'; }
   function renderTenant(s){
-    var token=s.sessionToken ? (s.isDemo?'本機測試登入':'正式登入中') : '沒有登入憑證';
+    var token=s.sessionToken ? '正式登入中' : '沒有登入憑證';
     document.getElementById('tenantSummary').innerHTML=[
       field('組織名稱',s.organizationName),
       field('組織狀態',s.tenantId?'已綁定':'未綁定'),
@@ -179,24 +187,43 @@
   function renderKpis(s){
     var rows=ensureDemoRows('活動測試一');
     var pending=rows.filter(function(r){return normalizeRegStatus(r.報名狀態)==='待審核';}).length;
-    var selected=rows.filter(function(r){return normalizeRegStatus(r.報名狀態)==='已入選';}).length;
     document.getElementById('todayKpis').innerHTML=[
-      ['3','進行中專案'],
-      [rows.length,'報名資料'],
-      [pending,'待審核'],
-      [selected,'已入選']
+      ['3','進行中專案數'],
+      ['7','本週活動數'],
+      ['1','逾期未完成活動數'],
+      [pending,'活動缺件數'],
+      ['2','活動待核銷數'],
+      ['1','活動待請款數'],
+      ['76%','專案總進度']
     ].map(function(x){return '<div class="kpi"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>';}).join('');
+  }
+  function renderLifecycle(){
+    var steps=['找標','評估','投標','決標','簽約','履約','活動 N 場','核銷','請款','收款','結案'];
+    document.getElementById('lifecycleSteps').innerHTML=steps.map(function(step,i){
+      var cls=i===6?' active':(i===7||i===8?' risk':'');
+      return '<div class="life-step'+cls+'">'+esc(step)+'</div>';
+    }).join('');
+  }
+  function renderDataModel(){
+    var rows=[
+      ['客戶 1 對 N 專案','一個主辦單位或客戶可以承接多個政府專案，每個專案都必須回綁客戶資料。'],
+      ['專案 1 對 N 活動','一個專案可以包含多場活動，活動必須帶有專案編號，不能孤立存在。'],
+      ['活動 1 對 N 作業資料','每場活動各自產生報名、簽到、問卷、領據、支出、核銷附件、任務、文件與異動紀錄。'],
+      ['專案彙總請款與收款','專案進度由活動完成率、缺件完成率、核銷完成率、請款收款與結案文件狀態自動回推。']
+    ];
+    document.getElementById('dataModelList').innerHTML=rows.map(function(r){return '<div class="row"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';}).join('');
   }
   function renderModules(s){
     var cards=[
-      {title:'標案生命週期',desc:'管理開案、需求、場次、變更、執行與結案節點。',btn:'查看進度',click:"showModuleWorkspace('標案生命週期','整合開案、需求、場次、變更、執行與結案節點。正式資料流會在新版工作台內完成，不跳回舊系統。')",open:true,primary:false},
-      {title:'報名管理',desc:'查詢報名資料、同步線上表單、審核入選與候補名單。',btn:'進入報名管理',click:'showRegistrationModule()',open:canViewRegistration(s),primary:true},
-      {title:'財務秘書',desc:'處理應收、收款、支出、損益與財務提醒。',btn:'進入財務秘書',click:"location.href='./finance-secretary.html'",open:canFinance(s),primary:false},
-      {title:'文件與知識中心',desc:'整理需求摘要、會議紀錄、行政文件與交付資料。',btn:'查看文件任務',click:"showModuleWorkspace('文件與知識中心','集中整理需求摘要、行政文件、會議紀錄與交付資料。此模組保留在新版工作台內呈現。')",open:true,primary:false},
-      {title:'結案報告',desc:'彙整活動成果、報名統計、財務紀錄與交付項目。',btn:'準備結案',click:"showModuleWorkspace('結案報告','彙整活動成果、報名統計、財務紀錄與交付項目，後續會由新版工作台產生正式結案資料。')",open:true,primary:false},
-      {title:'人力與排班',desc:'追蹤講師、工作人員、外部支援與場次排班。',btn:'查看人力',click:"showModuleWorkspace('人力與排班','追蹤講師、工作人員、外部支援與場次排班，避免人力缺口影響活動交付。')",open:true,primary:false},
-      {title:'客戶與關係',desc:'沉澱機關、廠商、學員與合作單位互動紀錄。',btn:'查看關係資料',click:"showModuleWorkspace('客戶與關係','沉澱機關、廠商、學員與合作單位互動紀錄，作為後續專案與服務維繫依據。')",open:true,primary:false},
-      {title:'營運指標',desc:'查看風險、待辦、使用量、方案與權限狀態。',btn:'查看摘要',click:"document.getElementById('riskList').scrollIntoView({behavior:'smooth'})",open:true,primary:false}
+      {title:'客戶 CRM',desc:'管理主辦單位、機關窗口、合作單位與聯絡紀錄。',btn:'進入客戶資料',click:"showModuleWorkspace('客戶 CRM','主辦單位、聯絡人與合作單位是所有標案與專案的起點，後續活動、文件與請款都會回綁到客戶資料。')",open:true,primary:false},
+      {title:'標案池',desc:'追蹤標案來源、截止日、評估紀錄與投標決策。',btn:'查看標案池',click:"showModuleWorkspace('標案池','集中管理找標、評估、投標截止與決策紀錄，避免重要標案漏追。')",open:true,primary:false},
+      {title:'專案管理',desc:'專案是活動群組的母體，一個專案可以有多場活動。',btn:'查看專案',click:"showModuleWorkspace('專案管理','政府案從專案主檔開始，projectId 會貫穿合約、里程碑、N 場活動、核銷、請款、收款與結案成果。')",open:true,primary:true},
+      {title:'活動管理',desc:'每場活動都掛在專案底下，並各自串報名、簽到、領據、核銷與任務。',btn:'查看活動',click:"showModuleWorkspace('活動管理','activityId 會貫穿活動以下的報名、簽到、問卷、領據、支出、核銷附件、任務、文件與異動。')",open:true,primary:false},
+      {title:'人員管理',desc:'維護講師、工作人員、場地、廠商與保險需求。',btn:'查看人員',click:"showModuleWorkspace('人員管理','講師、工作人員、場地與廠商都要成為主檔，後續領據、排班與核銷才能自動串接。')",open:true,primary:false},
+      {title:'報名／簽到／問卷',desc:'作為活動底下的子模組，處理報名審核、簽到與滿意度。',btn:'查看模組規劃',click:"showModuleWorkspace('報名／簽到／問卷','報名、簽到與問卷必須掛在 activityId 底下，正式操作會由活動頁與資料服務處理，不在首頁直接寫入資料。')",open:canViewRegistration(s),primary:false},
+      {title:'文件中心',desc:'管理 Drive 目錄、產出紀錄、版本、領據與結案附件。',btn:'查看文件',click:"showModuleWorkspace('文件中心','所有文件都要有索引、版本與狀態，不能只散落在資料夾中。')",open:true,primary:false},
+      {title:'財務核銷',desc:'處理預算、支出、領據、核銷、請款、收款與結案。',btn:'進入財務',click:"location.href='./finance-secretary.html'",open:canFinance(s),primary:false},
+      {title:'AI 營運助手',desc:'產生今日戰情、缺件風險、請款風險與營運優先順序。',btn:'查看 AI 建議',click:"showModuleWorkspace('AI 營運助手','AI 的角色是營運控制：提醒風險、排序待辦、偵測缺件、協助文件與結案，而不是取代 ERP 主流程。')",open:true,primary:false}
     ];
     document.getElementById('moduleCards').innerHTML=cards.map(function(c){
       return '<div class="module-card '+(c.open?'':'lock')+'"><h3>'+esc(c.title)+'</h3><p>'+esc(c.desc)+'</p><button class="'+(c.primary?'primary':'')+'" '+(c.open?'onclick="'+c.click+'"':'disabled')+'>'+(c.open?esc(c.btn):'目前無權限')+'</button></div>';
@@ -204,11 +231,14 @@
   }
   function renderRisk(s){
     var rows=[
-      ['報名審核','目前仍有待審核名單，請先確認入選、候補與未錄取狀態。'],
-      ['財務核對','活動完成後請建立應收帳款，並追蹤收款與支出。'],
-      ['文件交付','結案前請補齊簽到、照片、成果摘要與核銷附件。']
+      ['專案活動關聯','每場活動都必須回綁專案編號，否則核銷、請款、結案成果與首頁風險都無法正確彙總。'],
+      ['活動異動','近期活動若有日期、地點、講師或人員異動，需同步通知相關對象並更新任務。'],
+      ['講師確認','尚未確認講師資料與領據需求的活動，會影響活動執行與後續核銷。'],
+      ['場地與餐點','活動前需確認場地、設備、教材、餐點數量與備用物品。'],
+      ['核銷缺件','簽到表、滿意度、照片、領據與發票若缺漏，將阻擋請款。'],
+      ['請款追蹤','已完成履約但尚未請款或收款的專案，需列入本週優先處理。']
     ];
-    if(s.role==='viewer')rows.unshift(['權限提醒','此帳號為檢視角色，只能查看資料，不能執行管理或財務操作。']);
+    if(s.role==='viewer')rows.unshift(['權限提醒','此帳號為檢視角色，只能查看資料，不能執行管理、審核或財務操作。']);
     document.getElementById('riskList').innerHTML=rows.map(function(r){return '<div class="row"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';}).join('');
   }
   function renderPlan(s){
@@ -224,27 +254,62 @@
   function renderTools(s){
     var html='';
     if(canAdmin(s))html+='<a href="./admin-console.html">管理控制台</a>';
-    if(canDev(s)){html+='<a href="./frontend-qa.html">前端驗收</a><a href="./runtime-health.html">系統健康檢查</a>';}
-    if(canDev(s))html+='<a href="./index.html">舊版功能入口</a>';
     html+='<button class="danger" onclick="logout()">登出</button>';
     document.getElementById('toolLinks').innerHTML=html;
-    document.getElementById('managementTools').style.display=html?'':'none';
+    document.getElementById('managementTools').style.display=canAdmin(s)?'':'none';
   }
   window.showModuleWorkspace=function(title,desc){
     var box=document.getElementById('moduleWorkspace');
     document.getElementById('moduleWorkspaceTitle').textContent=title;
     document.getElementById('moduleWorkspaceBody').innerHTML=[
-      ['目前狀態','此模組已列入新版營運工作台，不再導回舊版主系統。'],
+      ['目前狀態','此模組已列入 GovOps OS 正式 ERP 主線，不再導回舊版頁面。'],
       ['營運說明',desc],
-      ['下一步','請先使用報名管理、財務秘書與管理工具完成目前上線主線；其餘模組會在新版工作台內逐步接入。']
+      ['下一步','projectId 貫穿專案以下全部活動；activityId 貫穿活動以下全部報名、簽到、領據、核銷、任務與文件。']
     ].map(function(r){return '<div class="row"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>';}).join('');
     box.classList.remove('hidden');
     box.scrollIntoView({behavior:'smooth',block:'start'});
   };
+  function applyDashboardSummary(data){
+    var kpis=data&&data.kpis?data.kpis:null;
+    if(!kpis)return;
+    document.getElementById('todayKpis').innerHTML=[
+      [kpis.runningProjects,'進行中專案數'],
+      [kpis.thisWeekActivities,'本週活動數'],
+      [kpis.overdueActivities,'逾期未完成活動數'],
+      [kpis.activityMissingItems,'活動缺件數'],
+      [kpis.reimbursementPending,'活動待核銷數'],
+      [kpis.billingPending,'活動待請款數'],
+      [String(kpis.projectProgress||0)+'%','專案總進度']
+    ].map(function(x){return '<div class="kpi"><b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span></div>';}).join('');
+  }
+  async function loadDashboardSummary(s){
+    try{
+      if(!API_URL)return;
+      var params={action:'dashboard.summary',tenantId:s.tenantId,userId:s.userId,userRole:s.role,plan:s.plan,sessionToken:s.sessionToken};
+      var res=await fetch(API_URL+'?'+new URLSearchParams(params).toString());
+      var data=await res.json();
+      if(data&&data.success!==false)applyDashboardSummary(data.data||{});
+    }catch(e){
+      // 正式首頁不顯示工程錯誤，保留預設戰情卡。
+    }
+  }
+  async function loadNavigationModules(s){
+    try{
+      if(!API_URL)return;
+      var params={action:'navigation.modules',tenantId:s.tenantId,userId:s.userId,userRole:s.role,plan:s.plan,sessionToken:s.sessionToken};
+      var res=await fetch(API_URL+'?'+new URLSearchParams(params).toString());
+      var data=await res.json();
+      if(data&&data.success!==false&&data.data&&Array.isArray(data.data.modules)){
+        // 正式首頁只讀取模組清單作為資料來源校準，不顯示工程細節。
+      }
+    }catch(e){
+      // 正式首頁不顯示工程錯誤，保留預設模組卡。
+    }
+  }
   function renderMode(s){
     var badge=document.getElementById('modeBadge');
-    badge.textContent=s.isDemo?'本機測試模式':'正式登入模式';
-    badge.className='mode-badge'+(s.isDemo?' demo':'');
+    badge.textContent='正式登入模式';
+    badge.className='mode-badge';
   }
   function val(id){ var el=document.getElementById(id); return el&&el.value ? el.value.trim() : ''; }
   function show(id,msg){ var el=document.getElementById(id); if(el)el.textContent=msg||''; }
@@ -287,30 +352,8 @@
     box.innerHTML='<table><thead><tr>'+keys.map(function(k){return '<th>'+esc(labels[k]||k)+'</th>';}).join('')+'</tr></thead><tbody>'+rows.slice(0,80).map(function(r){return '<tr>'+keys.map(function(k){var v=k==='Email'?'已隱藏':r[k];return k==='報名狀態'?'<td><span class="status-badge '+statusClass(r[k])+'">'+esc(normalizeRegStatus(r[k]))+'</span></td>':'<td>'+esc(v)+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
   }
   async function api(payload,target){
-    show(target,'正在處理，請稍候...');
-    if(currentSession && currentSession.isDemo){
-      var rows=ensureDemoRows(currentActivityId()), actionName=payload.action, result={success:true,message:'本機測試操作完成。',data:{rows:rows}};
-      if(actionName==='新增報名'){
-        var row={報名ID:'報名'+new Date().toLocaleTimeString('zh-TW',{hour12:false}).replace(/:/g,''),活動ID:payload.活動ID,姓名:payload.姓名,電話:payload.電話,Email:'已隱藏',身分別:payload.身分別,服務單位:payload.服務單位,來源渠道:payload.來源渠道,報名狀態:'待審核',建立時間:new Date().toLocaleString('zh-TW',{hour12:false})};
-        rows.unshift(row); saveDemoRegs(rows); result={success:true,message:'本機測試報名已新增。',data:{rows:rows,報名ID:row.報名ID}};
-      } else if(actionName==='審核報名') {
-        rows=rows.map(function(r){return String(r.報名ID)===String(payload.報名ID)?Object.assign({},r,{報名狀態:normalizeRegStatus(payload.報名狀態)}):r;}); saveDemoRegs(rows); result={success:true,message:'本機測試報名狀態已更新。',data:{rows:rows}};
-      } else if(actionName==='從報名表單同步報名資料') {
-        rows=[{報名ID:'表單報名'+new Date().toLocaleTimeString('zh-TW',{hour12:false}).replace(/:/g,''),活動ID:currentActivityId(),姓名:'線上表單學員',電話:'0900-123-001',Email:'已隱藏',身分別:'一般民眾',服務單位:'表單來源單位',來源渠道:'線上表單',報名狀態:'待審核',建立時間:new Date().toLocaleString('zh-TW',{hour12:false})}].concat(rows); saveDemoRegs(rows); result={success:true,message:'本機測試線上表單同步完成。',data:{rows:rows}};
-      }
-      show(target,result.message); return result;
-    }
-    try {
-      var params=Object.assign({tenantId:currentSession.tenantId,userId:currentSession.userId,userRole:currentSession.role,plan:currentSession.plan,sessionToken:currentSession.sessionToken},payload);
-      if(!API_URL) { show(target,'資料服務尚未載入。'); return {success:false,message:'資料服務尚未載入',data:{}}; }
-      var res=await fetch(API_URL+'?'+new URLSearchParams(params).toString());
-      var data=await res.json();
-      show(target,safeMessage(data.message,!!data.success));
-      return data;
-    } catch(e) {
-      show(target,'系統暫時無法完成操作，請稍後再試。');
-      return {success:false,data:{rows:[]}};
-    }
+    show(target,'首頁戰情中心不直接寫入資料，請從正式模組頁操作。');
+    return {success:false,data:{rows:[]}};
   }
   function requireOperate(target){ if(canOperateRegistration(currentSession))return true; show(target,'目前角色為唯讀權限，只能查詢報名資料，不能新增、同步或審核。'); return false; }
   window.applyRegistrationActivity=function(){ var id=currentActivityId(); document.getElementById('registrationActivityId').value=id; document.getElementById('regActivityId').value=id; show('regMsg','已套用活動：'+id); };
@@ -326,7 +369,7 @@
   window.showRegistrationModule=function(){ var mod=document.getElementById('registrationModule'); mod.classList.remove('hidden'); renderRegistrationModule(currentSession); if(location.hash!=='#registration')history.replaceState(null,'','#registration'); setTimeout(function(){mod.scrollIntoView({behavior:'smooth',block:'start'});},20); };
   function renderRegistrationModule(s){
     var mod=document.getElementById('registrationModule'); mod.classList.toggle('is-readonly',!canOperateRegistration(s));
-    document.getElementById('registrationMode').textContent=s.isDemo?'本機測試模式':'正式登入模式';
+    document.getElementById('registrationMode').textContent='正式登入模式';
     document.getElementById('registrationTenantLine').textContent=s.organizationName+'｜'+s.userName+'｜'+(ROLE_LABELS[s.role]||s.role);
     if(!val('registrationActivityId'))document.getElementById('registrationActivityId').value='活動測試一';
     if(!val('regActivityId'))document.getElementById('regActivityId').value=currentActivityId();
@@ -334,18 +377,54 @@
     if(canOperateRegistration(s)){note.classList.add('hidden');note.textContent='';}
     else{note.classList.remove('hidden');note.textContent='目前角色為唯讀權限，只能查詢報名資料，不能新增、同步或審核。';}
     renderStats([]);
-    if(s.isDemo)renderTable({success:true,data:{rows:ensureDemoRows(currentActivityId())}},'registrationTable');
   }
   window.logout=function(){ ['govops_auth','govops_profile','govops_usage'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}}); location.href='./login.html'; };
-  function boot(){
+  function redirectLogin(){
+    ['govops_auth','govops_profile','govops_usage'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+    document.getElementById('emptyState').style.display='block';
+    setTimeout(function(){location.href='./login.html?redirect='+encodeURIComponent('dashboard.html');},350);
+  }
+  function saveVerifiedSession(base, data){
+    data=data||{};
+    var merged=Object.assign({}, base, data);
+    localStorage.setItem('govops_auth',JSON.stringify(merged));
+    localStorage.setItem('govops_profile',JSON.stringify({
+      userId:merged.userId||'',
+      userName:merged.userName||merged.name||'使用者',
+      email:merged.email||'',
+      role:normalizeRole(merged.userRole||merged.role),
+      userRole:normalizeRole(merged.userRole||merged.role),
+      tenantId:merged.tenantId||'',
+      organizationName:merged.organizationName||merged.orgName||merged.workspaceName||'GovOps OS',
+      plan:normalizePlan(merged.plan||merged.planId)
+    }));
+  }
+  async function verifySession(s){
+    if(!s.hasSession||s.isDemo)return null;
+    try{
+      var res=await GovOpsAPI.post({action:'auth.me',sessionToken:s.sessionToken});
+      if(!res||res.success===false||!res.data)return null;
+      saveVerifiedSession(s,res.data);
+      return readSession();
+    }catch(e){return null;}
+  }
+  async function boot(){
     currentSession=readSession();
-    if(!currentSession.hasSession){ document.getElementById('emptyState').style.display='block'; setTimeout(function(){location.href='./login.html?redirect='+encodeURIComponent('/govbid-os/app/dashboard.html');},500); return; }
+    currentSession=await verifySession(currentSession);
+    if(!currentSession){ redirectLogin(); return; }
     document.getElementById('dashboardApp').style.display='';
-    renderMode(currentSession); renderTenant(currentSession); renderKpis(currentSession); renderModules(currentSession); renderRisk(currentSession); renderPlan(currentSession); renderTools(currentSession); renderRegistrationModule(currentSession);
-    if(location.hash==='#registration')setTimeout(function(){window.showRegistrationModule();},50);
+    renderMode(currentSession); renderTenant(currentSession); renderKpis(currentSession); renderLifecycle(); renderDataModel(); renderModules(currentSession); renderRisk(currentSession); renderPlan(currentSession); renderTools(currentSession); loadDashboardSummary(currentSession); loadNavigationModules(currentSession);
+    if(location.hash==='#registration')setTimeout(function(){window.showModuleWorkspace('報名／簽到／問卷','報名管理已降級為活動底下的子模組，正式操作不再由首頁直接寫入。');},50);
   }
   boot();
 })();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+

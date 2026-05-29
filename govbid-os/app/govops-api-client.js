@@ -3,7 +3,7 @@
   'use strict';
 
   var DEFAULT_TIMEOUT_MS = 45000;
-  var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzEayaKAUTk5C0s_3fSGQe49KmuJmsZNhYCoia2cjpYSmlYqnnZKIRHZh1GQZT4JpDy5g/exec';
+  var DEFAULT_API_URL = '';
 
   function getDefaultApiUrl(){
     return window.GOVOPS_CONFIG && window.GOVOPS_CONFIG.API_URL
@@ -16,9 +16,6 @@
   }
   function getProfile(){ return readJson('govops_profile'); }
   function getAuth(){ return readJson('govops_auth'); }
-  function isLocalDemoSession(){
-    return String(getAuth().sessionToken || getProfile().sessionToken || '').indexOf('LOCAL-DEMO-') === 0;
-  }
   function runtimeParams(params){
     params = params || {};
     var profile = getProfile();
@@ -40,18 +37,17 @@
   function friendlyError(reason, extra){
     return {
       success: false,
-      message: '系統暫時無法完成操作，請稍後再試。',
-      data: Object.assign({ reason: reason || 'FRONTEND_API_ERROR' }, extra || {})
+      message: '資料服務暫時無法連線，請稍後再試。',
+      data: Object.assign({ reason: reason || 'FRONTEND_SERVICE_ERROR' }, extra || {})
     };
   }
   function handleUnauthorized(){
-    if (isLocalDemoSession()) return;
     ['govops_auth','govops_profile'].forEach(function(k){
       try { localStorage.removeItem(k); } catch(e){}
     });
-    var cur = window.location.pathname + window.location.search;
+    var cur = window.location.pathname.split('/').pop() + window.location.search;
     if (cur.indexOf('login.html') === -1 && cur.indexOf('register.html') === -1) {
-      window.location.href = './login.html?redirect=' + encodeURIComponent(cur);
+      window.location.href = './login.html?redirect=' + encodeURIComponent(cur || 'dashboard.html');
     }
   }
   function doLogout(){
@@ -59,15 +55,6 @@
       try { localStorage.removeItem(k); } catch(e){}
     });
     window.location.href = './login.html';
-  }
-  function localDemoResponse(params){
-    var action = (params && params.action) || 'demo';
-    if (action === 'getMe') return { success: true, message: 'Demo session 已載入。', data: getAuth() };
-    return { success: true, message: 'Demo 模式已接收：' + action, data: { rows: [], reason: 'LOCAL_DEMO' } };
-  }
-  function shouldUseLocalDemo(params){
-    var action = String((params && params.action) || '');
-    return isLocalDemoSession() && ['loginUser','registerTenant','logoutUser'].indexOf(action) < 0;
   }
   function toQuery(params){
     var enriched = runtimeParams(params || {});
@@ -80,14 +67,13 @@
     catch(e){
       return {
         success: false,
-        message: 'API 回應不是 JSON，請檢查 Apps Script 部署狀態。',
-        data: { reason: 'INVALID_JSON', status: res.status, raw: text.slice(0, 300) }
+        message: '資料服務暫時無法回應，請稍後再試。',
+        data: { reason: 'INVALID_RESPONSE', status: res.status }
       };
     }
   }
   async function request(params, options){
     options = options || {};
-    if (shouldUseLocalDemo(params || {})) return localDemoResponse(params || {});
     var apiUrl = options.apiUrl || getDefaultApiUrl();
     if (!apiUrl) return friendlyError('MISSING_API_URL');
     var controller = new AbortController();
@@ -105,7 +91,6 @@
   }
   async function post(params, options){
     options = options || {};
-    if (shouldUseLocalDemo(params || {})) return localDemoResponse(params || {});
     var apiUrl = options.apiUrl || getDefaultApiUrl();
     if (!apiUrl) return friendlyError('MISSING_API_URL');
     var controller = new AbortController();
@@ -127,8 +112,8 @@
     }
   }
   function formatResult(data){
-    if (!data) return '沒有回應資料。';
-    return data.message || (data.success === false ? '操作未完成。' : '操作完成。');
+    if (!data) return '沒有可顯示的資料。';
+    return data.message || (data.success === false ? '操作未完成。' : '操作已完成。');
   }
   function extractRows(resp){
     var d = resp && resp.data ? resp.data : {};
@@ -136,7 +121,7 @@
   }
   async function bindMessageRequest(params, targetId, options){
     var target = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
-    if (target) target.textContent = '處理中，請稍候...';
+    if (target) target.textContent = '處理中...';
     var result = await request(params, options || {});
     if (target) target.textContent = formatResult(result);
     return result;
@@ -168,3 +153,7 @@
   };
   window.GovOpsApi = window.GovOpsAPI;
 })();
+
+
+
+
