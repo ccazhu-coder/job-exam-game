@@ -7,7 +7,7 @@
 <script src="./config.js?v=prod"></script>
 <script src="./govops-api-client.js?v=prod"></script>
 <style>
-:root{--bg:#f6f2ea;--panel:#fffdf9;--ink:#162033;--muted:#667085;--line:#e5ded2;--navy:#0d2340;--gold:#b8963e;--green:#19764a;--red:#b83a2f;--blue:#24566f;--soft:#fbf8f1}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f8f4ec,#eee6d9);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif}.shell{max-width:1220px;margin:0 auto;padding:24px 18px 44px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:18px}.eyebrow{font-size:.86rem;font-weight:900;color:var(--gold);letter-spacing:.04em}h1{margin:6px 0 8px;color:var(--navy);font-size:2.25rem;line-height:1.15}.subtitle{color:var(--muted);font-size:1.02rem;line-height:1.7;max-width:780px}.user-box{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.pill{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--navy);box-shadow:0 4px 14px rgba(13,35,64,.08)}.logout{border:1px solid #efc2bd;background:#fff;color:var(--red);border-radius:999px;padding:9px 14px;font-weight:900;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.span4{grid-column:span 4}.span6{grid-column:span 6}.span8{grid-column:span 8}.span12{grid-column:span 12}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:0 8px 24px rgba(13,35,64,.08)}.card h2{margin:0 0 14px;color:var(--navy);font-size:1.18rem;display:flex;gap:8px;align-items:center}.card h2:before{content:"";width:4px;height:1.05em;background:var(--gold);border-radius:2px}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:14px;min-height:92px}.kpi b{display:block;font-size:1.8rem;line-height:1;color:var(--navy)}.kpi span{display:block;margin-top:8px;color:var(--muted);font-size:.9rem;font-weight:900}.list{display:flex;flex-direction:column;gap:10px}.row{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:13px;line-height:1.6}.row b{display:block;color:var(--navy);margin-bottom:3px}.row span{color:var(--muted)}.modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.module{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-height:134px}.module h3{margin:0 0 9px;color:var(--navy);font-size:1.05rem}.module p{margin:0;color:var(--muted);line-height:1.6;font-size:.92rem}.lifecycle{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:8px}.step{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:12px 8px;text-align:center;font-weight:900;color:var(--navy);min-height:58px;display:flex;align-items:center;justify-content:center}.step.active{background:#fff8e6;border-color:#e0c987;color:#604b1f}.step.risk{background:#f7ecea;border-color:#efc2bd;color:var(--red)}.notice{border:1px solid #e0c987;background:#fff8e6;color:#604b1f;border-radius:10px;padding:14px 16px;font-weight:900;line-height:1.6}.empty{padding:18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-weight:900;background:#fff}.loading{display:flex;align-items:center;justify-content:center;min-height:220px;color:var(--muted);font-weight:900}.hidden{display:none!important}@media(max-width:980px){.span4,.span6,.span8{grid-column:span 12}.hero{grid-template-columns:1fr}.user-box{align-items:flex-start}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.modules{grid-template-columns:repeat(2,minmax(0,1fr))}.lifecycle{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:560px){.shell{padding:18px 12px 30px}.card{padding:16px}h1{font-size:1.8rem}.kpis,.modules,.lifecycle{grid-template-columns:1fr}.pill,.logout{width:100%}}
+:root{--bg:#f6f2ea;--panel:#fffdf9;--ink:#162033;--muted:#667085;--line:#e5ded2;--navy:#0d2340;--gold:#b8963e;--green:#19764a;--red:#b83a2f;--soft:#fbf8f1}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#f8f4ec,#eee6d9);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Microsoft JhengHei",sans-serif}.shell{max-width:1220px;margin:0 auto;padding:24px 18px 44px}.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;margin-bottom:18px}.eyebrow{font-size:.86rem;font-weight:900;color:var(--gold);letter-spacing:.04em}h1{margin:6px 0 8px;color:var(--navy);font-size:2.25rem;line-height:1.15}.subtitle{color:var(--muted);font-size:1.02rem;line-height:1.7;max-width:780px}.user-box{display:flex;flex-direction:column;gap:8px;align-items:flex-end}.pill{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:999px;background:#fff;border:1px solid var(--line);font-weight:900;color:var(--navy);box-shadow:0 4px 14px rgba(13,35,64,.08)}.logout{border:1px solid #efc2bd;background:#fff;color:var(--red);border-radius:999px;padding:9px 14px;font-weight:900;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.span4{grid-column:span 4}.span8{grid-column:span 8}.span12{grid-column:span 12}.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;box-shadow:0 8px 24px rgba(13,35,64,.08)}.card h2{margin:0 0 14px;color:var(--navy);font-size:1.18rem;display:flex;gap:8px;align-items:center}.card h2:before{content:"";width:4px;height:1.05em;background:var(--gold);border-radius:2px}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.kpi{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:14px;min-height:92px}.kpi b{display:block;font-size:1.8rem;line-height:1;color:var(--navy)}.kpi span{display:block;margin-top:8px;color:var(--muted);font-size:.9rem;font-weight:900}.list{display:flex;flex-direction:column;gap:10px}.row{border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:13px;line-height:1.6}.row b{display:block;color:var(--navy);margin-bottom:3px}.row span{color:var(--muted)}.modules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.module{border:1px solid var(--line);border-radius:10px;background:#fff;padding:16px;min-height:134px}.module h3{margin:0 0 9px;color:var(--navy);font-size:1.05rem}.module p{margin:0;color:var(--muted);line-height:1.6;font-size:.92rem}.lifecycle{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:8px}.step{border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:12px 8px;text-align:center;font-weight:900;color:var(--navy);min-height:58px;display:flex;align-items:center;justify-content:center}.step.active{background:#fff8e6;border-color:#e0c987;color:#604b1f}.step.risk{background:#f7ecea;border-color:#efc2bd;color:var(--red)}.loading{display:flex;align-items:center;justify-content:center;min-height:220px;color:var(--muted);font-weight:900}.hidden{display:none!important}@media(max-width:980px){.span4,.span8{grid-column:span 12}.hero{grid-template-columns:1fr}.user-box{align-items:flex-start}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.modules{grid-template-columns:repeat(2,minmax(0,1fr))}.lifecycle{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:560px){.shell{padding:18px 12px 30px}.card{padding:16px}h1{font-size:1.8rem}.kpis,.modules,.lifecycle{grid-template-columns:1fr}.pill,.logout{width:100%}}
 </style>
 </head>
 <body>
@@ -31,27 +31,22 @@
       <h2>今日營運摘要</h2>
       <div class="kpis" id="kpis"></div>
     </article>
-
     <article class="card span8">
       <h2>AI 風險提醒</h2>
       <div class="list" id="riskList"></div>
     </article>
-
     <article class="card span4">
       <h2>近期待辦</h2>
       <div class="list" id="todoList"></div>
     </article>
-
     <article class="card span12">
       <h2>專案生命週期</h2>
       <div class="lifecycle" id="lifecycle"></div>
     </article>
-
     <article class="card span12">
       <h2>正式模組入口</h2>
       <div class="modules" id="modules"></div>
     </article>
-
     <article class="card span12">
       <h2>近期活動</h2>
       <div class="list" id="recentList"></div>
@@ -77,48 +72,21 @@
   function $(id){return document.getElementById(id)}
   function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function store(){return window['local'+'Storage']}
+  function cache(){return window['session'+'Storage']}
   function codec(){return window['J'+'SON']}
   function read(name){try{return codec().parse(store().getItem(name)||'{}')||{}}catch(e){return {}}}
   function write(name,val){try{store().setItem(name,codec().stringify(val))}catch(e){}}
+  function readCache(name){try{var raw=cache().getItem(name);return raw?codec().parse(raw):null}catch(e){return null}}
+  function writeCache(name,val){try{cache().setItem(name,codec().stringify(val))}catch(e){}}
   function clearLogin(){['govops_auth','govops_profile','govops_usage'].forEach(function(k){try{store().removeItem(k)}catch(e){}})}
   function roleOf(s){var r=String((s&&s.userRole)||(s&&s.role)||'viewer').toLowerCase(); if(r==='administrator')r='admin'; if(r==='accounting')r='finance'; return roleLabels[r]?r:'viewer'}
   function tokenOf(){var a=read('govops_auth'); return String(a['session'+'Token']||a.token||'')}
-  function savedSession(){var a=read('govops_auth'),p=read('govops_profile'); return Object.assign({},p,a)}
+  function savedSession(){var a=read('govops_auth'),p=read('govops_profile'); var s=Object.assign({},p,a); s.role=roleOf(s); return s}
   function loginUrl(){return './login.html?redirect=dashboard.html'}
   function goLogin(){clearLogin(); location.href=loginUrl()}
-  async function verifyLogin(){
-    var token=tokenOf();
-    if(!token)goLogin();
-    try{
-      var res=await window['GovOps'+'A'+'PI'].post({action:'auth.me',['session'+'Token']:token});
-      if(!res||!res.success)throw new Error('invalid');
-      var data=res.data||{};
-      var session=Object.assign({},savedSession(),data,{['session'+'Token']:token});
-      session.role=roleOf(session);
-      state.session=session;
-      write('govops_auth',session);
-      write('govops_profile',{tenantId:session.tenantId,userId:session.userId,userName:session.userName,email:session.email,userRole:session.role,role:session.role,plan:session.plan,organizationName:session.organizationName});
-      return session;
-    }catch(e){goLogin()}
-  }
-  async function loadSummary(session){
-    try{
-      var res=await window['GovOps'+'A'+'PI'].post({action:'dashboard.summary',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
-      if(res&&res.success)state.summary=res.data||{};
-    }catch(e){state.summary=null}
-  }
-  async function loadModules(session){
-    try{
-      var res=await window['GovOps'+'A'+'PI'].post({action:'navigation.modules',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
-      if(res&&res.success&&res.data&&Array.isArray(res.data.modules))state.modules=res.data.modules;
-    }catch(e){state.modules=[]}
-    if(!state.modules.length)state.modules=defaultModules;
-  }
-  function renderUser(session){
-    var name=session.userName||session.email||'使用者';
-    var role=roleLabels[session.role]||'成員';
-    $('userPill').textContent=name+'｜'+role;
-  }
+  function api(){return window['GovOps'+'A'+'PI']}
+  function showApp(){ $('loadingState').classList.add('hidden'); $('dashboardApp').classList.remove('hidden') }
+  function renderUser(session){var name=session.userName||session.email||'使用者'; var role=roleLabels[session.role]||'成員'; $('userPill').textContent=name+'｜'+role}
   function renderKpis(){
     var k=(state.summary&&state.summary.kpis)||{};
     var rows=[
@@ -130,14 +98,14 @@
       [k.billingPending,'活動待請款數'],
       [(k.projectProgress==null?'0':k.projectProgress)+'%','專案總進度']
     ];
-    $('kpis').innerHTML=rows.map(function(r){return '<div class="kpi"><b>'+esc(r[0]==null?0:r[0])+'</b><span>'+esc(r[1])+'</span></div>'}).join('');
+    $('kpis').innerHTML=rows.map(function(r){return '<div class="kpi"><b>'+esc(r[0]==null?'--':r[0])+'</b><span>'+esc(r[1])+'</span></div>'}).join('');
   }
   function renderRisks(){
     var risks=(state.summary&&Array.isArray(state.summary.risks))?state.summary.risks:[];
     if(!risks.length){risks=[
-      {title:'目前尚無高風險提醒',description:'今日尚未偵測到需要立即處理的重大營運風險。'},
-      {title:'請持續追蹤活動缺件',description:'建議每日確認講師、場地、餐點、領據與核銷附件狀態。'},
-      {title:'請款節點請提前準備',description:'接近結案的專案請優先整理成果資料與請款附件。'}
+      {title:'資料載入中',description:'正在整理今日風險提醒，請稍候。'},
+      {title:'活動缺件追蹤',description:'請持續確認講師、場地、餐點、領據與核銷附件狀態。'},
+      {title:'請款節點提醒',description:'接近結案的專案請優先整理成果資料與請款附件。'}
     ]}
     $('riskList').innerHTML=risks.slice(0,6).map(function(r){return '<div class="row"><b>'+esc(r.title||r.label||'營運提醒')+'</b><span>'+esc(r.description||r.message||'目前尚無資料')+'</span></div>'}).join('');
   }
@@ -156,7 +124,7 @@
   }
   function renderModules(){
     var allowed=['clientCrm','tenderPool','bidProject','project','activity','resource','registration','reimbursement','billing','aiAssistant','organization'];
-    var list=(state.modules||defaultModules).filter(function(m){return allowed.indexOf(String(m.key||''))>=0}).slice(0,12);
+    var list=(state.modules.length?state.modules:defaultModules).filter(function(m){return allowed.indexOf(String(m.key||''))>=0}).slice(0,12);
     if(!list.length)list=defaultModules;
     $('modules').innerHTML=list.map(function(m){return '<div class="module"><h3>'+esc(m.label||m.title||'正式模組')+'</h3><p>'+esc(m.description||'目前尚無資料')+'</p></div>'}).join('');
   }
@@ -168,20 +136,52 @@
     ];
     $('recentList').innerHTML=rows.map(function(r){return '<div class="row"><b>'+esc(r[0])+'</b><span>'+esc(r[1])+'</span></div>'}).join('');
   }
-  function renderAll(){
-    renderUser(state.session); renderKpis(); renderRisks(); renderTodos(); renderLifecycle(); renderModules(); renderRecent();
-    $('loadingState').classList.add('hidden'); $('dashboardApp').classList.remove('hidden');
+  function renderAll(){renderUser(state.session); renderKpis(); renderRisks(); renderTodos(); renderLifecycle(); renderModules(); renderRecent(); showApp()}
+  async function verifyLogin(){
+    var token=tokenOf(); if(!token)goLogin();
+    try{
+      var res=await api().post({action:'auth.me',['session'+'Token']:token});
+      if(!res||!res.success)throw new Error('invalid');
+      var data=res.data||{};
+      var session=Object.assign({},savedSession(),data,{['session'+'Token']:token});
+      session.role=roleOf(session); state.session=session;
+      write('govops_auth',session);
+      write('govops_profile',{tenantId:session.tenantId,userId:session.userId,userName:session.userName,email:session.email,userRole:session.role,role:session.role,plan:session.plan,organizationName:session.organizationName});
+      renderUser(session);
+      return session;
+    }catch(e){goLogin()}
+  }
+  async function loadSummary(session){
+    var key='govops_dashboard_summary_'+String(session.tenantId||'default');
+    var cached=readCache(key);
+    if(cached&&cached.time&&Date.now()-cached.time<45000&&cached.data){state.summary=cached.data; renderKpis(); renderRisks(); renderTodos()}
+    try{
+      var res=await api().post({action:'dashboard.summary',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      if(res&&res.success){state.summary=res.data||{}; writeCache(key,{time:Date.now(),data:state.summary}); renderKpis(); renderRisks(); renderTodos()}
+    }catch(e){}
+  }
+  async function loadModules(session){
+    state.modules=defaultModules; renderModules();
+    try{
+      var res=await api().post({action:'navigation.modules',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      if(res&&res.success&&res.data&&Array.isArray(res.data.modules)){state.modules=res.data.modules; renderModules()}
+    }catch(e){}
   }
   async function logout(){
     var token=tokenOf();
-    try{if(token)await window['GovOps'+'A'+'PI'].post({action:'auth.logout',['session'+'Token']:token})}catch(e){}
+    try{if(token)await api().post({action:'auth.logout',['session'+'Token']:token})}catch(e){}
     clearLogin(); location.href='./login.html';
   }
   $('logoutBtn').addEventListener('click',logout);
-  (async function start(){
-    var session=await verifyLogin();
-    await Promise.all([loadSummary(session),loadModules(session)]);
+  (function start(){
+    var token=tokenOf(); if(!token){goLogin(); return}
+    state.session=savedSession();
     renderAll();
+    verifyLogin().then(function(session){
+      if(!session)return;
+      loadSummary(session);
+      setTimeout(function(){loadModules(session)},0);
+    });
   })();
 })();
 </script>
