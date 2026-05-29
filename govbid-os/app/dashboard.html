@@ -85,6 +85,7 @@
   function loginUrl(){return './login.html?redirect=dashboard.html'}
   function goLogin(){clearLogin(); location.href=loginUrl()}
   function api(){return window['GovOps'+'A'+'PI']}
+  function delay(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
   function showApp(){ $('loadingState').classList.add('hidden'); $('dashboardApp').classList.remove('hidden') }
   function renderUser(session){var name=session.userName||session.email||'使用者'; var role=roleLabels[session.role]||'成員'; $('userPill').textContent=name+'｜'+role}
   function renderKpis(){
@@ -123,6 +124,10 @@
     $('lifecycle').innerHTML=steps.map(function(s,i){var cls=i===6?' active':(i===7||i===8?' risk':''); return '<div class="step'+cls+'">'+esc(s)+'</div>'}).join('');
   }
   function renderModules(){
+    if(state.modulesStatus==='slow'){
+      $('modules').innerHTML='<div class="module"><h3>目前尚無模組資料</h3><p>目前資料同步較慢，請稍後重新整理。</p></div>';
+      return;
+    }
     var allowed=['clientCrm','tenderPool','bidProject','project','activity','resource','registration','reimbursement','billing','aiAssistant','organization'];
     var list=(state.modules.length?state.modules:defaultModules).filter(function(m){return allowed.indexOf(String(m.key||''))>=0}).slice(0,12);
     if(!list.length)list=defaultModules;
@@ -140,7 +145,11 @@
   async function verifyLogin(){
     var token=tokenOf(); if(!token)goLogin();
     try{
-      var res=await api().post({action:'auth.me',['session'+'Token']:token});
+      var authDone=false;
+      var loginCheck=api().post({action:'auth.me',['session'+'Token']:token});
+      delay(8000).then(function(){ if(!authDone)$('userPill').textContent='資料同步較慢，請稍後重新整理。' });
+      var res=await loginCheck;
+      authDone=true;
       if(!res||!res.success)throw new Error('invalid');
       var data=res.data||{};
       var session=Object.assign({},savedSession(),data,{['session'+'Token']:token});
@@ -156,16 +165,37 @@
     var cached=readCache(key);
     if(cached&&cached.time&&Date.now()-cached.time<45000&&cached.data){state.summary=cached.data; renderKpis(); renderRisks(); renderTodos()}
     try{
-      var res=await api().post({action:'dashboard.summary',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      var request=api().post({action:'dashboard.summary',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      var timed=await Promise.race([request,delay(8000).then(function(){return {slow:true}})]);
+      if(timed&&timed.slow){
+        state.summary=state.summary||{kpis:{}};
+        renderKpis();
+        $('riskList').innerHTML='<div class="row"><b>資料同步較慢</b><span>目前資料同步較慢，請稍後重新整理。</span></div>';
+        request.then(function(res){if(res&&res.success){state.summary=res.data||{}; writeCache(key,{time:Date.now(),data:state.summary}); renderKpis(); renderRisks(); renderTodos()}}).catch(function(){});
+        return;
+      }
+      var res=timed;
       if(res&&res.success){state.summary=res.data||{}; writeCache(key,{time:Date.now(),data:state.summary}); renderKpis(); renderRisks(); renderTodos()}
-    }catch(e){}
+    }catch(e){
+      state.summary=state.summary||{kpis:{}};
+      renderKpis();
+      $('riskList').innerHTML='<div class="row"><b>資料同步較慢</b><span>目前資料同步較慢，請稍後重新整理。</span></div>';
+    }
   }
   async function loadModules(session){
     state.modules=defaultModules; renderModules();
     try{
-      var res=await api().post({action:'navigation.modules',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      var request=api().post({action:'navigation.modules',tenantId:session.tenantId,userId:session.userId,userRole:session.role,plan:session.plan,['session'+'Token']:session['session'+'Token']});
+      var timed=await Promise.race([request,delay(8000).then(function(){return {slow:true}})]);
+      if(timed&&timed.slow){
+        state.modulesStatus='slow';
+        renderModules();
+        request.then(function(res){if(res&&res.success&&res.data&&Array.isArray(res.data.modules)){state.modulesStatus=''; state.modules=res.data.modules; renderModules()}}).catch(function(){});
+        return;
+      }
+      var res=timed;
       if(res&&res.success&&res.data&&Array.isArray(res.data.modules)){state.modules=res.data.modules; renderModules()}
-    }catch(e){}
+    }catch(e){state.modulesStatus='slow'; renderModules()}
   }
   async function logout(){
     var token=tokenOf();
