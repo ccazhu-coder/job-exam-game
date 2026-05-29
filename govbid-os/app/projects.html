@@ -4,63 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GovOps OS｜專案管理</title>
-<link rel="stylesheet" href="./erp-page-style.css">
-<script src="./config.js"></script>
+<script src="./config.js?v=prod"></script>
+<script src="./govops-api-client.js?v=prod"></script>
 </head>
-<body>
-<header><div class="wrap">
-  <div class="brand">GovOps OS</div>
-  <div class="sub">政府標案全流程營運系統</div>
-  <nav id="nav"></nav>
-</div></header>
-<main class="wrap">
-  <div class="page-title">
-    <h1>專案管理</h1>
-    <p>管理政府標案、委託課程與自辦活動等計畫專案</p>
-  </div>
-  <div class="card">
-    <div class="btns" style="margin-bottom:10px">
-      <button class="gold" onclick="openCreate()">＋ 新增專案</button>
-      <div style="flex:1"></div>
-      <input id="keyword" placeholder="專案名稱、主辦單位、狀態…" style="max-width:260px;margin:0" onkeydown="if(event.key==='Enter')query()">
-      <button onclick="query()">查詢</button>
-    </div>
-    <div id="queryMsg" class="msg">載入中…</div>
-    <div id="table" style="margin-top:8px"></div>
-  </div>
-</main>
-<script src="./govops-api-client.js"></script>
-<script src="./erp-aligned-core.js"></script>
-<script>
-document.getElementById('nav').innerHTML = ERPALIGNED.nav();
-
-const PROJ_CREATE = [
-  {name:'專案計畫名稱', label:'專案計畫名稱＊'},
-  {name:'專案類型', label:'專案類型', type:'select', options:['政府標案','自辦活動','委託課程','公會計畫','其他']},
-  {name:'主辦單位', label:'主辦／委託單位'},
-  {name:'契約金額', label:'契約金額（元）', type:'number'},
-  {name:'開始日期', label:'開始日期', type:'date'},
-  {name:'結束日期', label:'結束日期', type:'date'},
-  {name:'專案說明', label:'專案說明', type:'textarea'}
-];
-const PROJ_EDIT = [
-  {name:'專案ID', label:'專案 ID', readonly:true},
-  ...PROJ_CREATE,
-  {name:'狀態', label:'狀態', type:'select', options:['進行中','已完成','已取消','暫停']},
-  {name:'變更原因', label:'變更原因', type:'textarea'}
-];
-
-function openCreate(){
-  ERPALIGNED.showEditModal('新增專案', PROJ_CREATE, {}, '新增專案', null, query);
-}
-function openEdit(row){
-  ERPALIGNED.showEditModal('編輯專案：'+row['專案計畫名稱'], PROJ_EDIT, row, '修改專案', '專案ID', query);
-}
-async function query(){
-  const r=await ERPALIGNED.api({action:'查詢專案',keyword:document.getElementById('keyword').value},'queryMsg');
-  ERPALIGNED.renderTableWithEdit(r,'table',openEdit,['專案ID','專案計畫名稱','專案類型','主辦單位','契約金額','開始日期','結束日期','狀態']);
-}
-query();
-</script>
+<body data-page="projects">
+<script src="./v1-workbench.js?v=v1"></script>
 </body>
 </html>
