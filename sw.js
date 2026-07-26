@@ -1,5 +1,5 @@
-const CACHE='interview-game-v8-teacher-sync';
-const FILES=['./','./index.html','./style.css','./game-enhancements.css','./sync-mode.css','./sync-controls.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./sync-mode.js','./manifest.webmanifest'];
+const CACHE='interview-game-v9-market-bank';
+const FILES=['./','./index.html','./style.css','./game-enhancements.css','./sync-mode.css','./sync-controls.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./sync-mode.js','./market-bank.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
