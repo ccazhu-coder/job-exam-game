@@ -8,8 +8,10 @@
 <link href="manifest.webmanifest" rel="manifest"/>
 <link href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect rx='22' width='100' height='100' fill='%230a3557'/%3E%3Ctext y='.78em' x='.12em' font-size='78'%3E🎯%3C/text%3E%3C/svg%3E" rel="icon"/>
 <title>面談演練闖關遊戲｜正式上課版</title>
-<link href="style.css?v=20260726-6" rel="stylesheet"/>
-<link href="game-enhancements.css?v=20260726-6" rel="stylesheet"/>
+<link href="style.css?v=20260726-8" rel="stylesheet"/>
+<link href="game-enhancements.css?v=20260726-8" rel="stylesheet"/>
+<link href="sync-mode.css?v=20260726-8" rel="stylesheet" data-sync-mode="1"/>
+<link href="sync-controls.css?v=20260726-8" rel="stylesheet"/>
 </head>
 <body>
 <div class="splash" id="splash"><div class="splash-card"><div class="splash-icon">🎯</div><h1>面談演練闖關遊戲</h1><div class="feature-grid"><div class="feature"><b>免登入</b>不需帳號、密碼或註冊</div><div class="feature"><b>自動抽題</b>100題企業求職題庫</div><div class="feature"><b>自動保存</b>重新整理可接續進度</div><div class="feature"><b>離線可用</b>單一電腦也能完整上課</div></div><div class="splash-actions"><button class="btn btn-gold" id="newGameBtn">開始新的課程</button><button class="btn btn-primary hidden" id="resumeBtn">繼續上次進度</button><button class="btn btn-ghost" id="splashHelpBtn">查看操作方式</button></div><div class="privacy">資料只保存在這台裝置的瀏覽器中，不會上傳學員姓名或成績。</div></div></div>
@@ -24,8 +26,8 @@
 </div>
 <div class="overlay" id="challengeOverlay"><div class="modal"><h2 id="challengeTitle">事件卡</h2><div class="challenge" id="challengeText"></div><div class="btn-row"><button class="btn btn-primary grow" id="closeChallenge">接受挑戰</button></div></div></div>
 <div class="overlay" id="setupOverlay"><div class="modal"><h2>學員與小組設定</h2><p class="help-list"><b>開課時設定一次即可。</b>之後切換每一輪都會沿用相同分組與姓名，角色會自動輪替。姓名只保存在這台裝置，不會上傳。</p><div class="setup-grid" id="setupGrid"></div><div class="btn-row"><button class="btn btn-primary grow" id="saveSetupBtn">儲存設定</button><button class="btn btn-ghost" data-close="setupOverlay">取消</button></div></div></div>
-<div class="overlay" id="helpOverlay"><div class="modal"><h2>操作方式</h2><div class="help-list"><p><b>學員設定：</b>只需在課程開始時設定一次；所有輪次都會沿用，按「下一位」會自動輪替角色。</p><p><b>操作人：</b>老師使用一台電腦接投影幕；學生不需登入或操作手機。</p><p><b>每回合：</b>老師選輪次與求職方向 → 一次抽5題 → 每題開始前啟動倒數 → 面試官追問 → 老師依5項指標評分 → 儲存 → 下一位。</p><p><b>資料安全：</b>成績與進度自動保存在本機瀏覽器。建議課程中場與結束時各匯出一次CSV或JSON。</p><p><b>快捷鍵：</b><span class="kbd">D</span>抽題　<span class="kbd">空白</span>計時/暫停　<span class="kbd">F</span>追問　<span class="kbd">E</span>事件　<span class="kbd">N</span>下一位　<span class="kbd">1～5</span>快速評分　<span class="kbd">S</span>儲存　<span class="kbd">P</span>投影模式。</p></div><div class="btn-row"><button class="btn btn-primary grow" data-close="helpOverlay">我知道了</button></div></div></div>
+<div class="overlay" id="helpOverlay"><div class="modal"><h2>操作方式</h2><div class="help-list"><p><b>學員設定：</b>只需在課程開始時設定一次；所有輪次都會沿用，按「下一位」會自動輪替角色。</p><p><b>操作人：</b>老師使用一台電腦接投影幕；學生不需登入或操作手機。</p><p><b>每回合：</b>老師選輪次與求職方向 → 一次抽5題 → 每題開始前啟動倒數 → 面試官追問 → 老師依5項指標評分 → 儲存 → 下一位。</p><p><b>四組同步：</b>老師可選擇隨機抽5題、手動選5題，或只替換其中一題；四組共用同一個倒數同步練習。</p><p><b>資料安全：</b>成績與進度自動保存在本機瀏覽器。建議課程中場與結束時各匯出一次CSV或JSON。</p><p><b>快捷鍵：</b><span class="kbd">D</span>抽題　<span class="kbd">空白</span>計時/暫停　<span class="kbd">F</span>追問　<span class="kbd">E</span>事件　<span class="kbd">N</span>下一位　<span class="kbd">1～5</span>快速評分　<span class="kbd">S</span>儲存　<span class="kbd">P</span>投影模式。</p></div><div class="btn-row"><button class="btn btn-primary grow" data-close="helpOverlay">我知道了</button></div></div></div>
 <div class="overlay" id="resetOverlay"><div class="modal"><h2>確定重設全部資料？</h2><p class="help-list">此操作會清除目前分數、面試紀錄與抽題進度。請先匯出備份。請在下方輸入「重設」。</p><input id="resetConfirm" placeholder="請輸入：重設"/><div class="btn-row"><button class="btn btn-red grow" id="confirmResetBtn">永久清除</button><button class="btn btn-ghost" data-close="resetOverlay">取消</button></div></div></div>
 <div class="toast" id="toast"></div>
-<script defer="" src="data.js?v=20260726-6"></script><script defer="" src="app.js?v=20260726-6"></script><script defer="" src="runtime-check.js?v=20260726-6"></script><script defer="" src="game-effects.js?v=20260726-6"></script>
+<script defer="" src="data.js?v=20260726-8"></script><script defer="" src="app.js?v=20260726-8"></script><script defer="" src="runtime-check.js?v=20260726-8"></script><script defer="" src="game-effects.js?v=20260726-8"></script><script defer="" src="sync-mode.js?v=20260726-8" data-sync-mode="1"></script>
 </body></html>
