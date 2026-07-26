@@ -1,0 +1,83 @@
+/* 面談演練闖關遊戲：投影版面與遊戲特效 */
+:root{--game-cyan:#38c7ff;--game-purple:#7a6cff;--game-glow:0 0 24px rgba(56,199,255,.38)}
+
+/* 按鈕遊戲感 */
+.btn,.icon-btn,.tab,.preset,.score-option,.team{position:relative;overflow:hidden}
+.btn::after,.icon-btn::after,.tab::after{content:"";position:absolute;inset:-100% auto -100% -35%;width:28%;transform:rotate(18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transition:left .55s ease;pointer-events:none}
+.btn:hover::after,.icon-btn:hover::after,.tab:hover::after{left:115%}
+.btn:active,.icon-btn:active,.tab:active,.score-option:active,.preset:active{transform:translateY(1px) scale(.98)}
+.game-ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:gameRipple .55s ease-out;pointer-events:none}
+@keyframes gameRipple{to{transform:scale(4);opacity:0}}
+
+/* 抽題翻牌與題目逐題進場 */
+.question-card.game-deal{animation:gameDeal .58s cubic-bezier(.18,.8,.25,1)}
+@keyframes gameDeal{0%{opacity:.2;transform:perspective(900px) rotateY(-11deg) translateY(24px) scale(.96);filter:blur(3px)}100%{opacity:1;transform:none;filter:none}}
+.question.multi{display:grid!important;gap:10px;white-space:normal!important}
+.game-question-item{display:grid;grid-template-columns:42px 1fr;align-items:start;gap:8px;padding:9px 12px;border-radius:12px;background:linear-gradient(90deg,rgba(234,246,252,.92),rgba(255,255,255,.2));border-left:4px solid rgba(35,130,184,.65);opacity:0;transform:translateX(-22px);animation:questionEnter .42s ease forwards}
+.game-question-number{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-size:16px;font-weight:950;box-shadow:0 5px 14px rgba(21,93,143,.25)}
+.game-question-text{padding-top:1px}
+@keyframes questionEnter{to{opacity:1;transform:none}}
+
+/* 分數與排行榜 */
+.score-total.game-score-pop strong{animation:scorePop .65s cubic-bezier(.18,.9,.25,1)}
+@keyframes scorePop{0%{transform:scale(.55);color:var(--gold)}55%{transform:scale(1.28)}100%{transform:scale(1)}}
+.rank-item.game-rank-flash{animation:rankFlash .75s ease}
+@keyframes rankFlash{0%,100%{background:transparent}45%{background:rgba(243,182,63,.28)}}
+
+/* 倒數計時 */
+.timer{transition:color .2s,transform .2s,box-shadow .2s}
+.timer.game-ticking{animation:timerTick .9s ease}
+.timer.game-urgent{color:#d83f48!important;text-shadow:0 0 22px rgba(216,63,72,.38);animation:urgentPulse .7s infinite}
+.timer.game-timeup{animation:timeUp .55s ease 2}
+@keyframes timerTick{50%{transform:scale(1.035)}}
+@keyframes urgentPulse{50%{transform:scale(1.06)}}
+@keyframes timeUp{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
+/* 事件與追問卡 */
+#challengeOverlay.open .modal{animation:modalBoss .45s cubic-bezier(.18,.9,.3,1)}
+#challengeOverlay.event-mode .modal{box-shadow:0 0 0 4px rgba(201,74,74,.2),0 34px 90px rgba(0,0,0,.35);animation:eventShake .48s ease}
+@keyframes modalBoss{0%{opacity:0;transform:scale(.82) translateY(30px)}100%{opacity:1;transform:none}}
+@keyframes eventShake{0%,100%{transform:none}20%{transform:translateX(-8px) rotate(-.4deg)}40%{transform:translateX(7px) rotate(.4deg)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+
+/* 下一位轉場 */
+.game-turn-banner{position:fixed;left:50%;top:50%;z-index:220;transform:translate(-50%,-50%) scale(.75);padding:24px 42px;border-radius:22px;background:linear-gradient(135deg,rgba(8,46,76,.97),rgba(21,93,143,.97));color:#fff;text-align:center;box-shadow:0 28px 80px rgba(0,0,0,.35),var(--game-glow);opacity:0;pointer-events:none}
+.game-turn-banner.show{animation:turnBanner 1.15s ease forwards}
+.game-turn-banner small{display:block;font-size:14px;opacity:.78;margin-bottom:6px}.game-turn-banner strong{font-size:30px}
+@keyframes turnBanner{0%{opacity:0;transform:translate(-50%,-50%) scale(.72)}20%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-58%) scale(1.04)}}
+
+/* 彩帶 */
+.game-confetti{position:fixed;top:-20px;z-index:230;width:10px;height:16px;border-radius:2px;pointer-events:none;animation:confettiFall var(--fall,1.7s) linear forwards}
+@keyframes confettiFall{to{transform:translate3d(var(--drift,0),105vh,0) rotate(720deg);opacity:.2}}
+
+/* 音效切換 */
+.game-sound-btn{white-space:nowrap}
+
+/* 投影模式：同畫面顯示五題、倒數與操作列 */
+body.presentation{overflow:hidden}
+.presentation .topbar{position:relative;padding:9px 18px;min-height:82px}
+.presentation .brand-icon{width:44px;height:44px;font-size:25px}
+.presentation .brand h1{font-size:22px}.presentation .brand p{font-size:11px}
+.presentation .shell{display:block;max-width:1400px;height:calc(100vh - 82px);padding:8px 22px 150px;overflow:hidden}
+.presentation .side-left,.presentation .side-right,.presentation .round-tabs,.presentation .timer-controls{display:none!important}
+.presentation .stage{height:100%;min-height:0;padding:0;display:block;box-shadow:none;background:transparent;border:0}
+.presentation .question-wrap{display:block;height:100%;padding:0;min-height:0}
+.presentation .question-card{width:100%;height:100%;min-height:0;max-height:none;padding:18px 28px 14px;border-radius:24px;display:flex;flex-direction:column;overflow:hidden}
+.presentation .category-line{flex:0 0 auto}
+.presentation .question.multi{flex:1;min-height:0;margin:12px 0 8px;font-size:clamp(21px,2.15vw,31px)!important;line-height:1.22!important;gap:clamp(5px,1vh,10px);align-content:center}
+.presentation .game-question-item{grid-template-columns:44px 1fr;gap:9px;padding:clamp(5px,.75vh,9px) 12px;background:rgba(244,250,253,.78)}
+.presentation .game-question-number{width:34px;height:34px;font-size:17px}
+.presentation .hint-block{display:none!important}
+.presentation .card-meta{flex:0 0 auto;margin-top:6px}
+.presentation .timer{position:fixed;left:50%;bottom:79px;z-index:46;transform:translateX(-50%);min-width:190px;margin:0;padding:5px 24px 7px;border:2px solid rgba(255,255,255,.85);border-radius:18px;background:linear-gradient(135deg,rgba(8,46,76,.97),rgba(21,93,143,.97));color:#fff!important;font-size:46px!important;line-height:1;box-shadow:0 12px 32px rgba(8,46,76,.32),var(--game-glow)}
+.presentation .timer.game-urgent{color:#fff!important;background:linear-gradient(135deg,#a92735,#d9484f)}
+.presentation .present-toolbar{display:flex;bottom:13px;z-index:48}
+
+@media(max-height:760px){
+ .presentation .topbar{min-height:70px;padding:6px 14px}.presentation .shell{height:calc(100vh - 70px);padding:5px 15px 128px}
+ .presentation .question-card{padding:12px 22px 9px}.presentation .category{padding:5px 9px;font-size:12px}
+ .presentation .question.multi{font-size:clamp(18px,2vw,25px)!important;gap:4px;margin:7px 0 4px}
+ .presentation .game-question-item{padding:4px 9px}.presentation .game-question-number{width:29px;height:29px;font-size:14px}
+ .presentation .timer{bottom:70px;font-size:38px!important;padding:4px 19px}.present-toolbar{bottom:8px}
+}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
