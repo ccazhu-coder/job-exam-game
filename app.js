@@ -40,9 +40,7 @@ function drawQuestion(isChange=false){
   state.current={
     id:ids.join('、'),
     category:`${roundLabels[state.round]}｜5題練習組`,
-    question:chosen.map((q,i)=>`${i+1}. ${q.question}`).join('
-
-'),
+    question:chosen.map((q,i)=>`${i+1}. ${q.question}`).join(String.fromCharCode(10,10)),
     intent:'觀察學員能否在不同題型中，保持回答架構、職務連結與安全意識。',
     hint:'每題先說結論，再補充理由或實例；老師可在每題開始前重新啟動倒數。',
     questions:chosen
