@@ -16,14 +16,53 @@ function openOverlay(id){$(''+id).classList.add('open')}function closeOverlay(id
 function log(text,type='info'){const time=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});state.logs.unshift({time,text,type,at:new Date().toISOString()});if(state.logs.length>300)state.logs.length=300;renderLog();safeSave()}
 function roundPool(){const r=state.round;if(r==='offer')return OFFERS.map((question,i)=>({id:`O${i+1}`,category:'Offer談判',question,intent:'確認薪資、到職條件與職涯判斷。',hint:'先確認職務內容與完整條件，再提出有依據、可協商的回答。'}));if(r==='warmup')return QUESTIONS.filter(q=>q.id<=10);if(r==='scenario')return QUESTIONS.filter(q=>(q.id>=21&&q.id<=30)||(q.id>=51&&q.id<=80));if(r==='pk')return QUESTIONS.filter(q=>(q.id>=71&&q.id<=80)||(q.id>=91&&q.id<=100)||[22,27,57,62].includes(q.id));const map={pilot:q=>(q.id>=11&&q.id<=30)||(q.id>=51&&q.id<=60),media:q=>(q.id>=21&&q.id<=40)||(q.id>=61&&q.id<=70),inspection:q=>(q.id>=21&&q.id<=30)||(q.id>=41&&q.id<=70),project:q=>(q.id>=61&&q.id<=100)};return QUESTIONS.filter(map[state.career])}
 function usedKey(){return `${state.round}:${state.career}`}
-function drawQuestion(isChange=false){snapshot(isChange?'換題':'抽題');const pool=roundPool();const key=usedKey();state.used[key]=state.used[key]||[];let available=pool.filter(q=>!state.used[key].includes(String(q.id)));if(!available.length){state.used[key]=[];available=pool;toast('本題組已全部抽完，重新洗牌')}const q=available[Math.floor(Math.random()*available.length)];state.used[key].push(String(q.id));state.current=q;state.currentToken=`${Date.now()}-${Math.random().toString(36).slice(2)}`;state.currentSaved=false;state.criteria=[3,3,3,3,3];resetTimer(false);log(`${isChange?'換題':'抽題'}｜${activeTeam().name}｜${activePlayer()}｜${q.category}：${q.question}`);renderQuestion(true);renderCriteria();safeSave()}
+function drawQuestion(isChange=false){
+  snapshot(isChange?'換5題':'抽5題');
+  const pool=roundPool();
+  const key=usedKey();
+  state.used[key]=state.used[key]||[];
+  const chosen=[];
+  let reshuffled=false;
+  while(chosen.length<5){
+    let available=pool.filter(q=>!state.used[key].includes(String(q.id))&&!chosen.some(c=>String(c.id)===String(q.id)));
+    if(!available.length){
+      state.used[key]=[];
+      reshuffled=true;
+      available=pool.filter(q=>!chosen.some(c=>String(c.id)===String(q.id)));
+    }
+    if(!available.length)break;
+    const q=available[Math.floor(Math.random()*available.length)];
+    chosen.push(q);
+    state.used[key].push(String(q.id));
+  }
+  if(reshuffled)toast('本題組題目已抽完，已自動重新洗牌');
+  const ids=chosen.map(q=>q.id);
+  state.current={
+    id:ids.join('、'),
+    category:`${roundLabels[state.round]}｜5題練習組`,
+    question:chosen.map((q,i)=>`${i+1}. ${q.question}`).join('
+
+'),
+    intent:'觀察學員能否在不同題型中，保持回答架構、職務連結與安全意識。',
+    hint:'每題先說結論，再補充理由或實例；老師可在每題開始前重新啟動倒數。',
+    questions:chosen
+  };
+  state.currentToken=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  state.currentSaved=false;
+  state.criteria=[3,3,3,3,3];
+  resetTimer(false);
+  log(`${isChange?'換5題':'抽5題'}｜${activeTeam().name}｜${activePlayer()}｜題號 ${ids.join('、')}`);
+  renderQuestion(true);
+  renderCriteria();
+  safeSave();
+}
 function activeTeam(){return state.teams[state.activeTeam]}function activePlayer(){return activeTeam().members[activeTeam().member]}
 function roleName(offset){const t=activeTeam();return t.members[(t.member+offset)%4]}
 function setActiveTeam(i){if(i===state.activeTeam)return;snapshot('切換小組');state.activeTeam=i;stopTimer();resetTimer(false);renderAll();safeSave()}
 function nextRole(){snapshot('下一位');stopTimer();const t=activeTeam();t.member=(t.member+1)%4;if(t.member===0)state.activeTeam=(state.activeTeam+1)%state.teams.length;state.current=null;state.currentToken=null;state.currentSaved=false;state.criteria=[3,3,3,3,3];resetTimer(false);log(`角色輪替｜目前 ${activeTeam().name}｜應徵者：${activePlayer()}`);renderAll();toast('角色已自動輪替，請抽下一題')}
 function renderTeams(){$('teams').innerHTML=state.teams.map((t,i)=>{const pct=Math.min(100,(t.attempts/4)*100);return `<div class="team ${i===state.activeTeam?'active':''}" data-team="${i}"><div class="team-head"><span class="team-name">${escapeHtml(t.name)}</span><span class="team-score">${t.score}</span></div><div class="members"><span class="role-badge">應徵者</span>${escapeHtml(t.members[t.member])}<br><span class="role-badge">面試官</span>${escapeHtml(t.members[(t.member+1)%4])}　<span class="role-badge">觀察</span>${escapeHtml(t.members[(t.member+2)%4])}<br><span class="role-badge">紀錄</span>${escapeHtml(t.members[(t.member+3)%4])}｜已評分 ${t.attempts} 題</div><div class="team-progress"><span style="width:${pct}%"></span></div></div>`}).join('');document.querySelectorAll('[data-team]').forEach(el=>el.onclick=()=>setActiveTeam(Number(el.dataset.team)));renderStatus();renderRanking()}
 function renderStatus(){$('roundStatus').textContent=roundLabels[state.round];$('teamStatus').textContent=activeTeam().name;$('playerStatus').textContent=`應徵者：${activePlayer()}`;$('roundSelect').value=state.round;$('careerSelect').value=state.career;$('answerSeconds').value=String(state.answerSeconds);document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.round===state.round));$('careerSelect').disabled=false}
-function renderQuestion(animate=false){const q=state.current;if(!q){$('category').textContent='準備開始';$('question').textContent='請由老師選擇輪次，按下「自動抽題」';$('intent').innerHTML='<b>企業想確認：</b>系統將顯示面試官觀察重點。';$('hint').innerHTML='<b>高分回答：</b>系統將顯示回答架構提示。';$('questionNo').textContent='題號：—';$('attemptInfo').textContent='本題尚未評分';$('unsavedBadge').textContent='尚未抽題';return}$('category').textContent=q.category;$('question').textContent=q.question;$('intent').innerHTML=`<b>企業想確認：</b>${escapeHtml(q.intent)}`;$('hint').innerHTML=`<b>高分回答：</b>${escapeHtml(q.hint)}`;$('questionNo').textContent=`題號：${q.id}`;$('attemptInfo').textContent=state.currentSaved?'本題成績已儲存':'本題尚未評分';$('unsavedBadge').textContent=state.currentSaved?'✓ 已評分':'● 待評分';$('unsavedBadge').style.color=state.currentSaved?'var(--green)':'var(--red)';if(animate){$('questionCard').classList.remove('draw');void $('questionCard').offsetWidth;$('questionCard').classList.add('draw')}}
+function renderQuestion(animate=false){const q=state.current;$('question').classList.toggle('multi',!!(q&&Array.isArray(q.questions)));if(!q){$('category').textContent='準備開始';$('question').textContent='請由老師選擇輪次，按下「自動抽題」';$('intent').innerHTML='<b>企業想確認：</b>系統將顯示面試官觀察重點。';$('hint').innerHTML='<b>高分回答：</b>系統將顯示回答架構提示。';$('questionNo').textContent='題號：—';$('attemptInfo').textContent='本題尚未評分';$('unsavedBadge').textContent='尚未抽題';return}$('category').textContent=q.category;$('question').textContent=q.question;$('intent').innerHTML=`<b>企業想確認：</b>${escapeHtml(q.intent)}`;$('hint').innerHTML=`<b>高分回答：</b>${escapeHtml(q.hint)}`;$('questionNo').textContent=`題號：${q.id}`;$('attemptInfo').textContent=state.currentSaved?'本題成績已儲存':'本題尚未評分';$('unsavedBadge').textContent=state.currentSaved?'✓ 已評分':'● 待評分';$('unsavedBadge').style.color=state.currentSaved?'var(--green)':'var(--red)';if(animate){$('questionCard').classList.remove('draw');void $('questionCard').offsetWidth;$('questionCard').classList.add('draw')}}
 function renderCriteria(){$('criteria').innerHTML=CRITERIA.map((name,ci)=>`<div class="criterion"><div class="criterion-head"><span>${name}</span><span>${state.criteria[ci]}分</span></div><div class="score-options">${[1,2,3,4,5].map(n=>`<button class="score-option ${state.criteria[ci]===n?'active':''}" data-ci="${ci}" data-score="${n}">${n}</button>`).join('')}</div></div>`).join('');document.querySelectorAll('.score-option').forEach(b=>b.onclick=()=>{state.criteria[Number(b.dataset.ci)]=Number(b.dataset.score);renderCriteria();safeSave()});$('scoreTotal').textContent=state.criteria.reduce((a,b)=>a+b,0)}
 function applyPreset(n){state.criteria=[n,n,n,n,n];renderCriteria();safeSave()}
 function saveScore(){if(!state.current){toast('請先抽題');return}snapshot('儲存成績');const total=state.criteria.reduce((a,b)=>a+b,0);const comment=[$('commentSelect').value,$('customComment').value.trim()].filter(Boolean).join('｜');let attempt=state.attempts.find(a=>a.token===state.currentToken);if(attempt){const team=state.teams[attempt.teamIndex];team.score+=total-attempt.total;attempt.criteria=[...state.criteria];attempt.total=total;attempt.comment=comment;attempt.updatedAt=new Date().toISOString();log(`更新評分｜${team.name}｜${attempt.player}｜${total}/25`)}else{attempt={token:state.currentToken,time:new Date().toLocaleString('zh-TW'),teamIndex:state.activeTeam,team:activeTeam().name,player:activePlayer(),round:roundLabels[state.round],career:careerLabels[state.career],questionId:state.current.id,category:state.current.category,question:state.current.question,criteria:[...state.criteria],total,comment};state.attempts.push(attempt);activeTeam().score+=total;activeTeam().attempts+=1;log(`儲存評分｜${activeTeam().name}｜${activePlayer()}｜${total}/25｜${comment}`)}state.currentSaved=true;$('customComment').value='';renderAll();safeSave();toast(`已儲存 ${total} 分`)}
