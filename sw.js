@@ -1,5 +1,5 @@
-const CACHE='interview-formal-v3-1';
-const FILES=['./','./index.html','./formal.css','./formal-data.js','./core-part1.js','./core-part2.js','./core-part3.js','./core-part4.js','./core-part5.js','./core-loader.js'];
+const CACHE='interview-formal-v4-ui';
+const FILES=['./','./index.html','./formal.css','./formal-ui-fix.css','./formal-data.js','./core-part1.js','./core-part2.js','./core-part3.js','./core-part4.js','./core-part5.js','./core-loader.js'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
