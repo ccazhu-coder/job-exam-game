@@ -1,5 +1,15 @@
 (() => {
   'use strict';
+
+  function loadUiFix(){
+    if(document.querySelector('link[data-formal-ui-fix]')) return;
+    const link=document.createElement('link');
+    link.rel='stylesheet';
+    link.href='formal-ui-fix.css?v=4.0.0';
+    link.dataset.formalUiFix='1';
+    document.head.appendChild(link);
+  }
+
   function showFailure(error){
     console.error('正式版程式載入失敗', error);
     const render=()=>{
@@ -8,7 +18,9 @@
     };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',render); else render();
   }
+
   try{
+    loadUiFix();
     const encoded=window.__CORE_B64||'';
     if(!encoded) throw new Error('MISSING_CORE');
     const binary=atob(encoded);
