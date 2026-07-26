@@ -1,0 +1,74 @@
+/* v4 正式版：教師主控台與所有操作鍵一致化 */
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none}
+.app-shell{align-items:start}
+.panel{min-width:0}
+.panel.left,.panel.right{align-self:start}
+.panel.stage{align-self:stretch}
+
+/* 左側：所有成對操作鍵固定二欄，不因文字長度或 flex 換行而變形 */
+.left>.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin-top:8px;align-items:stretch}
+.left>.row[style*="margin-top"]{margin-top:12px!important}
+.left>.row>.btn{width:100%;min-width:0;height:48px;min-height:48px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.15;white-space:nowrap;border-radius:12px;font-size:15px;flex:none}
+.left>.row>.btn:hover{transform:translateY(-1px)}
+.left select,.left .inline-unit input,.left .inline-unit .unit{height:48px;min-height:48px}
+.left .inline-unit .unit{min-width:60px;padding:0 12px}
+.left .helptext{margin:5px 0 10px}
+.left h3{clear:both;margin-top:18px}
+
+/* 主畫面三欄對齊與控制元件一致 */
+.top-actions>button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.tabs>.tab{min-height:42px;display:grid;place-items:center}
+.timer-controls>.btn{min-width:0;min-height:44px;height:44px;padding:0 8px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.scores>.score{min-height:40px;display:grid;place-items:center}
+.right>#saveScore{min-height:46px}
+
+/* 四組同步按鍵與時間控制一致 */
+.sync-settings>*{height:46px;min-height:46px}
+.sync-settings>span{display:flex;align-items:center;white-space:nowrap;font-weight:800}
+.sync-timer-card>.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%}
+.sync-timer-card>.row>.btn{width:100%;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.sync-toolbar>.btn{min-height:44px;height:44px;padding:0 13px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+.sync-group button{min-height:40px;display:flex;align-items:center;justify-content:center;white-space:nowrap}
+
+/* 彈窗按鍵一致 */
+.modal>.row>.btn,.modal .row>.btn{min-height:44px;display:flex;align-items:center;justify-content:center}
+
+@media(max-width:1450px){
+  .app-shell{grid-template-columns:292px minmax(0,1fr) 326px;gap:12px;padding:12px}
+  .panel{padding:13px}
+  .left>.row>.btn{font-size:14px;padding:0 7px}
+  .qtext{font-size:17px}
+}
+@media(max-width:1180px){
+  .top{position:relative;flex-wrap:wrap}
+  .app-shell{grid-template-columns:1fr}
+  .stage{order:1;min-height:650px}
+  .left{order:2}
+  .right{order:3}
+  .left>.row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sync-head{grid-template-columns:1fr}
+  .sync-settings{flex-wrap:wrap;justify-content:flex-start}
+  .sync-main{grid-template-columns:1fr}
+  .sync-timer-card{min-height:auto}
+}
+@media(max-width:700px){
+  .top{padding:10px;gap:10px}
+  .brand h1{font-size:18px}
+  .brand p,.status{display:none}
+  .top-actions{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .top-actions>button{min-width:0;padding:8px 5px;font-size:12px}
+  .app-shell{padding:8px;gap:9px}
+  .panel{border-radius:14px;padding:11px}
+  .left>.row{gap:7px}
+  .left>.row>.btn{height:46px;min-height:46px;font-size:14px;padding:0 6px}
+  .timer-controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .timer-controls>.btn{height:46px}
+  .sync-groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sync-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sync-toolbar>.btn{width:100%;min-width:0;font-size:13px;padding:0 6px}
+  .setup-grid,.features{grid-template-columns:1fr}
+}
+@media(max-width:390px){
+  .left>.row>.btn{font-size:13px}
+  .top-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
