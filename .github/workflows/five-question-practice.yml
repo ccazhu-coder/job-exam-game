@@ -1,0 +1,99 @@
+name: Five-question practice mode
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable five-question draw mode
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          app = Path('app.js')
+          text = app.read_text(encoding='utf-8')
+
+          new_draw = r'''function drawQuestion(isChange=false){
+            snapshot(isChange?'換5題':'抽5題');
+            const pool=roundPool();
+            const key=usedKey();
+            state.used[key]=state.used[key]||[];
+            const chosen=[];
+            let reshuffled=false;
+            while(chosen.length<5){
+              let available=pool.filter(q=>!state.used[key].includes(String(q.id))&&!chosen.some(c=>String(c.id)===String(q.id)));
+              if(!available.length){
+                state.used[key]=[];
+                reshuffled=true;
+                available=pool.filter(q=>!chosen.some(c=>String(c.id)===String(q.id)));
+              }
+              if(!available.length)break;
+              const q=available[Math.floor(Math.random()*available.length)];
+              chosen.push(q);
+              state.used[key].push(String(q.id));
+            }
+            if(reshuffled)toast('本題組題目已抽完，已自動重新洗牌');
+            const ids=chosen.map(q=>q.id);
+            state.current={
+              id:ids.join('、'),
+              category:`${roundLabels[state.round]}｜5題練習組`,
+              question:chosen.map((q,i)=>`${i+1}. ${q.question}`).join('\n\n'),
+              intent:'觀察學員能否在不同題型中，保持回答架構、職務連結與安全意識。',
+              hint:'每題先說結論，再補充理由或實例；老師可在每題開始前重新啟動倒數。',
+              questions:chosen
+            };
+            state.currentToken=`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            state.currentSaved=false;
+            state.criteria=[3,3,3,3,3];
+            resetTimer(false);
+            log(`${isChange?'換5題':'抽5題'}｜${activeTeam().name}｜${activePlayer()}｜題號 ${ids.join('、')}`);
+            renderQuestion(true);
+            renderCriteria();
+            safeSave();
+          }
+          '''
+          text, count = re.subn(r"function drawQuestion\(isChange=false\)\{.*?\}\nfunction activeTeam", new_draw + "function activeTeam", text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('drawQuestion patch failed')
+
+          old_start = "function renderQuestion(animate=false){const q=state.current;if(!q){"
+          new_start = "function renderQuestion(animate=false){const q=state.current;$('question').classList.toggle('multi',!!(q&&Array.isArray(q.questions)));if(!q){"
+          if old_start not in text:
+              raise SystemExit('renderQuestion patch failed')
+          text = text.replace(old_start, new_start, 1)
+          app.write_text(text, encoding='utf-8')
+
+          index = Path('index.html')
+          html = index.read_text(encoding='utf-8')
+          html = html.replace('id="drawBtn">🎴 自動抽題</button>', 'id="drawBtn">🎴 一次抽5題</button>')
+          html = html.replace('id="changeBtn">換題</button>', 'id="changeBtn">換5題</button>')
+          html = html.replace('老師選輪次 → 自動抽題 → 開始倒數', '老師選輪次與求職方向 → 一次抽5題 → 每題開始前啟動倒數')
+          html = html.replace('id="pDraw">抽題</button>', 'id="pDraw">抽5題</button>')
+          index.write_text(html, encoding='utf-8')
+
+          style = Path('style.css')
+          css = style.read_text(encoding='utf-8')
+          if '.question.multi{' not in css:
+              css += '\n.question.multi{font-size:24px;line-height:1.55;white-space:pre-line;text-align:left;margin-top:18px}.presentation .question.multi{font-size:30px;line-height:1.55}@media(max-width:680px){.question.multi{font-size:19px}}\n'
+          style.write_text(css, encoding='utf-8')
+          PY
+      - name: Commit five-question mode
+        run: |
+          if git diff --quiet; then
+            echo "No changes needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js index.html style.css
+          git commit -m "feat: draw five practice questions at once"
+          git push
