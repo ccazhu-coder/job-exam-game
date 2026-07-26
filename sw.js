@@ -1,5 +1,5 @@
-const CACHE='interview-game-v6-effects';
-const FILES=['./','./index.html','./style.css','./game-enhancements.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./manifest.webmanifest'];
+const CACHE='interview-game-v8-teacher-sync';
+const FILES=['./','./index.html','./style.css','./game-enhancements.css','./sync-mode.css','./sync-controls.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./sync-mode.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
