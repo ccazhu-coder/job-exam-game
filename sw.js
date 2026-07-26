@@ -1,5 +1,5 @@
-const CACHE='drone-interview-v3-five-question';
-const FILES=['./','./index.html','./style.css','./data.js','./app.js','./manifest.webmanifest'];
+const CACHE='drone-interview-v5-button-check';
+const FILES=['./','./index.html','./style.css','./data.js','./app.js','./runtime-check.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
