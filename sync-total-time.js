@@ -150,6 +150,7 @@
     input.setAttribute('aria-label','本輪總時間（分鐘）');
     input.title='老師自行設定本輪總時間，不依題數或組數相乘';
     input.dataset.syncTotalBound='1';
+    input.dataset.minuteReady='1';
     const parent=old.parentElement;
     if(parent&&parent.classList.contains('minute-input-wrap')){
       parent.replaceChild(input,old);
