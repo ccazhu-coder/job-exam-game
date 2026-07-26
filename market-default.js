@@ -1,6 +1,25 @@
 (() => {
   'use strict';
   const KEY='interviewMarketGeneralDefaultV1';
+  const VERSION='20260726-11';
+
+  function loadMinuteControls(){
+    if(!document.querySelector('link[data-minute-controls]')){
+      const link=document.createElement('link');
+      link.rel='stylesheet';
+      link.href=`time-minutes.css?v=${VERSION}`;
+      link.dataset.minuteControls='1';
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector('script[data-minute-controls]')){
+      const script=document.createElement('script');
+      script.src=`time-minutes.js?v=${VERSION}`;
+      script.async=false;
+      script.dataset.minuteControls='1';
+      document.head.appendChild(script);
+    }
+  }
+
   function init(){
     if(typeof state==='undefined') return;
     try{
@@ -18,5 +37,7 @@
     if(typeof renderAll==='function') renderAll();
     if(typeof safeSave==='function') safeSave();
   }
+
+  loadMinuteControls();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
