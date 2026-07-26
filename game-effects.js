@@ -137,9 +137,29 @@
     },true);
   }
 
+  function loadFourGroupMode(){
+    if(!document.querySelector('link[data-sync-mode]')){
+      const link=document.createElement('link');
+      link.rel='stylesheet';link.href='sync-mode.css?v=20260726-7';link.dataset.syncMode='1';
+      document.head.appendChild(link);
+    }
+    if(!document.querySelector('script[data-sync-mode]')){
+      const script=document.createElement('script');
+      script.src='sync-mode.js?v=20260726-7';script.dataset.syncMode='1';
+      document.body.appendChild(script);
+    }
+  }
+
+  window.gameFxSound=kind=>{
+    if(kind==='draw')drawSound();
+    else if(kind==='next')nextSound();
+    else if(kind==='success')successSound();
+    else tone(520,.08,'triangle');
+  };
+
   function init(){
     document.title='面談演練闖關遊戲｜正式上課版';
-    addSoundToggle();bindGameEvents();monitorTimer();monitorQuestions();renameExports();
+    addSoundToggle();bindGameEvents();monitorTimer();monitorQuestions();renameExports();loadFourGroupMode();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
