@@ -5,9 +5,92 @@
   const getState = () => window.eval('state');
   const call = (name, ...args) => typeof window[name] === 'function' ? window[name](...args) : undefined;
   let mirrorTimerId = null;
+  let pickerMode = 'select';
+  let pickerReplaceIndex = null;
+  let pickerPool = [];
+  let pickerOrder = [];
 
   function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[char]));
+  }
+
+  function getPool() {
+    try {
+      const pool = window.eval('roundPool()');
+      return Array.isArray(pool) ? pool : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function questionSetFrom(questions) {
+    const labels = window.eval('roundLabels');
+    return {
+      id: questions.map(q => q.id).join('、'),
+      category: `${labels[getState().round]}｜5題練習組`,
+      question: questions.map((q, i) => `${i + 1}. ${q.question}`).join(String.fromCharCode(10, 10)),
+      intent: '觀察學員能否在不同題型中，保持回答架構、職務連結與安全意識。',
+      hint: '每題先說結論，再補充理由或實例；老師可在每題開始前重新啟動倒數。',
+      questions: questions.map(q => JSON.parse(JSON.stringify(q)))
+    };
+  }
+
+  function sessionHasScores() {
+    const state = getState();
+    return Boolean(state.syncSession?.tokens?.some(token => state.attempts.some(attempt => attempt.token === token)));
+  }
+
+  function markQuestionsUsed(questions) {
+    const state = getState();
+    try {
+      const key = window.eval('usedKey()');
+      state.used[key] = state.used[key] || [];
+      questions.forEach(question => {
+        const id = String(question.id);
+        if (!state.used[key].includes(id)) state.used[key].push(id);
+      });
+    } catch (_) {}
+  }
+
+  function publishQuestionSet(questions, label = '老師指定5題') {
+    if (!Array.isArray(questions) || questions.length !== 5) {
+      call('toast', '請選滿5題');
+      return;
+    }
+    const state = getState();
+    const set = questionSetFrom(questions);
+    const base = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const tokens = [0, 1, 2, 3].map(index => `${base}-team-${index}`);
+
+    call('snapshot', label);
+    state.activeTeam = 0;
+    state.current = set;
+    state.currentToken = tokens[0];
+    state.currentSaved = false;
+    state.criteria = [3, 3, 3, 3, 3];
+    state.syncSession = {
+      createdAt: new Date().toISOString(),
+      source: label,
+      questionSet: JSON.parse(JSON.stringify(set)),
+      tokens
+    };
+    markQuestionsUsed(questions);
+    call('resetTimer', false);
+    call('log', `${label}｜四組同步｜題號 ${questions.map(q => q.id).join('、')}`);
+    call('renderAll');
+    call('safeSave');
+    renderSync(true);
+    flashDraw();
+  }
+
+  function flashDraw() {
+    const flash = document.createElement('div');
+    flash.className = 'sync-flash';
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 520);
+    if (typeof window.gameFxSound === 'function') window.gameFxSound('draw');
   }
 
   function ensureButton() {
@@ -32,7 +115,7 @@
       <header class="sync-head">
         <div class="sync-title">
           <div class="sync-title-icon">🎯</div>
-          <div><h2>四組同步練習</h2><p>單一電腦投影｜四組共用同一組5題</p></div>
+          <div><h2>四組同步練習</h2><p>老師控制抽題｜四組共用同一組5題</p></div>
         </div>
         <div class="sync-settings">
           <select id="syncRoundSelect" aria-label="面試輪次">
@@ -67,8 +150,8 @@
             <span class="sync-round-pill" id="syncRoundPill">第一輪｜暖身面試</span>
             <span class="sync-ready" id="syncReady">尚未抽題</span>
           </div>
-          <div class="sync-list" id="syncQuestionList"><div class="sync-empty">老師按下「同步抽5題」後，四組一起開始練習。</div></div>
-          <div class="sync-meta"><span id="syncQuestionNos">題號：—</span><span>四組同題｜每組自行分配應徵者、面試官、觀察員與紀錄員</span></div>
+          <div class="sync-list" id="syncQuestionList"><div class="sync-empty">老師可選擇「隨機抽5題」或「老師手動選5題」。</div></div>
+          <div class="sync-meta"><span id="syncQuestionNos">題號：—</span><span>每題右側可單獨替換｜四組同題同步練習</span></div>
         </article>
         <aside class="sync-timer-panel">
           <div class="sync-timer-label">全班共用倒數</div>
@@ -83,8 +166,9 @@
         </aside>
       </main>
       <footer class="sync-toolbar">
-        <button class="btn btn-primary" id="syncDrawBtn">🎴 同步抽5題</button>
-        <button class="btn btn-ghost" id="syncChangeBtn">換5題</button>
+        <button class="btn btn-primary" id="syncDrawBtn">🎲 隨機抽5題</button>
+        <button class="btn btn-gold" id="syncManualBtn">☑ 老師手動選5題</button>
+        <button class="btn btn-ghost" id="syncChangeBtn">重新隨機5題</button>
         <button class="btn btn-ghost" id="syncFollowBtn">❓ 追問題</button>
         <button class="btn btn-ghost" id="syncEventBtn">⚡ 事件卡</button>
         <button class="btn btn-gold" id="syncNextAllBtn">🔄 四組下一位</button>
@@ -93,10 +177,42 @@
     bindOverlay();
   }
 
+  function ensurePicker() {
+    if (byId('syncPickerOverlay')) return;
+    const picker = document.createElement('div');
+    picker.id = 'syncPickerOverlay';
+    picker.className = 'sync-picker-overlay';
+    picker.innerHTML = `
+      <div class="sync-picker-card" role="dialog" aria-modal="true" aria-labelledby="syncPickerTitle">
+        <div class="sync-picker-head">
+          <div><h3 id="syncPickerTitle">老師手動選5題</h3><p id="syncPickerSubtitle">從目前輪次題庫中勾選5題</p></div>
+          <button class="sync-picker-close" id="syncPickerCloseBtn" aria-label="關閉">×</button>
+        </div>
+        <div class="sync-picker-tools">
+          <input id="syncPickerSearch" type="search" placeholder="搜尋題號、類別或題目內容">
+          <span id="syncPickerCount">已選0題</span>
+        </div>
+        <div class="sync-picker-list" id="syncPickerList"></div>
+        <div class="sync-picker-actions">
+          <button class="btn btn-ghost" id="syncPickerClearBtn">清除選取</button>
+          <button class="btn btn-ghost" id="syncPickerCancelBtn">取消</button>
+          <button class="btn btn-primary" id="syncPickerConfirmBtn">套用題目</button>
+        </div>
+      </div>`;
+    document.body.appendChild(picker);
+    byId('syncPickerCloseBtn').addEventListener('click', closePicker);
+    byId('syncPickerCancelBtn').addEventListener('click', closePicker);
+    byId('syncPickerClearBtn').addEventListener('click', () => { pickerOrder = []; renderPickerList(); });
+    byId('syncPickerConfirmBtn').addEventListener('click', confirmPicker);
+    byId('syncPickerSearch').addEventListener('input', renderPickerList);
+    picker.addEventListener('click', event => { if (event.target === picker) closePicker(); });
+  }
+
   function bindOverlay() {
     byId('syncCloseBtn').addEventListener('click', closeSyncMode);
     byId('syncFullscreenBtn').addEventListener('click', () => call('fullscreen'));
     byId('syncDrawBtn').addEventListener('click', () => drawForAll(false));
+    byId('syncManualBtn').addEventListener('click', () => openPicker('select'));
     byId('syncChangeBtn').addEventListener('click', () => drawForAll(true));
     byId('syncStartBtn').addEventListener('click', () => call('startTimer'));
     byId('syncPauseBtn').addEventListener('click', () => { call('stopTimer'); call('safeSave'); });
@@ -127,15 +243,21 @@
 
     document.addEventListener('keydown', event => {
       if (!byId('syncOverlay')?.classList.contains('open')) return;
+      if (byId('syncPickerOverlay')?.classList.contains('open')) {
+        if (event.key === 'Escape') closePicker();
+        return;
+      }
       if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
       if (event.key === 'Escape') closeSyncMode();
       if (event.key.toLowerCase() === 'd') drawForAll(false);
+      if (event.key.toLowerCase() === 'm') openPicker('select');
       if (event.key.toLowerCase() === 'n') advanceAllTeams();
     });
   }
 
   function openSyncMode() {
     ensureOverlay();
+    ensurePicker();
     const overlay = byId('syncOverlay');
     overlay.classList.add('open');
     overlay.setAttribute('aria-hidden', 'false');
@@ -146,6 +268,7 @@
   }
 
   function closeSyncMode() {
+    closePicker();
     const overlay = byId('syncOverlay');
     overlay?.classList.remove('open');
     overlay?.setAttribute('aria-hidden', 'true');
@@ -157,44 +280,141 @@
     const state = getState();
     state.activeTeam = 0;
     call('drawQuestion', isChange);
-    const current = state.current ? JSON.parse(JSON.stringify(state.current)) : null;
-    const base = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    state.syncSession = {
-      createdAt: new Date().toISOString(),
-      questionSet: current,
-      tokens: [0,1,2,3].map(index => `${base}-team-${index}`)
-    };
-    call('safeSave');
-    renderSync(true);
-    const flash = document.createElement('div');
-    flash.className = 'sync-flash';
-    document.body.appendChild(flash);
-    setTimeout(() => flash.remove(), 520);
-    if (typeof window.gameFxSound === 'function') window.gameFxSound('draw');
+    const currentQuestions = state.current?.questions;
+    if (!Array.isArray(currentQuestions) || currentQuestions.length !== 5) {
+      call('toast', '目前題庫無法抽出5題');
+      return;
+    }
+    publishQuestionSet(currentQuestions, isChange ? '重新隨機5題' : '隨機抽5題');
+  }
+
+  function openPicker(mode, replaceIndex = null) {
+    ensurePicker();
+    pickerMode = mode;
+    pickerReplaceIndex = replaceIndex;
+    pickerPool = getPool();
+    const state = getState();
+    const current = state.syncSession?.questionSet?.questions || [];
+
+    if (mode === 'replace') {
+      if (!current.length) {
+        call('toast', '請先抽出或選定5題');
+        return;
+      }
+      if (sessionHasScores()) {
+        call('toast', '已有小組完成評分，請先進入下一回合再換題');
+        return;
+      }
+      const otherIds = new Set(current.filter((_, index) => index !== replaceIndex).map(q => String(q.id)));
+      pickerPool = pickerPool.filter(q => !otherIds.has(String(q.id)));
+      pickerOrder = [];
+      byId('syncPickerTitle').textContent = `替換第${replaceIndex + 1}題`;
+      byId('syncPickerSubtitle').textContent = '選擇1題後套用，其餘4題保持不變';
+      byId('syncPickerClearBtn').classList.add('hidden');
+    } else {
+      pickerOrder = current.map(q => String(q.id));
+      byId('syncPickerTitle').textContent = '老師手動選5題';
+      byId('syncPickerSubtitle').textContent = '從目前輪次與求職方向的題庫中勾選5題';
+      byId('syncPickerClearBtn').classList.remove('hidden');
+    }
+
+    byId('syncPickerSearch').value = '';
+    renderPickerList();
+    byId('syncPickerOverlay').classList.add('open');
+    setTimeout(() => byId('syncPickerSearch').focus(), 30);
+  }
+
+  function closePicker() {
+    byId('syncPickerOverlay')?.classList.remove('open');
+  }
+
+  function togglePickerQuestion(id) {
+    const value = String(id);
+    const existingIndex = pickerOrder.indexOf(value);
+    if (existingIndex >= 0) {
+      pickerOrder.splice(existingIndex, 1);
+    } else {
+      const max = pickerMode === 'replace' ? 1 : 5;
+      if (pickerOrder.length >= max) {
+        if (pickerMode === 'replace') pickerOrder = [value];
+        else call('toast', '最多只能選5題');
+      } else {
+        pickerOrder.push(value);
+      }
+    }
+    renderPickerList();
+  }
+
+  function renderPickerList() {
+    const list = byId('syncPickerList');
+    if (!list) return;
+    const keyword = (byId('syncPickerSearch')?.value || '').trim().toLowerCase();
+    const filtered = pickerPool.filter(question => {
+      const haystack = `${question.id} ${question.category} ${question.question}`.toLowerCase();
+      return !keyword || haystack.includes(keyword);
+    });
+    list.innerHTML = filtered.length ? filtered.map(question => {
+      const selected = pickerOrder.includes(String(question.id));
+      const order = pickerOrder.indexOf(String(question.id)) + 1;
+      return `<button type="button" class="sync-pick-row${selected ? ' selected' : ''}" data-pick-id="${escapeHtml(question.id)}">
+        <span class="sync-pick-check">${selected ? (pickerMode === 'replace' ? '✓' : order) : ''}</span>
+        <span class="sync-pick-content"><b>題號 ${escapeHtml(question.id)}｜${escapeHtml(question.category)}</b><span>${escapeHtml(question.question)}</span></span>
+      </button>`;
+    }).join('') : '<div class="sync-picker-empty">找不到符合的題目</div>';
+    list.querySelectorAll('[data-pick-id]').forEach(button => {
+      button.addEventListener('click', () => togglePickerQuestion(button.dataset.pickId));
+    });
+    const required = pickerMode === 'replace' ? 1 : 5;
+    byId('syncPickerCount').textContent = `已選${pickerOrder.length}題／需選${required}題`;
+    byId('syncPickerConfirmBtn').disabled = pickerOrder.length !== required;
+  }
+
+  function confirmPicker() {
+    const required = pickerMode === 'replace' ? 1 : 5;
+    if (pickerOrder.length !== required) {
+      call('toast', `請選滿${required}題`);
+      return;
+    }
+    const selected = pickerOrder.map(id => pickerPool.find(question => String(question.id) === id)).filter(Boolean);
+    if (selected.length !== required) {
+      call('toast', '選題資料不完整，請重新選擇');
+      return;
+    }
+
+    if (pickerMode === 'replace') {
+      const state = getState();
+      const current = state.syncSession?.questionSet?.questions || [];
+      const next = current.map(q => JSON.parse(JSON.stringify(q)));
+      next[pickerReplaceIndex] = selected[0];
+      publishQuestionSet(next, `老師替換第${pickerReplaceIndex + 1}題`);
+    } else {
+      publishQuestionSet(selected, '老師手動選5題');
+    }
+    closePicker();
   }
 
   function advanceAllTeams() {
     const state = getState();
-    if (typeof window.snapshot === 'function') window.snapshot('四組同步下一位');
+    call('snapshot', '四組同步下一位');
     state.teams.forEach(team => { team.member = (team.member + 1) % team.members.length; });
     state.current = null;
     state.currentToken = null;
     state.currentSaved = false;
     state.syncSession = null;
-    state.criteria = [3,3,3,3,3];
+    state.criteria = [3, 3, 3, 3, 3];
     call('resetTimer', false);
     call('renderAll');
     call('safeSave');
     renderSync();
     if (typeof window.gameFxSound === 'function') window.gameFxSound('next');
-    if (typeof window.toast === 'function') window.toast('四組角色已同步輪替');
+    call('toast', '四組角色已同步輪替');
   }
 
   function scoreTeam(index) {
     const state = getState();
     const session = state.syncSession;
     if (!session?.questionSet) {
-      if (typeof window.toast === 'function') window.toast('請先同步抽5題');
+      call('toast', '請先抽出或選定5題');
       return;
     }
     state.activeTeam = index;
@@ -202,11 +422,11 @@
     state.currentToken = session.tokens[index];
     const existing = state.attempts.find(attempt => attempt.token === state.currentToken);
     state.currentSaved = Boolean(existing);
-    state.criteria = existing ? [...existing.criteria] : [3,3,3,3,3];
+    state.criteria = existing ? [...existing.criteria] : [3, 3, 3, 3, 3];
     call('renderAll');
     call('safeSave');
     closeSyncMode();
-    if (typeof window.toast === 'function') window.toast(`現在評分：${state.teams[index].name}`);
+    call('toast', `現在評分：${state.teams[index].name}`);
   }
 
   function renderGroups() {
@@ -231,14 +451,21 @@
     const list = byId('syncQuestionList');
     if (!list) return;
     if (!set?.questions?.length) {
-      list.innerHTML = '<div class="sync-empty">老師按下「同步抽5題」後，四組一起開始練習。</div>';
+      list.innerHTML = '<div class="sync-empty">老師可選擇「隨機抽5題」或「老師手動選5題」。</div>';
       byId('syncQuestionNos').textContent = '題號：—';
       byId('syncReady').textContent = '尚未抽題';
       return;
     }
-    list.innerHTML = set.questions.map((question, index) => `<div class="sync-question-item${animate ? ' fresh' : ''}"><span class="sync-qno">${index + 1}</span><span>${escapeHtml(question.question)}</span></div>`).join('');
+    list.innerHTML = set.questions.map((question, index) => `<div class="sync-question-item${animate ? ' fresh' : ''}">
+      <span class="sync-qno">${index + 1}</span>
+      <span class="sync-question-text">${escapeHtml(question.question)}</span>
+      <button type="button" class="sync-replace-btn" data-replace-index="${index}" title="只替換這一題">換這題</button>
+    </div>`).join('');
+    list.querySelectorAll('[data-replace-index]').forEach(button => {
+      button.addEventListener('click', () => openPicker('replace', Number(button.dataset.replaceIndex)));
+    });
     byId('syncQuestionNos').textContent = `題號：${set.questions.map(question => question.id).join('、')}`;
-    byId('syncReady').textContent = '四組同步作答中';
+    byId('syncReady').textContent = state.syncSession?.source || '四組同步作答中';
   }
 
   function renderTimerMirror() {
@@ -275,6 +502,7 @@
   function init() {
     ensureButton();
     ensureOverlay();
+    ensurePicker();
     window.openFourGroupSync = openSyncMode;
     window.closeFourGroupSync = closeSyncMode;
   }
