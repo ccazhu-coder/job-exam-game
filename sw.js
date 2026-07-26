@@ -1,5 +1,5 @@
-const CACHE='interview-game-v11-minute-timer';
-const FILES=['./','./index.html','./style.css','./game-enhancements.css','./sync-mode.css','./sync-controls.css','./time-minutes.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./sync-mode.js','./market-bank.js','./market-default.js','./time-minutes.js','./manifest.webmanifest'];
+const CACHE='interview-game-v12-sync-total-time';
+const FILES=['./','./index.html','./style.css','./game-enhancements.css','./sync-mode.css','./sync-controls.css','./time-minutes.css','./data.js','./app.js','./runtime-check.js','./game-effects.js','./sync-mode.js','./market-bank.js','./market-default.js','./time-minutes.js','./sync-total-time.js','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
